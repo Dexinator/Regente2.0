@@ -1,16 +1,25 @@
 import express from "express";
 import cors from "cors";
+import helmet from "helmet";
 import dotenv from "dotenv";
+import ordersRoutes from "./routes/orders.route.js";
+import productsRoutes from "./routes/products.route.js";
+import clientsRoutes from "./routes/clients.route.js";
+import employeesRoutes from "./routes/employees.route.js";
 
 dotenv.config();
 const app = express();
 
+// Configuraciones de seguridad y CORS
+app.use(helmet());
 app.use(cors());
 app.use(express.json());
 
-app.get("/ping", (req, res) => {
-  res.json({ message: "Servidor funcionando correctamente" });
-});
+// Rutas
+app.use("/orders", ordersRoutes);
+app.use("/products", productsRoutes);
+app.use("/clients", clientsRoutes);
+app.use("/employees", employeesRoutes);
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
