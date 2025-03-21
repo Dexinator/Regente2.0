@@ -1,20 +1,23 @@
-# Usa una imagen de Node.js con npm
+# Usa una imagen oficial de Node.js
 FROM node:18
 
-# Instalar pnpm globalmente
+# Instalar PNPM globalmente
 RUN npm install -g pnpm
 
-# Definir el directorio de trabajo
+# Establecer el directorio de trabajo en el contenedor
 WORKDIR /app
 
-# Copiar package.json y pnpm-lock.yaml antes de instalar dependencias
+# Copiar los archivos de dependencias primero para aprovechar la caché de Docker
 COPY package.json pnpm-lock.yaml ./
 
-# Instalar dependencias usando pnpm
+# Instalar dependencias
 RUN pnpm install
 
-# Copiar el código restante
+# Copiar el resto del código fuente
 COPY . .
 
-# Comando para iniciar el servidor
-CMD ["node", "src/index.js"]
+# Exponer el puerto de la API
+EXPOSE 3000
+
+# Comando para iniciar el servidor en modo desarrollo
+CMD ["pnpm", "dev"]
