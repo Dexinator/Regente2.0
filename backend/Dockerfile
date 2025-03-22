@@ -19,5 +19,4 @@ COPY . .
 # Exponer el puerto de la API
 EXPOSE 3000
 
-# Comando para iniciar el servidor en modo desarrollo
-CMD ["pnpm", "dev"]
+CMD ["pnpm", "start"]

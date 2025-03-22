@@ -1,8 +1,10 @@
+version: "3.8"
 name: regente
 
 services:
   postgres:
-    image: postgres
+    image: postgres:15
+    container_name: regente-db
     restart: always
     ports:
       - "5432:5432"
@@ -15,6 +17,7 @@ services:
 
   pgadmin:
     image: dpage/pgadmin4
+    container_name: regente-pgadmin
     restart: always
     environment:
       PGADMIN_DEFAULT_EMAIL: "admin@admin.com"
@@ -23,15 +26,29 @@ services:
       - "5050:80"
     depends_on:
       - postgres
-  
+
   backend:
     build: ./backend
+    container_name: regente-backend
+    restart: always
     ports:
       - "3000:3000"
     depends_on:
       - postgres
     environment:
       - DATABASE_URL=postgresql://root:root@postgres:5432/regente
+    volumes:
+      - ./backend:/app
+    command: ["pnpm", "start"]
+
+  frontend:
+    build: ./frontend
+    container_name: regente-frontend
+    restart: always
+    ports:
+      - "4321:4321"
+    depends_on:
+      - backend
 
 volumes:
   pgdata:
