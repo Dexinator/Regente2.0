@@ -1,9 +1,8 @@
-version: "3.8"
 name: regente
 
 services:
   postgres:
-    image: postgres:15
+    image: postgres:17
     container_name: regente-db
     restart: always
     ports:
