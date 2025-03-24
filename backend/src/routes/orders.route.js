@@ -1,6 +1,7 @@
 import express from "express";
 import {
   fetchOrders,
+  fetchOpenOrders,
   fetchOrderById,
   addOrder,
   closeOrderById
@@ -8,9 +9,10 @@ import {
 
 const router = express.Router();
 
-router.get("/", fetchOrders);
-router.get("/:id", fetchOrderById);
-router.post("/", addOrder);
-router.put("/:id/close", closeOrderById);
+router.get("/", fetchOrders);              // Todas las órdenes
+router.get("/open", fetchOpenOrders);      // Solo órdenes abiertas
+router.get("/:id", fetchOrderById);        // Una orden con detalles
+router.post("/", addOrder);                // Crear orden
+router.put("/:id/close", closeOrderById);  // Cerrar orden
 
 export default router;

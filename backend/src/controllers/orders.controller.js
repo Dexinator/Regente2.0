@@ -1,5 +1,6 @@
 import {
   getAllOrders,
+  getOpenOrders,
   getOrderWithDetails,
   createOrder,
   closeOrder
@@ -7,6 +8,11 @@ import {
 
 export const fetchOrders = async (req, res) => {
   const orders = await getAllOrders();
+  res.json(orders);
+};
+
+export const fetchOpenOrders = async (req, res) => {
+  const orders = await getOpenOrders();
   res.json(orders);
 };
 
