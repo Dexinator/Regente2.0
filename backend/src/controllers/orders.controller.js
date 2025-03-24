@@ -1,20 +1,32 @@
-import { getAllOrders, createOrder } from "../models/orders.model.js";
+import {
+  getAllOrders,
+  getOrderWithDetails,
+  createOrder,
+  closeOrder
+} from "../models/orders.model.js";
 
 export const fetchOrders = async (req, res) => {
-  try {
-    const orders = await getAllOrders();
-    res.json(orders);
-  } catch (error) {
-    res.status(500).json({ error: "Error obteniendo órdenes" });
-  }
+  const orders = await getAllOrders();
+  res.json(orders);
+};
+
+export const fetchOrderById = async (req, res) => {
+  const order = await getOrderWithDetails(req.params.id);
+  if (!order) return res.status(404).json({ error: "Orden no encontrada" });
+  res.json(order);
 };
 
 export const addOrder = async (req, res) => {
   try {
-    const { presoId, nombreCliente, total, estado, empleadoId } = req.body;
-    const newOrder = await createOrder(presoId, nombreCliente, total, estado, empleadoId);
+    const newOrder = await createOrder(req.body);
     res.status(201).json(newOrder);
-  } catch (error) {
-    res.status(500).json({ error: "Error creando la orden" });
+  } catch (err) {
+    res.status(500).json({ error: "Error al crear la orden", detail: err.message });
   }
+};
+
+export const closeOrderById = async (req, res) => {
+  const updated = await closeOrder(req.params.id);
+  if (!updated) return res.status(404).json({ error: "Orden no encontrada" });
+  res.json(updated);
 };
