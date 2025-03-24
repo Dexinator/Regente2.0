@@ -36,7 +36,9 @@ services:
       - postgres
     environment:
       - DATABASE_URL=postgresql://root:root@postgres:5432/regente
-
+      - PORT=3000
+      - JWT_SECRET=supersecreto123
+      
   frontend:
     build: ./frontend
     container_name: regente-frontend
