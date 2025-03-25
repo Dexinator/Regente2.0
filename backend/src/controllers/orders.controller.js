@@ -36,3 +36,22 @@ export const closeOrderById = async (req, res) => {
   if (!updated) return res.status(404).json({ error: "Orden no encontrada" });
   res.json(updated);
 };
+
+import { addProductsToOrder } from "../models/orders.model.js";
+
+// Agregar productos a una orden abierta
+export const addProducts = async (req, res) => {
+  const orden_id = req.params.id;
+  const { productos, empleado_id } = req.body;
+
+  if (!productos || !empleado_id) {
+    return res.status(400).json({ error: "Faltan datos: productos o empleado_id" });
+  }
+
+  try {
+    const result = await addProductsToOrder(orden_id, productos, empleado_id);
+    res.status(200).json(result);
+  } catch (err) {
+    res.status(500).json({ error: "Error al agregar productos", detail: err.message });
+  }
+};
