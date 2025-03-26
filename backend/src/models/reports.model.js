@@ -53,6 +53,7 @@ export const getMonthlyTotals = async () => {
 };
 
 
+
 // Ventas por categoría para un rango de tiempo
 export const getSalesByCategoryAndRange = async (range) => {
   const result = await pool.query(`

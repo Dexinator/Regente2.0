@@ -1,19 +1,21 @@
 import {
     getMonthlySalesByProduct,
     getMonthlySalesByCategory,
-    getMonthlyTotal
+    getMonthlyTotals
   } from "../models/reports.model.js";
   
   export const getFinancialReport = async (req, res) => {
     try {
-      const [productos, categorias, total] = await Promise.all([
+      const [productos, categorias, totales] = await Promise.all([
         getMonthlySalesByProduct(),
         getMonthlySalesByCategory(),
-        getMonthlyTotal()
+        getMonthlyTotals()
       ]);
-  
+      
       res.json({
-        total_mes: parseFloat(total),
+        total_bruto: parseFloat(totales.total_bruto),
+        total_neto: parseFloat(totales.total_neto),
+        descuento_total: parseFloat(totales.descuento_total),
         por_producto: productos,
         por_categoria: categorias
       });
@@ -68,7 +70,7 @@ import {
   import {
     getSalesByProductInRange,
     getSalesByCategoryInRange,
-    getTotalInRange
+    getTotalsInRange
   } from "../models/reports.model.js";
   
   export const getCustomRangeReport = async (req, res) => {
@@ -79,14 +81,16 @@ import {
     }
   
     try {
-      const [productos, categorias, total] = await Promise.all([
+      const [productos, categorias, totales] = await Promise.all([
         getSalesByProductInRange(desde, hasta),
         getSalesByCategoryInRange(desde, hasta),
-        getTotalInRange(desde, hasta)
+        getTotalsInRange(desde, hasta)
       ]);
-  
+      
       res.json({
-        total,
+        total_bruto: parseFloat(totales.total_bruto),
+        total_neto: parseFloat(totales.total_neto),
+        descuento_total: parseFloat(totales.descuento_total),
         por_producto: productos,
         por_categoria: categorias
       });

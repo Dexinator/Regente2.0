@@ -1,17 +1,15 @@
 import {
   getAllOrders,
-  getOpenOrders,
   getOrderWithDetails,
   createOrder,
-  closeOrder
+  closeOrder,
+  getOpenOrdersWithPayments
 } from "../models/orders.model.js";
 
 export const fetchOrders = async (req, res) => {
   const orders = await getAllOrders();
   res.json(orders);
 };
-
-import { getOpenOrdersWithPayments } from "../models/orders.model.js";
 
 export const fetchOpenOrders = async (req, res) => {
   try {
