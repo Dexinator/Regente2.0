@@ -11,10 +11,17 @@ export const fetchOrders = async (req, res) => {
   res.json(orders);
 };
 
+import { getOpenOrdersWithPayments } from "../models/orders.model.js";
+
 export const fetchOpenOrders = async (req, res) => {
-  const orders = await getOpenOrders();
-  res.json(orders);
+  try {
+    const ordenes = await getOpenOrdersWithPayments();
+    res.json(ordenes);
+  } catch (err) {
+    res.status(500).json({ error: "Error obteniendo órdenes abiertas", detail: err.message });
+  }
 };
+
 
 export const fetchOrderById = async (req, res) => {
   const order = await getOrderWithDetails(req.params.id);

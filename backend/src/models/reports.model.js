@@ -39,15 +39,19 @@ export const getMonthlySalesByCategory = async () => {
 };
 
 // Total vendido en el mes
-export const getMonthlyTotal = async () => {
+export const getMonthlyTotals = async () => {
   const result = await pool.query(`
-    SELECT COALESCE(SUM(total), 0) AS total
+    SELECT
+      COALESCE(SUM(total_bruto), 0) AS total_bruto,
+      COALESCE(SUM(total), 0) AS total_neto,
+      COALESCE(SUM(total_bruto - total), 0) AS descuento_total
     FROM ordenes
     WHERE DATE_TRUNC('month', fecha) = DATE_TRUNC('month', CURRENT_DATE)
-      AND estado = 'cerrada';
+      AND estado = 'cerrada'
   `);
-  return result.rows[0].total;
+  return result.rows[0];
 };
+
 
 // Ventas por categoría para un rango de tiempo
 export const getSalesByCategoryAndRange = async (range) => {
@@ -115,15 +119,19 @@ export const getSalesByCategoryInRange = async (desde, hasta) => {
   return result.rows;
 };
 
-export const getTotalInRange = async (desde, hasta) => {
+export const getTotalsInRange = async (desde, hasta) => {
   const result = await pool.query(`
-    SELECT COALESCE(SUM(total), 0) AS total
+    SELECT
+      COALESCE(SUM(total_bruto), 0) AS total_bruto,
+      COALESCE(SUM(total), 0) AS total_neto,
+      COALESCE(SUM(total_bruto - total), 0) AS descuento_total
     FROM ordenes
     WHERE fecha BETWEEN $1 AND $2
       AND estado = 'cerrada'
   `, [desde, hasta]);
-  return parseFloat(result.rows[0].total);
+  return result.rows[0];
 };
+
 
 
 export const getTopSellingProducts = async (limite = 10) => {

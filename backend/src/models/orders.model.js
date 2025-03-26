@@ -7,10 +7,42 @@ export const getAllOrders = async () => {
 };
 
 // Obtener solo órdenes abiertas
-export const getOpenOrders = async () => {
-  const result = await pool.query("SELECT * FROM ordenes WHERE estado = 'abierta' ORDER BY fecha DESC");
-  return result.rows;
+export const getOpenOrdersWithPayments = async () => {
+  const result = await pool.query(`
+    SELECT
+      o.orden_id,
+      o.total,
+      o.fecha,
+      COALESCE(p.reg_name, o.nombre_cliente) AS cliente,
+      (
+        SELECT COALESCE(SUM(monto), 0)
+        FROM pagos
+        WHERE orden_id = o.orden_id
+      ) AS total_pagado
+    FROM ordenes o
+    LEFT JOIN presos p ON o.preso_id = p.id
+    WHERE o.estado = 'abierta'
+    ORDER BY o.fecha DESC
+  `);
+
+  return result.rows.map(orden => {
+    const diferencia = orden.total_pagado - orden.total;
+    let estado_pago = "pendiente";
+    if (diferencia > 0) estado_pago = "propina";
+    else if (diferencia === 0) estado_pago = "pagado";
+
+    return {
+      orden_id: orden.orden_id,
+      cliente: orden.cliente,
+      fecha: orden.fecha,
+      total: parseFloat(orden.total),
+      total_pagado: parseFloat(orden.total_pagado),
+      diferencia: parseFloat(diferencia.toFixed(2)),
+      estado_pago
+    };
+  });
 };
+
 
 // Obtener una orden con sus productos
 export const getOrderWithDetails = async (orden_id) => {
@@ -91,6 +123,8 @@ export const createOrder = async ({ preso_id, nombre_cliente, empleado_id, produ
 
 
 // Cerrar una orden con cálculo de descuento automático
+import { getTotalPagado } from "./pagos.model.js";
+
 export const closeOrder = async (orden_id) => {
   const client = await pool.connect();
   try {
@@ -150,6 +184,12 @@ export const closeOrder = async (orden_id) => {
 
     // Calcular total con descuento
     const total_con_descuento = total_bruto * (1 - descuento_aplicable / 100);
+    const total_pagado = await getTotalPagado(orden_id);
+    
+    if (total_pagado < total_con_descuento) {
+      throw new Error("La orden aún no ha sido completamente pagada.");
+    }
+    
 
     // Actualizar la orden con ambos totales y cerrar
     const result = await client.query(
