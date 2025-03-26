@@ -6,11 +6,11 @@
 }
 @font-face {
   font-family: 'OldEnglish';
-  src: url("../../public/OldEnglishTextMT.ttf") format("truetype");
+  src: url("../../public/fonts/oldenglishtextmt.ttf") format("truetype");
 }
 @font-face {
   font-family: 'Georgia';
-  src: url("../../public/georgia.ttf") format("truetype");
+  src: url("../../public/fonts/georgia.ttf") format("truetype");
 }
 
 @theme {
