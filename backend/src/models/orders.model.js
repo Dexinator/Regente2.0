@@ -39,25 +39,26 @@ export const getOrderWithDetails = async (orden_id) => {
 
 
 // Crear nueva orden con detalles
-export const createOrder = async ({ preso_id, nombre_cliente, total, empleado_id, productos }) => {
+export const createOrder = async ({ preso_id, nombre_cliente, empleado_id, productos }) => {
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
 
+    // 1. Crear la orden (total y total_bruto inician en 0)
     const ordenRes = await client.query(
-      `INSERT INTO ordenes (preso_id, nombre_cliente, total, empleado_id)
-       VALUES ($1, $2, $3, $4)
+      `INSERT INTO ordenes (preso_id, nombre_cliente, total, total_bruto, empleado_id)
+       VALUES ($1, $2, 0, 0, $3)
        RETURNING *`,
       [
         preso_id || null,
         preso_id ? null : nombre_cliente,
-        total,
         empleado_id
       ]
     );
 
     const orden_id = ordenRes.rows[0].orden_id;
 
+    // 2. Agregar productos
     for (const { producto_id, cantidad } of productos) {
       const precioRes = await client.query(
         `SELECT precio FROM productos WHERE id = $1`,
@@ -78,6 +79,7 @@ export const createOrder = async ({ preso_id, nombre_cliente, total, empleado_id
 
     await client.query("COMMIT");
     return ordenRes.rows[0];
+
   } catch (err) {
     await client.query("ROLLBACK");
     throw err;
@@ -85,6 +87,7 @@ export const createOrder = async ({ preso_id, nombre_cliente, total, empleado_id
     client.release();
   }
 };
+
 
 
 // Cerrar una orden con cálculo de descuento automático
@@ -214,3 +217,21 @@ export const addProductsToOrder = async (orden_id, productos, empleado_id) => {
   }
 };
 
+//Obtener resumen de orden
+export const getOrderResumen = async (orden_id) => {
+  const productos = await pool.query(`
+    SELECT p.nombre, d.cantidad, d.precio_unitario,
+           (d.cantidad * d.precio_unitario) AS subtotal
+    FROM detalles_orden d
+    JOIN productos p ON d.producto_id = p.id
+    WHERE d.orden_id = $1
+  `, [orden_id]);
+
+  const total = productos.rows.reduce((acc, prod) => acc + parseFloat(prod.subtotal), 0);
+
+  return {
+    orden_id,
+    total: total.toFixed(2),
+    productos: productos.rows
+  };
+};

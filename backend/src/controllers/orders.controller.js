@@ -23,13 +23,24 @@ export const fetchOrderById = async (req, res) => {
 };
 
 export const addOrder = async (req, res) => {
+  const { preso_id, nombre_cliente, empleado_id, productos } = req.body;
+
+  if (!empleado_id || !Array.isArray(productos) || productos.length === 0) {
+    return res.status(400).json({ error: "Faltan datos obligatorios: productos o empleado_id" });
+  }
+
+  if (!preso_id && !nombre_cliente) {
+    return res.status(400).json({ error: "Debe enviarse 'preso_id' o 'nombre_cliente'" });
+  }
+
   try {
-    const newOrder = await createOrder(req.body);
+    const newOrder = await createOrder({ preso_id, nombre_cliente, empleado_id, productos });
     res.status(201).json(newOrder);
   } catch (err) {
-    res.status(500).json({ error: "Error al crear la orden", detail: err.message });
+    res.status(500).json({ error: "Error creando la orden", detail: err.message });
   }
 };
+
 
 export const closeOrderById = async (req, res) => {
   const updated = await closeOrder(req.params.id);
@@ -53,5 +64,17 @@ export const addProducts = async (req, res) => {
     res.status(200).json(result);
   } catch (err) {
     res.status(500).json({ error: "Error al agregar productos", detail: err.message });
+  }
+};
+
+//Resumen de orden
+import { getOrderResumen } from "../models/orders.model.js";
+
+export const getOrderSummary = async (req, res) => {
+  try {
+    const resumen = await getOrderResumen(req.params.id);
+    res.json(resumen);
+  } catch (err) {
+    res.status(500).json({ error: "Error generando resumen", detail: err.message });
   }
 };
