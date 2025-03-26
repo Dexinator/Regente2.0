@@ -1,1 +1,24 @@
 @import "tailwindcss";
+
+@font-face {
+  font-family: 'Incised';
+  src: url("../../public/fonts/Incised_Black_Wide.ttf") format("truetype");
+}
+@font-face {
+  font-family: 'OldEnglish';
+  src: url("../../public/OldEnglishTextMT.ttf") format("truetype");
+}
+@font-face {
+  font-family: 'Georgia';
+  src: url("../../public/georgia.ttf") format("truetype");
+}
+
+@theme {
+  --color-negro: #0A0A0A;
+  --color-vino: #721422;
+  --color-amarillo: #DC9D00;
+  --font-logo: Incised, serif;
+  --font-titulo: OldEnglish, serif;
+  --font-subtitulo: GeorgiaBold, serif;
+  --font-texto: Georgia, serif;
+}

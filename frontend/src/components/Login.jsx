@@ -23,14 +23,11 @@ export default function Login() {
         return;
       }
 
-      // Guardar token
       localStorage.setItem("token", data.token);
 
-      // Decodificar el token para extraer el rol
       const payload = JSON.parse(atob(data.token.split(".")[1]));
       const rol = payload.rol;
 
-      // Redirigir según el rol
       switch (rol) {
         case "mesero":
           window.location.href = "/ordenes";
@@ -51,38 +48,36 @@ export default function Login() {
         default:
           setError("Rol no reconocido");
       }
-    } catch (err) {
+    } catch {
       setError("Error de conexión");
     }
   };
 
   return (
-    <form
-      onSubmit={handleLogin}
-      className="bg-neutral-800 p-6 rounded-xl shadow-lg w-full max-w-sm space-y-4"
-    >
-      <h1 className="text-2xl font-semibold">Iniciar sesión</h1>
-      {error && <p className="text-red-400">{error}</p>}
+    <form onSubmit={handleLogin} className="space-y-4 font-texto">
+      {error && <p className="text-red-300">{error}</p>}
 
       <input
         type="text"
         placeholder="Usuario"
         value={usuario}
         onChange={(e) => setUsuario(e.target.value)}
-        className="w-full px-4 py-2 rounded bg-neutral-700 text-white"
+        className="w-full px-4 py-2 rounded bg-negro text-white placeholder:text-white border border-amarillo"
         required
       />
+
       <input
         type="password"
         placeholder="Contraseña"
         value={password}
         onChange={(e) => setPassword(e.target.value)}
-        className="w-full px-4 py-2 rounded bg-neutral-700 text-white"
+        className="w-full px-4 py-2 rounded bg-negro text-white placeholder:text-white border border-amarillo"
         required
       />
+
       <button
         type="submit"
-        className="w-full bg-purple-600 hover:bg-purple-700 py-2 rounded font-bold"
+        className="w-full bg-amarillo text-negro font-bold py-2 rounded hover:bg-yellow-500 transition"
       >
         Entrar
       </button>
