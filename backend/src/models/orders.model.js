@@ -11,9 +11,13 @@ export const getOpenOrdersWithPayments = async () => {
   const result = await pool.query(`
     SELECT
       o.orden_id,
-      o.total,
       o.fecha,
       COALESCE(p.reg_name, o.nombre_cliente) AS cliente,
+      (
+        SELECT COALESCE(SUM(d.precio_unitario * d.cantidad), 0)
+        FROM detalles_orden d
+        WHERE d.orden_id = o.orden_id
+      ) AS total_calculado,
       (
         SELECT COALESCE(SUM(monto), 0)
         FROM pagos
@@ -25,8 +29,8 @@ export const getOpenOrdersWithPayments = async () => {
     ORDER BY o.fecha DESC
   `);
 
-  return result.rows.map(orden => {
-    const diferencia = orden.total_pagado - orden.total;
+  return result.rows.map((orden) => {
+    const diferencia = orden.total_pagado - orden.total_calculado;
     let estado_pago = "pendiente";
     if (diferencia > 0) estado_pago = "propina";
     else if (diferencia === 0) estado_pago = "pagado";
@@ -34,14 +38,14 @@ export const getOpenOrdersWithPayments = async () => {
     return {
       orden_id: orden.orden_id,
       cliente: orden.cliente,
-      fecha: orden.fecha,
-      total: parseFloat(orden.total),
+      total: parseFloat(orden.total_calculado),
       total_pagado: parseFloat(orden.total_pagado),
       diferencia: parseFloat(diferencia.toFixed(2)),
-      estado_pago
+      estado_pago,
     };
   });
 };
+
 
 
 // Obtener una orden con sus productos

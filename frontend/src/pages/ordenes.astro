@@ -1,0 +1,10 @@
+---
+import ListaOrdenes from "../components/ListaOrdenes.jsx";
+import PrivateLayout from "../layouts/PrivateLayout.astro";
+---
+
+
+<PrivateLayout title="Órdenes abiertas">
+      <h1 class="text-2xl font-titulo text-amarillo mb-4 text-center">Órdenes Abiertas</h1>
+      <ListaOrdenes client:load />
+</PrivateLayout>

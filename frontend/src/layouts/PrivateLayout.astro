@@ -1,0 +1,17 @@
+---
+import "../styles/global.css"
+const { title = "Regente" } = Astro.props;
+---
+
+<html lang="es">
+  <head>
+    <title>{title}</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  </head>
+  <body class="bg-negro text-white font-texto min-h-screen">
+    <main class="p-4 max-w-xl mx-auto">
+      <slot />
+    </main>
+  </body>
+</html>
