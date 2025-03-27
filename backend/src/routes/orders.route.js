@@ -20,7 +20,7 @@ router.get("/:id", fetchOrderById);        // Una orden con detalles
 router.post("/", addOrder);                // Crear orden
 router.put("/:id/close",closeOrderById);
 router.post("/:id/productos", addProducts);
-router.get("/:id/resumen", getOrderSummary); 
+router.get("/:id/resumen", getOrderSummary);
 
 /*
 router.put("/:id/close",

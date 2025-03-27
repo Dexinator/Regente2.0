@@ -263,7 +263,8 @@ export const addProductsToOrder = async (orden_id, productos, empleado_id) => {
 
 //Obtener resumen de orden
 export const getOrderResumen = async (orden_id) => {
-  const productos = await pool.query(`
+  // 1. Obtener productos de la orden
+  const productosQuery = await pool.query(`
     SELECT p.nombre, d.cantidad, d.precio_unitario,
            (d.cantidad * d.precio_unitario) AS subtotal
     FROM detalles_orden d
@@ -271,11 +272,44 @@ export const getOrderResumen = async (orden_id) => {
     WHERE d.orden_id = $1
   `, [orden_id]);
 
-  const total = productos.rows.reduce((acc, prod) => acc + parseFloat(prod.subtotal), 0);
+  const productos = productosQuery.rows;
+
+  const total = productos.reduce(
+    (acc, prod) => acc + parseFloat(prod.subtotal),
+    0
+  );
+
+  // 2. Obtener nombre del cliente
+  const clienteQuery = await pool.query(`
+    SELECT COALESCE(pr.reg_name, o.nombre_cliente) AS cliente
+    FROM ordenes o
+    LEFT JOIN presos pr ON o.preso_id = pr.id
+    WHERE o.orden_id = $1
+  `, [orden_id]);
+
+  const cliente = clienteQuery.rows[0]?.cliente || "Cliente desconocido";
+
+  // 3. Obtener pagos
+  const pagosQuery = await pool.query(`
+    SELECT COALESCE(SUM(monto), 0) AS total_pagado
+    FROM pagos
+    WHERE orden_id = $1
+  `, [orden_id]);
+
+  const total_pagado = parseFloat(pagosQuery.rows[0].total_pagado);
+  const diferencia = parseFloat((total_pagado - total).toFixed(2));
+
+  let estado_pago = "pendiente";
+  if (diferencia > 0) estado_pago = "propina";
+  else if (diferencia === 0) estado_pago = "pagado";
 
   return {
     orden_id,
-    total: total.toFixed(2),
-    productos: productos.rows
+    cliente,
+    productos,
+    total: parseFloat(total.toFixed(2)),
+    total_pagado,
+    diferencia,
+    estado_pago
   };
 };
