@@ -1,5 +1,6 @@
 ---
 import "../styles/global.css"
+import NavMenu from "../components/NavMenu";
 const { title = "Regente" } = Astro.props;
 ---
 
@@ -10,7 +11,8 @@ const { title = "Regente" } = Astro.props;
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   </head>
   <body class="bg-negro text-white font-texto min-h-screen">
-    <main class="p-4 max-w-xl mx-auto">
+    <NavMenu client:load />
+    <main class="p-4 max-w-xl mx-auto pt-16">
       <slot />
     </main>
   </body>

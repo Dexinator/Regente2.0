@@ -1,0 +1,9 @@
+---
+import PrivateLayout from "../../layouts/PrivateLayout.astro";
+import DashboardGerente from "../../components/DashboardGerente";
+---
+
+<PrivateLayout title="Dashboard - Gerente">
+  <h1 class="text-3xl font-titulo text-amarillo mb-6">Dashboard Gerencial</h1>
+  <DashboardGerente client:load />
+</PrivateLayout> 

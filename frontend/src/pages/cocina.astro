@@ -1,0 +1,9 @@
+---
+import PrivateLayout from "../layouts/PrivateLayout.astro";
+import PedidosCocina from "../components/PedidosCocina";
+---
+
+<PrivateLayout title="Cocina - Pedidos">
+  <h1 class="text-3xl font-titulo text-amarillo mb-6">Pedidos Pendientes</h1>
+  <PedidosCocina client:load />
+</PrivateLayout> 

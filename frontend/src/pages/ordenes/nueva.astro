@@ -1,9 +1,9 @@
 ---
-import CrearOrden from "../../components/CrearOrden.jsx";
 import PrivateLayout from "../../layouts/PrivateLayout.astro";
+import CrearOrden from "../../components/CrearOrden";
 ---
 
-<PrivateLayout title="Órdenes abiertas">
-    <h1 class="text-xl font-titulo text-amarillo text-center mb-4">Nueva Orden</h1>
-    <CrearOrden client:load />
+<PrivateLayout title="Nueva Orden">
+  <h1 class="text-3xl font-titulo text-amarillo mb-6">Crear Nueva Orden</h1>
+  <CrearOrden client:load />
 </PrivateLayout>

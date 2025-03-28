@@ -1,0 +1,9 @@
+---
+import PrivateLayout from "../../layouts/PrivateLayout.astro";
+import DashboardFinanciero from "../../components/DashboardFinanciero";
+---
+
+<PrivateLayout title="Dashboard - Financiero">
+  <h1 class="text-3xl font-titulo text-amarillo mb-6">Dashboard Financiero</h1>
+  <DashboardFinanciero client:load />
+</PrivateLayout> 

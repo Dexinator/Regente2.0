@@ -1,13 +1,12 @@
 ---
 export const prerender = false;
 import PrivateLayout from "../../layouts/PrivateLayout.astro";
-import GestionOrden from "../../components/GestionOrden.jsx";
+import GestionOrden from "../../components/GestionOrden";
+
 const { id } = Astro.params;
 ---
 
 <PrivateLayout title={`Orden #${id}`}>
-  <h1 class="text-xl font-titulo text-amarillo text-center mb-4">
-    Orden #{id}
-  </h1>
+  <h1 class="text-3xl font-titulo text-amarillo mb-6">Gestionar Orden #{id}</h1>
   <GestionOrden id={id} client:load />
 </PrivateLayout>

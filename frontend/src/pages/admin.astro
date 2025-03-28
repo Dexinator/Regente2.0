@@ -1,0 +1,9 @@
+---
+import PrivateLayout from "../layouts/PrivateLayout.astro";
+import AdminDashboard from "../components/AdminDashboard";
+---
+
+<PrivateLayout title="Panel de Administración">
+  <h1 class="text-3xl font-titulo text-amarillo mb-6">Panel de Administración</h1>
+  <AdminDashboard client:load />
+</PrivateLayout> 

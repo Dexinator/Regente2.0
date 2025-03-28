@@ -93,55 +93,57 @@ const crearOrden = async () => {
 
 return (
     <div className="space-y-6">
-    <div>
-    <label className="block mb-2 text-amarillo font-bold">Cliente registrado</label>
+    {!nombreLibre && (
+        <div>
+        <label className="block mb-2 text-amarillo font-bold">Cliente registrado</label>
 
-    <input
-  type="text"
-  placeholder="Buscar preso por nombre o número..."
-  value={filtroPreso}
-  onChange={(e) => setFiltroPreso(e.target.value)}
-  className="w-full mb-2 bg-negro text-white p-2 rounded border border-amarillo placeholder:text-white/60"
-/>
+        <input
+        type="text"
+        placeholder="Buscar preso por nombre o número..."
+        value={filtroPreso}
+        onChange={(e) => setFiltroPreso(e.target.value)}
+        className="w-full mb-2 bg-negro text-white p-2 rounded border border-amarillo placeholder:text-white/60"
+        />
 
-
-    <select
-    value={presoSeleccionado || ""}
-    onChange={(e) => {
-        setPresoSeleccionado(e.target.value || null);
-        setNombreLibre("");
-    }}
-    className="w-full bg-vino text-white p-2 rounded"
-    >
-    <option value="">-- Selecciona un preso --</option>
-    {presos
-  .filter(
-    (p) =>
-      p.reg_name.toLowerCase().includes(filtroPreso.toLowerCase()) ||
-      p.id.toString().includes(filtroPreso)
-  )
-  .map((p) => (
-    <option key={p.id} value={p.id}>
-      #{p.id} · {p.reg_name}
-    </option>
-))}
-
-    </select>
-    </div>
+        <select
+        value={presoSeleccionado || ""}
+        onChange={(e) => {
+            setPresoSeleccionado(e.target.value || null);
+            setNombreLibre("");
+        }}
+        className="w-full bg-vino text-white p-2 rounded"
+        >
+        <option value="">-- Selecciona un preso --</option>
+        {presos
+        .filter(
+            (p) =>
+            p.reg_name.toLowerCase().includes(filtroPreso.toLowerCase()) ||
+            p.id.toString().includes(filtroPreso)
+        )
+        .map((p) => (
+            <option key={p.id} value={p.id}>
+            #{p.id} · {p.reg_name}
+            </option>
+        ))}
+        </select>
+        </div>
+    )}
     
-    <div>
-    <label className="block mb-2 text-amarillo font-bold">O nombre de referencia</label>
-    <input
-    type="text"
-    value={nombreLibre}
-    onChange={(e) => {
-        setNombreLibre(e.target.value);
-        setPresoSeleccionado(null);
-    }}
-    placeholder="Ej. Chica de blanco"
-    className="w-full bg-vino text-white p-2 rounded"
-    />
-    </div>
+    {!presoSeleccionado && (
+        <div>
+        <label className="block mb-2 text-amarillo font-bold">O nombre de referencia</label>
+        <input
+        type="text"
+        value={nombreLibre}
+        onChange={(e) => {
+            setNombreLibre(e.target.value);
+            setPresoSeleccionado(null);
+        }}
+        placeholder="Ej. Chica de blanco"
+        className="w-full bg-vino text-white p-2 rounded"
+        />
+        </div>
+    )}
     
     <hr className="my-6 border-amarillo" />
     <h2 className="text-lg font-bold text-amarillo">Seleccionar productos</h2>
@@ -171,22 +173,29 @@ return (
     
     <div className="grid grid-cols-1 gap-2 max-h-80 overflow-y-auto">
     {productos
-        .filter((p) =>
-            p.nombre.toLowerCase().includes(filtroNombre.toLowerCase()) &&
-        (filtroCategoria === "" || p.categoria === filtroCategoria)
-    )
-    .map((prod) => (
-        <button
-        key={prod.id}
-        onClick={() => agregarProducto(prod)}
-        className="bg-negro p-3 rounded text-left hover:bg-gray-800"
-        >
-        <p className="font-subtitulo">{prod.nombre}</p>
-        <p className="text-sm text-white/70">
-        ${prod.precio} · {prod.categoria}
-        </p>
-        </button>
-    ))}
+        .filter((p) => {
+            const textoBusqueda = filtroNombre.toLowerCase();
+            const coincideNombre = p.nombre.toLowerCase().includes(textoBusqueda);
+            const coincideCategoriaTexto = p.categoria && p.categoria.toLowerCase().includes(textoBusqueda);
+            const coincideCategoriaDesplegable = filtroCategoria === "" || p.categoria === filtroCategoria;
+            
+            // Si hay texto de búsqueda, se filtra por nombre o categoría
+            // Y luego se aplica el filtro del desplegable de categoría
+            return (textoBusqueda === "" || coincideNombre || coincideCategoriaTexto) 
+                   && coincideCategoriaDesplegable;
+        })
+        .map((prod) => (
+            <button
+            key={prod.id}
+            onClick={() => agregarProducto(prod)}
+            className="bg-negro p-3 rounded text-left hover:bg-gray-800"
+            >
+            <p className="font-subtitulo">{prod.nombre}</p>
+            <p className="text-sm text-white/70">
+            ${prod.precio} · {prod.categoria}
+            </p>
+            </button>
+        ))}
     </div>
     
     <hr className="my-6 border-amarillo" />

@@ -1,0 +1,9 @@
+---
+import PrivateLayout from "../../layouts/PrivateLayout.astro";
+import HistorialCocina from "../../components/HistorialCocina";
+---
+
+<PrivateLayout title="Cocina - Historial">
+  <h1 class="text-3xl font-titulo text-amarillo mb-6">Historial de Pedidos</h1>
+  <HistorialCocina client:load />
+</PrivateLayout> 

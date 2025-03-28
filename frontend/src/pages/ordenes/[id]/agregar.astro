@@ -1,0 +1,13 @@
+---
+export const prerender = false;
+import PrivateLayout from "../../../layouts/PrivateLayout.astro";
+import AgregarProducto from "../../../components/AgregarProducto";
+
+const { id } = Astro.params;
+---
+
+<PrivateLayout title={`Agregar Producto - Orden #${id}`}>
+  <h1 class="text-3xl font-titulo text-amarillo mb-6">Agregar Producto</h1>
+  <p class="text-lg mb-6">Orden #{id}</p>
+  <AgregarProducto orden_id={id} client:load />
+</PrivateLayout> 
