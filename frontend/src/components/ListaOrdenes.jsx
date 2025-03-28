@@ -68,8 +68,8 @@ export default function ListaOrdenes() {
             <div className="text-sm">
             <p>Total: ${orden.total.toFixed(2)}</p>
             <p>Pagado: ${orden.total_pagado.toFixed(2)}</p>
-            {orden.diferencia > 0 && (
-                <p className="text-green-400">Propina: +${orden.diferencia.toFixed(2)}</p>
+            {orden.total_propina > 0 && (
+                <p className="text-green-400">Propina: ${orden.total_propina.toFixed(2)}</p>
             )}
             {orden.diferencia < 0 && (
                 <p className="text-red-400">Faltan: ${Math.abs(orden.diferencia).toFixed(2)}</p>

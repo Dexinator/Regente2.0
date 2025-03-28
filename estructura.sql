@@ -51,3 +51,15 @@ CREATE TABLE detalles_orden (
     precio_unitario NUMERIC(10,2) NOT NULL, 
     empleado_id INT NOT NULL REFERENCES empleados(id) ON DELETE CASCADE -- ✅ Se agrega referencia a empleados
 );
+
+CREATE TABLE public.pagos (
+    id integer NOT NULL,
+    orden_id integer,
+    metodo text NOT NULL,
+    monto numeric(10,2) NOT NULL,
+    fecha timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    empleado_id integer,
+    propina numeric(10,2) DEFAULT 0,
+    porcentaje_propina numeric(5,2),
+    CONSTRAINT pagos_metodo_check CHECK ((metodo = ANY (ARRAY['efectivo'::text, 'tarjeta'::text, 'transferencia'::text, 'otro'::text])))
+);

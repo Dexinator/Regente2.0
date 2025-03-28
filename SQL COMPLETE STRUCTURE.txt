@@ -1,0 +1,1510 @@
+toc.dat                                                                                             0000600 0004000 0002000 00000052072 14771153741 0014457 0                                                                                                    ustar 00postgres                        postgres                        0000000 0000000                                                                                                                                                                        PGDMP       -                }            regente    17.4 (Debian 17.4-1.pgdg120+2)    17.4 G    
+           0    0    ENCODING    ENCODING        SET client_encoding = 'UTF8';
+                           false         ‚
+           0    0 
+   STDSTRINGS 
+   STDSTRINGS     (   SET standard_conforming_strings = 'on';
+                           false         ƒ
+           0    0 
+   SEARCHPATH 
+   SEARCHPATH     8   SELECT pg_catalog.set_config('search_path', '', false);
+                           false         „
+           1262    16384    regente    DATABASE     r   CREATE DATABASE regente WITH TEMPLATE = template0 ENCODING = 'UTF8' LOCALE_PROVIDER = libc LOCALE = 'en_US.utf8';
+    DROP DATABASE regente;
+                     root    false         Ù            1259    16389    detalles_orden    TABLE     ï   CREATE TABLE public.detalles_orden (
+    id integer NOT NULL,
+    orden_id integer NOT NULL,
+    producto_id integer NOT NULL,
+    cantidad integer DEFAULT 1,
+    precio_unitario numeric(10,2) NOT NULL,
+    empleado_id integer NOT NULL
+);
+ "   DROP TABLE public.detalles_orden;
+       public         heap r       root    false         Ú            1259    16393    detalles_orden_id_seq    SEQUENCE        CREATE SEQUENCE public.detalles_orden_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+ ,   DROP SEQUENCE public.detalles_orden_id_seq;
+       public               root    false    217         …
+           0    0    detalles_orden_id_seq    SEQUENCE OWNED BY     O   ALTER SEQUENCE public.detalles_orden_id_seq OWNED BY public.detalles_orden.id;
+          public               root    false    218         Û            1259    16394 	   empleados    TABLE     ™  CREATE TABLE public.empleados (
+    id integer NOT NULL,
+    nombre character varying(255) NOT NULL,
+    usuario character varying(50) NOT NULL,
+    password text NOT NULL,
+    rol text NOT NULL,
+    fecha_ingreso date DEFAULT CURRENT_DATE,
+    activo boolean DEFAULT true,
+    CONSTRAINT empleados_rol_check CHECK ((rol = ANY (ARRAY['admin'::text, 'mesero'::text, 'cocinero'::text, 'financiero'::text])))
+);
+    DROP TABLE public.empleados;
+       public         heap r       root    false         Ü            1259    16402    empleados_id_seq    SEQUENCE     ˆ   CREATE SEQUENCE public.empleados_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+ '   DROP SEQUENCE public.empleados_id_seq;
+       public               root    false    219         †
+           0    0    empleados_id_seq    SEQUENCE OWNED BY     E   ALTER SEQUENCE public.empleados_id_seq OWNED BY public.empleados.id;
+          public               root    false    220         ä            1259    16469    grados    TABLE     w   CREATE TABLE public.grados (
+    id integer NOT NULL,
+    nombre text NOT NULL,
+    descuento numeric(5,2) NOT NULL
+);
+    DROP TABLE public.grados;
+       public         heap r       root    false         ã            1259    16468 
+   grados_id_seq    SEQUENCE     …   CREATE SEQUENCE public.grados_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+ $   DROP SEQUENCE public.grados_id_seq;
+       public               root    false    228         ‡
+           0    0 
+   grados_id_seq    SEQUENCE OWNED BY     ?   ALTER SEQUENCE public.grados_id_seq OWNED BY public.grados.id;
+          public               root    false    227         Ý            1259    16403    ordenes    TABLE     ³  CREATE TABLE public.ordenes (
+    orden_id integer NOT NULL,
+    preso_id integer,
+    nombre_cliente character varying(255),
+    total numeric(10,2) NOT NULL,
+    fecha timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    estado text DEFAULT 'abierta'::text,
+    empleado_id integer NOT NULL,
+    total_bruto numeric(10,2),
+    CONSTRAINT ordenes_estado_check CHECK ((estado = ANY (ARRAY['abierta'::text, 'cerrada'::text])))
+);
+    DROP TABLE public.ordenes;
+       public         heap r       root    false         Þ            1259    16411    ordenes_orden_id_seq    SEQUENCE     Œ   CREATE SEQUENCE public.ordenes_orden_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+ +   DROP SEQUENCE public.ordenes_orden_id_seq;
+       public               root    false    221         ˆ
+           0    0    ordenes_orden_id_seq    SEQUENCE OWNED BY     M   ALTER SEQUENCE public.ordenes_orden_id_seq OWNED BY public.ordenes.orden_id;
+          public               root    false    222         è            1259    24661    pagos    TABLE     m  CREATE TABLE public.pagos (
+    id integer NOT NULL,
+    orden_id integer,
+    metodo text NOT NULL,
+    monto numeric(10,2) NOT NULL,
+    fecha timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    empleado_id integer,
+    CONSTRAINT pagos_metodo_check CHECK ((metodo = ANY (ARRAY['efectivo'::text, 'tarjeta'::text, 'transferencia'::text, 'otro'::text])))
+);
+    DROP TABLE public.pagos;
+       public         heap r       root    false         ç            1259    24660    pagos_id_seq    SEQUENCE     „   CREATE SEQUENCE public.pagos_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+ #   DROP SEQUENCE public.pagos_id_seq;
+       public               root    false    232         ‰
+           0    0    pagos_id_seq    SEQUENCE OWNED BY     =   ALTER SEQUENCE public.pagos_id_seq OWNED BY public.pagos.id;
+          public               root    false    231         æ            1259    16480    preso_grado    TABLE     —   CREATE TABLE public.preso_grado (
+    id integer NOT NULL,
+    preso_id integer,
+    grado_id integer,
+    fecha_otorgado date DEFAULT CURRENT_DATE
+);
+    DROP TABLE public.preso_grado;
+       public         heap r       root    false         å            1259    16479    preso_grado_id_seq    SEQUENCE     Š   CREATE SEQUENCE public.preso_grado_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+ )   DROP SEQUENCE public.preso_grado_id_seq;
+       public               root    false    230         Š
+           0    0    preso_grado_id_seq    SEQUENCE OWNED BY     I   ALTER SEQUENCE public.preso_grado_id_seq OWNED BY public.preso_grado.id;
+          public               root    false    229         ß            1259    16412    presos    TABLE        CREATE TABLE public.presos (
+    id integer NOT NULL,
+    reg_name text NOT NULL,
+    res_tel text NOT NULL,
+    igname text,
+    bday text NOT NULL,
+    mkt boolean NOT NULL,
+    cellmate integer NOT NULL,
+    referidos integer DEFAULT 0,
+    fecha_registro date DEFAULT CURRENT_DATE
+);
+    DROP TABLE public.presos;
+       public         heap r       root    false         à            1259    16419 
+   presos_id_seq    SEQUENCE     …   CREATE SEQUENCE public.presos_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+ $   DROP SEQUENCE public.presos_id_seq;
+       public               root    false    223         ‹
+           0    0 
+   presos_id_seq    SEQUENCE OWNED BY     ?   ALTER SEQUENCE public.presos_id_seq OWNED BY public.presos.id;
+          public               root    false    224         á            1259    16420 	   productos    TABLE     È   CREATE TABLE public.productos (
+    id integer NOT NULL,
+    nombre character varying(255) NOT NULL,
+    precio numeric(10,2) NOT NULL,
+    categoria character varying(50),
+    costo numeric(10,2)
+);
+    DROP TABLE public.productos;
+       public         heap r       root    false         â            1259    16423    productos_id_seq    SEQUENCE     ˆ   CREATE SEQUENCE public.productos_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+ '   DROP SEQUENCE public.productos_id_seq;
+       public               root    false    225         Œ
+           0    0    productos_id_seq    SEQUENCE OWNED BY     E   ALTER SEQUENCE public.productos_id_seq OWNED BY public.productos.id;
+          public               root    false    226         ­           2604    16424    detalles_orden id    DEFAULT     v   ALTER TABLE ONLY public.detalles_orden ALTER COLUMN id SET DEFAULT nextval('public.detalles_orden_id_seq'::regclass);
+ @   ALTER TABLE public.detalles_orden ALTER COLUMN id DROP DEFAULT;
+       public               root    false    218    217         ¯           2604    16425    empleados id    DEFAULT     l   ALTER TABLE ONLY public.empleados ALTER COLUMN id SET DEFAULT nextval('public.empleados_id_seq'::regclass);
+ ;   ALTER TABLE public.empleados ALTER COLUMN id DROP DEFAULT;
+       public               root    false    220    219         ¹           2604    16472 	   grados id    DEFAULT     f   ALTER TABLE ONLY public.grados ALTER COLUMN id SET DEFAULT nextval('public.grados_id_seq'::regclass);
+ 8   ALTER TABLE public.grados ALTER COLUMN id DROP DEFAULT;
+       public               root    false    228    227    228         ²           2604    16426    ordenes orden_id    DEFAULT     t   ALTER TABLE ONLY public.ordenes ALTER COLUMN orden_id SET DEFAULT nextval('public.ordenes_orden_id_seq'::regclass);
+ ?   ALTER TABLE public.ordenes ALTER COLUMN orden_id DROP DEFAULT;
+       public               root    false    222    221         ¼           2604    24664    pagos id    DEFAULT     d   ALTER TABLE ONLY public.pagos ALTER COLUMN id SET DEFAULT nextval('public.pagos_id_seq'::regclass);
+ 7   ALTER TABLE public.pagos ALTER COLUMN id DROP DEFAULT;
+       public               root    false    232    231    232         º           2604    16483    preso_grado id    DEFAULT     p   ALTER TABLE ONLY public.preso_grado ALTER COLUMN id SET DEFAULT nextval('public.preso_grado_id_seq'::regclass);
+ =   ALTER TABLE public.preso_grado ALTER COLUMN id DROP DEFAULT;
+       public               root    false    229    230    230         µ           2604    16427 	   presos id    DEFAULT     f   ALTER TABLE ONLY public.presos ALTER COLUMN id SET DEFAULT nextval('public.presos_id_seq'::regclass);
+ 8   ALTER TABLE public.presos ALTER COLUMN id DROP DEFAULT;
+       public               root    false    224    223         ¸           2604    16428    productos id    DEFAULT     l   ALTER TABLE ONLY public.productos ALTER COLUMN id SET DEFAULT nextval('public.productos_id_seq'::regclass);
+ ;   ALTER TABLE public.productos ALTER COLUMN id DROP DEFAULT;
+       public               root    false    226    225         o
+          0    16389    detalles_orden 
+   TABLE DATA           k   COPY public.detalles_orden (id, orden_id, producto_id, cantidad, precio_unitario, empleado_id) FROM stdin;
+    public               root    false    217       3439.dat q
+          0    16394 	   empleados 
+   TABLE DATA           ^   COPY public.empleados (id, nombre, usuario, password, rol, fecha_ingreso, activo) FROM stdin;
+    public               root    false    219       3441.dat z
+          0    16469    grados 
+   TABLE DATA           7   COPY public.grados (id, nombre, descuento) FROM stdin;
+    public               root    false    228       3450.dat s
+          0    16403    ordenes 
+   TABLE DATA           u   COPY public.ordenes (orden_id, preso_id, nombre_cliente, total, fecha, estado, empleado_id, total_bruto) FROM stdin;
+    public               root    false    221       3443.dat ~
+          0    24661    pagos 
+   TABLE DATA           P   COPY public.pagos (id, orden_id, metodo, monto, fecha, empleado_id) FROM stdin;
+    public               root    false    232       3454.dat |
+          0    16480    preso_grado 
+   TABLE DATA           M   COPY public.preso_grado (id, preso_id, grado_id, fecha_otorgado) FROM stdin;
+    public               root    false    230       3452.dat u
+          0    16412    presos 
+   TABLE DATA           o   COPY public.presos (id, reg_name, res_tel, igname, bday, mkt, cellmate, referidos, fecha_registro) FROM stdin;
+    public               root    false    223       3445.dat w
+          0    16420 	   productos 
+   TABLE DATA           I   COPY public.productos (id, nombre, precio, categoria, costo) FROM stdin;
+    public               root    false    225       3447.dat 
+           0    0    detalles_orden_id_seq    SEQUENCE SET     D   SELECT pg_catalog.setval('public.detalles_orden_id_seq', 42, true);
+          public               root    false    218         Ž
+           0    0    empleados_id_seq    SEQUENCE SET     >   SELECT pg_catalog.setval('public.empleados_id_seq', 3, true);
+          public               root    false    220         
+           0    0 
+   grados_id_seq    SEQUENCE SET     ;   SELECT pg_catalog.setval('public.grados_id_seq', 1, true);
+          public               root    false    227         
+           0    0    ordenes_orden_id_seq    SEQUENCE SET     C   SELECT pg_catalog.setval('public.ordenes_orden_id_seq', 42, true);
+          public               root    false    222         ‘
+           0    0    pagos_id_seq    SEQUENCE SET     ;   SELECT pg_catalog.setval('public.pagos_id_seq', 1, false);
+          public               root    false    231         ’
+           0    0    preso_grado_id_seq    SEQUENCE SET     @   SELECT pg_catalog.setval('public.preso_grado_id_seq', 1, true);
+          public               root    false    229         “
+           0    0 
+   presos_id_seq    SEQUENCE SET     <   SELECT pg_catalog.setval('public.presos_id_seq', 1, false);
+          public               root    false    224         ”
+           0    0    productos_id_seq    SEQUENCE SET     ?   SELECT pg_catalog.setval('public.productos_id_seq', 1, false);
+          public               root    false    226         Â           2606    16430 "   detalles_orden detalles_orden_pkey 
+   CONSTRAINT     `   ALTER TABLE ONLY public.detalles_orden
+    ADD CONSTRAINT detalles_orden_pkey PRIMARY KEY (id);
+ L   ALTER TABLE ONLY public.detalles_orden DROP CONSTRAINT detalles_orden_pkey;
+       public                 root    false    217         Ä           2606    16432    empleados empleados_pkey 
+   CONSTRAINT     V   ALTER TABLE ONLY public.empleados
+    ADD CONSTRAINT empleados_pkey PRIMARY KEY (id);
+ B   ALTER TABLE ONLY public.empleados DROP CONSTRAINT empleados_pkey;
+       public                 root    false    219         Æ           2606    16434    empleados empleados_usuario_key 
+   CONSTRAINT     ]   ALTER TABLE ONLY public.empleados
+    ADD CONSTRAINT empleados_usuario_key UNIQUE (usuario);
+ I   ALTER TABLE ONLY public.empleados DROP CONSTRAINT empleados_usuario_key;
+       public                 root    false    219         Î           2606    16478    grados grados_nombre_key 
+   CONSTRAINT     U   ALTER TABLE ONLY public.grados
+    ADD CONSTRAINT grados_nombre_key UNIQUE (nombre);
+ B   ALTER TABLE ONLY public.grados DROP CONSTRAINT grados_nombre_key;
+       public                 root    false    228         Ð           2606    16476    grados grados_pkey 
+   CONSTRAINT     P   ALTER TABLE ONLY public.grados
+    ADD CONSTRAINT grados_pkey PRIMARY KEY (id);
+ <   ALTER TABLE ONLY public.grados DROP CONSTRAINT grados_pkey;
+       public                 root    false    228         È           2606    16436    ordenes ordenes_pkey 
+   CONSTRAINT     X   ALTER TABLE ONLY public.ordenes
+    ADD CONSTRAINT ordenes_pkey PRIMARY KEY (orden_id);
+ >   ALTER TABLE ONLY public.ordenes DROP CONSTRAINT ordenes_pkey;
+       public                 root    false    221         Ô           2606    24670    pagos pagos_pkey 
+   CONSTRAINT     N   ALTER TABLE ONLY public.pagos
+    ADD CONSTRAINT pagos_pkey PRIMARY KEY (id);
+ :   ALTER TABLE ONLY public.pagos DROP CONSTRAINT pagos_pkey;
+       public                 root    false    232         Ò           2606    16486    preso_grado preso_grado_pkey 
+   CONSTRAINT     Z   ALTER TABLE ONLY public.preso_grado
+    ADD CONSTRAINT preso_grado_pkey PRIMARY KEY (id);
+ F   ALTER TABLE ONLY public.preso_grado DROP CONSTRAINT preso_grado_pkey;
+       public                 root    false    230         Ê           2606    16438    presos presos_pkey 
+   CONSTRAINT     P   ALTER TABLE ONLY public.presos
+    ADD CONSTRAINT presos_pkey PRIMARY KEY (id);
+ <   ALTER TABLE ONLY public.presos DROP CONSTRAINT presos_pkey;
+       public                 root    false    223         Ì           2606    16440    productos productos_pkey 
+   CONSTRAINT     V   ALTER TABLE ONLY public.productos
+    ADD CONSTRAINT productos_pkey PRIMARY KEY (id);
+ B   ALTER TABLE ONLY public.productos DROP CONSTRAINT productos_pkey;
+       public                 root    false    225         Õ           2606    16441 .   detalles_orden detalles_orden_empleado_id_fkey 
+   FK CONSTRAINT     §   ALTER TABLE ONLY public.detalles_orden
+    ADD CONSTRAINT detalles_orden_empleado_id_fkey FOREIGN KEY (empleado_id) REFERENCES public.empleados(id) ON DELETE CASCADE;
+ X   ALTER TABLE ONLY public.detalles_orden DROP CONSTRAINT detalles_orden_empleado_id_fkey;
+       public               root    false    219    217    3268         Ö           2606    16446 +   detalles_orden detalles_orden_orden_id_fkey 
+   FK CONSTRAINT     ¥   ALTER TABLE ONLY public.detalles_orden
+    ADD CONSTRAINT detalles_orden_orden_id_fkey FOREIGN KEY (orden_id) REFERENCES public.ordenes(orden_id) ON DELETE CASCADE;
+ U   ALTER TABLE ONLY public.detalles_orden DROP CONSTRAINT detalles_orden_orden_id_fkey;
+       public               root    false    217    3272    221         ×           2606    16451 .   detalles_orden detalles_orden_producto_id_fkey 
+   FK CONSTRAINT     §   ALTER TABLE ONLY public.detalles_orden
+    ADD CONSTRAINT detalles_orden_producto_id_fkey FOREIGN KEY (producto_id) REFERENCES public.productos(id) ON DELETE CASCADE;
+ X   ALTER TABLE ONLY public.detalles_orden DROP CONSTRAINT detalles_orden_producto_id_fkey;
+       public               root    false    3276    217    225         Ø           2606    16456     ordenes ordenes_empleado_id_fkey 
+   FK CONSTRAINT     ™   ALTER TABLE ONLY public.ordenes
+    ADD CONSTRAINT ordenes_empleado_id_fkey FOREIGN KEY (empleado_id) REFERENCES public.empleados(id) ON DELETE CASCADE;
+ J   ALTER TABLE ONLY public.ordenes DROP CONSTRAINT ordenes_empleado_id_fkey;
+       public               root    false    219    3268    221         Ù           2606    16461    ordenes ordenes_preso_id_fkey 
+   FK CONSTRAINT     ‘   ALTER TABLE ONLY public.ordenes
+    ADD CONSTRAINT ordenes_preso_id_fkey FOREIGN KEY (preso_id) REFERENCES public.presos(id) ON DELETE SET NULL;
+ G   ALTER TABLE ONLY public.ordenes DROP CONSTRAINT ordenes_preso_id_fkey;
+       public               root    false    3274    221    223         Ü           2606    24676    pagos pagos_empleado_id_fkey 
+   FK CONSTRAINT     ƒ   ALTER TABLE ONLY public.pagos
+    ADD CONSTRAINT pagos_empleado_id_fkey FOREIGN KEY (empleado_id) REFERENCES public.empleados(id);
+ F   ALTER TABLE ONLY public.pagos DROP CONSTRAINT pagos_empleado_id_fkey;
+       public               root    false    219    3268    232         Ý           2606    24671    pagos pagos_orden_id_fkey 
+   FK CONSTRAINT     “   ALTER TABLE ONLY public.pagos
+    ADD CONSTRAINT pagos_orden_id_fkey FOREIGN KEY (orden_id) REFERENCES public.ordenes(orden_id) ON DELETE CASCADE;
+ C   ALTER TABLE ONLY public.pagos DROP CONSTRAINT pagos_orden_id_fkey;
+       public               root    false    232    3272    221         Ú           2606    16492 %   preso_grado preso_grado_grado_id_fkey 
+   FK CONSTRAINT     ˜   ALTER TABLE ONLY public.preso_grado
+    ADD CONSTRAINT preso_grado_grado_id_fkey FOREIGN KEY (grado_id) REFERENCES public.grados(id) ON DELETE CASCADE;
+ O   ALTER TABLE ONLY public.preso_grado DROP CONSTRAINT preso_grado_grado_id_fkey;
+       public               root    false    230    228    3280         Û           2606    16487 %   preso_grado preso_grado_preso_id_fkey 
+   FK CONSTRAINT     ˜   ALTER TABLE ONLY public.preso_grado
+    ADD CONSTRAINT preso_grado_preso_id_fkey FOREIGN KEY (preso_id) REFERENCES public.presos(id) ON DELETE CASCADE;
+ O   ALTER TABLE ONLY public.preso_grado DROP CONSTRAINT preso_grado_preso_id_fkey;
+       public               root    false    223    3274    230                                                                                                                                                                                                                                                                                                                                                                                                                                                                              3439.dat                                                                                            0000600 0004000 0002000 00000000271 14771153741 0014266 0                                                                                                    ustar 00postgres                        postgres                        0000000 0000000                                                                                                                                                                        1	8	1	2	70.00	1
+2	8	4	1	115.00	1
+3	8	2	1	135.00	1
+4	8	35	2	105.00	1
+6	8	10	2	90.00	1
+7	8	35	10	105.00	1
+8	10	10	2	90.00	1
+9	10	35	10	105.00	1
+41	42	36	4	120.00	1
+42	42	3	1	85.00	1
+\.
+
+
+                                                                                                                                                                                                                                                                                                                                       3441.dat                                                                                            0000600 0004000 0002000 00000000410 14771153741 0014252 0                                                                                                    ustar 00postgres                        postgres                        0000000 0000000                                                                                                                                                                        1	Admin temporal	admin_test	1234	admin	2025-03-24	t
+2	Mesera nueva	mesera1	$2b$10$8qMNqi9PC5YJ2NX5QMsj6ummu4UixS6DOrhWFhMh7dws8lPmc7KoW	mesero	2025-03-24	t
+3	David Loro	deivid	$2b$10$mZEgqTVRaIoPcYR7RhQXWeTtpLrmULc8D20bWfzlGYj2gWyzNmDIy	cocinero	2025-03-24	t
+\.
+
+
+                                                                                                                                                                                                                                                        3450.dat                                                                                            0000600 0004000 0002000 00000000036 14771153741 0014256 0                                                                                                    ustar 00postgres                        postgres                        0000000 0000000                                                                                                                                                                        1	Carcelero del mes	5.00
+\.
+
+
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  3443.dat                                                                                            0000600 0004000 0002000 00000000274 14771153741 0014264 0                                                                                                    ustar 00postgres                        postgres                        0000000 0000000                                                                                                                                                                        8	3	\N	242.25	2025-03-24 17:42:44.359832	abierta	1	255.00
+10	\N	Chica de blanco	220.00	2025-03-25 15:12:47.39117	abierta	1	\N
+42	296	\N	0.00	2025-03-27 03:36:49.846712	abierta	1	0.00
+\.
+
+
+                                                                                                                                                                                                                                                                                                                                    3454.dat                                                                                            0000600 0004000 0002000 00000000005 14771153741 0014256 0                                                                                                    ustar 00postgres                        postgres                        0000000 0000000                                                                                                                                                                        \.
+
+
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           3452.dat                                                                                            0000600 0004000 0002000 00000000026 14771153741 0014257 0                                                                                                    ustar 00postgres                        postgres                        0000000 0000000                                                                                                                                                                        1	3	1	2025-03-23
+\.
+
+
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          3445.dat                                                                                            0000600 0004000 0002000 00000070245 14771153741 0014273 0                                                                                                    ustar 00postgres                        postgres                        0000000 0000000                                                                                                                                                                        1	Jorge	2226803262		3/26/1997	f	1	5	2025-03-03
+2	Paco Chucho	2213333854	Pacochuchs	12/10/1992	t	1	3	2025-03-03
+3	Paco Chucho	2213333854	Pacochuchs	12/10/1992	t	1	0	2025-03-03
+4	David Loro	2288241181		11/12/1991	t	1	0	2025-03-03
+5	Serch	5519079955	Awesomeserch	1/17/1997	t	0	4	2025-03-03
+6	Jennifer	9211097752		1/16/1993	t	2	2	2025-03-03
+7	Rene	3330370516	@crodian	4/3/1989	t	6	1	2025-03-03
+8	Rene	3330370516	@crodian	4/3/1989	t	6	0	2025-03-03
+9	Gerardo	2227352207	Ilgameshlara	1/16/1993	t	0	0	2025-03-03
+10	Samuel	5547633824		9/26/1993	f	0	0	2025-03-03
+11	Alan	5529454183	@g.o_alan	9/3/1999	t	0	1	2025-03-03
+12	Rodrigo	5638995046	@glenrjui	9/13/2002	t	0	7	2025-03-03
+13	Rafael garcia	4434805070	@_rafagd	3/17/2003	t	0	3	2025-03-03
+14	Rafael garcia	4434805070	@_rafagd	3/17/2003	t	0	0	2025-03-03
+15	Allisson	7971014559	@allisson_maltes	5/24/1997	t	0	0	2025-03-03
+16	Daniela	5543453312	@danielaricostraff	9/26/1990	f	0	0	2025-03-03
+17	JosÃ© Vigil	2223830696	Chema_vigil6	3/6/1998	t	0	3	2025-03-03
+18	Shantal	2212746541	La.musa.cosmica 	3/30/2000	t	0	0	2025-03-03
+19	Rosari	2226963697	@saherrosy	9/2/1996	t	0	0	2025-03-03
+20	Carlos Arturo NuÃ±ez 	2225993386	arturonf	11/4/1995	f	0	5	2025-03-03
+21	Fabio Camacho guerrero	7822426009	Fabio.cg	8/4/1996	t	20	0	2025-03-03
+22	Ivana del rio	7224357178	@ivanadelriobl	7/21/1998	t	0	2	2025-03-03
+23	Andrea casas	2293255107	@andyyych	6/3/1998	f	22	0	2025-03-03
+24	Emilia canales	5640008373		11/3/1999	t	22	0	2025-03-03
+25	Ada asurim	2227884330	Ada_asurim	2/15/1991	t	0	1	2025-03-03
+26	Ximena tapia morales	7225392647	@xine__tapia	7/8/2002	t	0	1	2025-03-03
+27	Yei-Cipactli Rhydian CuitlÃ¡huac IxcÃ³atl van der Kroft MartÃ­nez	6241560915		3/26/1999	t	0	11	2025-03-03
+28	Mitzi del castillo guzman	2292554362		12/18/2004	t	27	0	2025-03-03
+29	Narda Marlet serret guzman	7828200488	@limonarda	8/5/2004	t	0	0	2025-03-03
+30	Alejandro chavez	2211670691	@astourjean	5/8/1996	t	27	0	2025-03-03
+31	Vero VelÃ¡zquez 	2223806289	Veronicavel_19	9/19/1996	t	0	1	2025-03-03
+32	JoaquÃ­n palafox	2221847088	Joaquin_palafox	8/11/1999	t	31	0	2025-03-03
+33	Mitzi vergara	2331156324	Mitzivergara22	9/22/2004	t	0	1	2025-03-03
+34	JosÃ© Eduardo lopez	9931062734		3/22/2002	t	0	1	2025-03-03
+35	MarÃ­a lopez	9934034684	Looez6441	6/15/2004	t	34	0	2025-03-03
+36	Andrea ugalde	5530405799	3dvivas	12/2/1996	t	0	3	2025-03-03
+37	Julieta tellez	2225633529	Julest.irl	1/24/2001	t	36	0	2025-03-03
+38	Luis zainos 	2461288815	@zain0s.rl	7/2/2002	t	0	0	2025-03-03
+39	Antonio flores	2228183301	@bxlmxrx	10/29/2002	t	5	0	2025-03-03
+40	Alonso marquina	2211678869	@alonso_marquinars	5/24/1996	t	5	0	2025-03-03
+41	Aaron borja	2223623957	@aaronborja97	2/14/1997	t	0	1	2025-03-03
+42	Alina tellez	2221074919	@aaliinaalee	1/9/2001	t	41	0	2025-03-03
+43	Eduardo ortega	2211068600	@_lalo_volovan	8/29/2002	t	0	1	2025-03-03
+44	Rodrigo alvarez	2215710874		8/15/2005	t	43	0	2025-03-03
+45	Gerardo Apango	2223582886	Gerandroid	10/23/1997	t	0	0	2025-03-03
+46	Fernando escalante	2226951944	Ferescalante18	7/13/1999	t	0	0	2025-03-03
+47	Daniela serrano	2223778476	Dann.semilla	9/24/1989	t	0	0	2025-03-03
+48	Sara reyes	2225011185	@malappecora	5/14/1999	t	0	1	2025-03-03
+49	Paola medellin	2222068756	Pmedelln	8/19/1992	t	0	2	2025-03-03
+50	Alan Lopez 	2221865460	Alan.lopezmartinez	6/24/1989	t	0	1	2025-03-03
+51	Pablo tenorio	5541855819	Pablotnr	10/11/1998	f	50	0	2025-03-03
+52	Karla hermosillo	2225645202	Koralaaaaaa	9/25/1999	t	49	0	2025-03-03
+53	Giorgio farid	2213322750	Giorgiolinetti	9/18/1998	t	0	1	2025-03-03
+54	AngÃ©lica ruiz	2211112691	Acilegnaziur	12/12/1996	t	53	0	2025-03-03
+55	Jenaro perrz	2211983322	Sie7e_capas	8/17/1993	t	48	0	2025-03-03
+56	Romario marquez	2225067579	Romariojesus	9/8/1994	t	0	5	2025-03-03
+57	Javiera vasquez	2225067579	Ja_vf	7/11/1996	f	56	0	2025-03-03
+58	Naila dicha	5575444993	Nailadiag	9/8/1993	t	56	0	2025-03-03
+59	Emiliano bello	7757572614	Emiliano.beio	11/15/2000	t	0	3	2025-03-03
+60	Daniela morales	7775131055	Dan_2m	4/7/2000	t	0	0	2025-03-03
+61	Daniela Morales	7751310551	Dan_2m	4/7/2000	t	0	1	2025-03-03
+62	Edin gonzalez	2281012458	Ender.sense	2/15/1998	t	0	0	2025-03-03
+63	Cris azcuaga	5576571239	@consome_d_cris	1/3/2003	t	0	6	2025-03-03
+64	Roben malpas	5576571239	Roben.malpas	10/10/2003	t	0	0	2025-03-03
+65	Samo barrios	2216599879	Samotanuki	6/13/1997	t	63	0	2025-03-03
+66	Eduardo solano	2214315892	Lalo.zs.3	5/15/2003	t	0	1	2025-03-03
+67	Alberto gracia	2221091329	Joven_galeno	8/3/1999	t	66	0	2025-03-03
+68	Miranda ramos	2221098923	Miramoos_	10/15/1999	t	0	1	2025-03-03
+69	Javier granados	2215270865	Javo.granados	1/15/1988	t	68	1	2025-03-03
+70	Antonio elizalde	2214151570		12/18/1999	t	0	1	2025-03-03
+71	FÃ¡tima almonte	2211327370	Faty.ortegaa	8/4/2001	t	70	0	2025-03-03
+72	Aldo Javier guzman	2211072029	Aldojavierguzman	2/18/2003	t	0	0	2025-03-03
+73	Enrique perez	2223420660	Qp.moreno	8/15/1995	t	0	3	2025-03-03
+74	LulÃº farrera	2221854680	Lulu_farrera	2/11/2000	t	0	0	2025-03-03
+75	Ana Paula carrillo	4491921392	Paulaestodo	7/4/1996	t	0	1	2025-03-03
+76	Fabiana arollo	4491117558	Lafamulan	4/8/1998	t	75	0	2025-03-03
+77	Luis Enrique cardenas	4493464488	Soythisquique	10/15/1996	t	75	0	2025-03-03
+78	Fer flores	2221142552	Fer.flooo	12/3/1989	t	0	1	2025-03-03
+79	IvÃ¡n pablo	2226733294	Edgar.ivan.ph	10/23/1999	t	0	0	2025-03-03
+80	Cesar sarmiento	2224166151	Sarmiento_921	1/22/1988	t	78	0	2025-03-03
+81	Axel Capdeville 	5565574821	Rascharcutero	7/11/1991	t	0	0	2025-03-03
+82	Diana vigil	2221267463	Diana_vesca	1/29/1995	f	17	0	2025-03-03
+83	Testing	1234567899		7/9/1990	f	0	0	2025-03-03
+84	Testing	1234567899		7/9/1990	f	0	0	2025-03-03
+85	Elena RendÃ³n 	7441920929		9/12/2001	t	27	0	2025-03-03
+86	Miguel angel colex	2215898159	Angelcolex01	6/9/2001	t	0	0	2025-03-03
+87	Testing	1234567899		7/9/1990	f	0	0	2025-03-03
+88	Testing	1234567899		7/9/1990	f	0	0	2025-03-03
+89	Testing	1234567899		7/9/1990	f	0	0	2025-03-03
+90	Carolina MontaÃ±o	7475455944	Caromonthd	1/20/1997	t	0	1	2025-03-03
+91	JosÃ© Carlos crespo	8112881879	Cdcrespo	11/21/1995	t	90	8	2025-03-03
+92	Airam cisneros	2211334838	Cisneros.airam	11/7/1995	t	91	0	2025-03-03
+93	Frida GÃ³mez espinosa 	7712401628	Fri_gomezp	7/29/2000	t	59	0	2025-03-03
+94	Eduardo flores	2223270982		11/17/2004	t	0	1	2025-03-03
+95	Hannia hernandez	2225980237	Hannia_her03	7/17/2004	t	94	0	2025-03-03
+96	Alexis zuÃ±iga	2221788974	Vaaloartee	6/7/2024	f	0	1	2025-03-03
+97	NoemÃ­ boivin	2229045249		5/14/1993	t	0	0	2025-03-03
+98	Luis RubÃ©n MartÃ­nez 	9211194390	Luis__ruben99	12/4/1999	t	0	0	2025-03-03
+99	Melanie Sarabia 	6241298586	Melaniesarabiaf	11/11/2001	t	0	3	2025-03-03
+100	Amanda Craviotto	5575681189	Amandacraviotto	2/14/2001	t	0	3	2025-03-03
+101	Rodrigo GarcÃ­a 	7771359934		1/13/2001	f	99	0	2025-03-03
+102	Liza Queen	5532429769		6/22/2001	f	99	0	2025-03-03
+103	Mary Hierro 	5561996649		2/14/2001	f	99	0	2025-03-03
+104	Cinthia Dayana Amaro	2212261863		8/15/2001	f	100	0	2025-03-03
+105	Alberto Bravo 	7715670955		4/3/1996	f	100	0	2025-03-03
+106	Luis Saucedo 	7711172614		5/3/2001	f	100	0	2025-03-03
+107	Gabriel Mancilla 	2221837225	Manci0020	4/29/2003	t	0	1	2025-03-03
+108	Yessyca yazmin	2215630978	Yessymar0012	9/30/2004	t	107	0	2025-03-03
+109	Jan Niklas	2227763287		3/2/1992	t	0	1	2025-03-03
+110	Marcos hernandez	9616039212	Makonucamendi	12/6/1989	t	49	0	2025-03-03
+111	Angel castaÃ±eda	2215249295	Kassady_z	12/26/2002	t	0	0	2025-03-03
+112	Pao sosa 	2224411078		3/12/2003	t	0	0	2025-03-03
+113	Dana mixcoatl	2221082013	Danna	5/17/2003	t	0	0	2025-03-03
+114	Alan paez calderon	2228045907	Alan_capz	7/1/2003	t	0	0	2025-03-03
+115	JesÃºs rotunno	6121377500	Salazar.rotunno	10/6/1998	t	0	0	2025-03-03
+116	Paola guerrero	2221345323		6/27/1989	t	91	0	2025-03-03
+117	Angel SantamarÃ­a 	2212845772	Angeman98	7/1/1998	t	91	0	2025-03-03
+118	Leo feria	2225057305	Leo31_feria	10/15/1995	t	91	0	2025-03-03
+119	Victor canales	2461796279	Victorcali00	2/21/2000	t	27	0	2025-03-03
+120	Marco coutiÃ±o	9613038585	Marco_cou	10/15/2001	t	61	0	2025-03-03
+121	Alixes casillas	7441449573	Ali.cmtz	9/16/1995	t	91	0	2025-03-03
+122	Karla herrera	2216542670	Karla_hm09	4/9/2000	t	56	2	2025-03-03
+123	Osmar lezama	2211654804	Lr.osmar	2/16/1993	t	56	0	2025-03-03
+124	Claudia Vivas Ofarrill	5530405799		6/19/1968	f	36	0	2025-03-03
+125	Jose Leonardo Ugalde Garcia	5554026442		11/26/1959	f	36	0	2025-03-03
+126	Juan perez	5530433051	Juanperezmijangos	8/7/2001	t	0	1	2025-03-03
+127	Denise zacatelco	5540145477	Denice_zl	1/19/2002	t	126	0	2025-03-03
+128	Atzi portilla	2227949366	Atziportillaaa	10/29/1993	t	0	0	2025-03-03
+129	Laura mcgregor 	2223873459	Laurademaiz	3/9/1989	t	0	0	2025-03-03
+130	Jimena cinta	2227818131	Jack.jjcc	10/23/1996	t	2	0	2025-03-03
+131	JosÃ© Antonio Espinosa 	2211688700	Antonio11es	8/15/2002	t	0	0	2025-03-03
+132	Araceli Soto	4441436906		9/6/1975	f	91	0	2025-03-03
+133	Carlos Crespo Bravo	8112881879		5/16/1971	f	91	0	2025-03-03
+134	Paola Guadalupe Crespo	4443563733		5/28/1999	f	91	0	2025-03-03
+135	Rigel CerÃ³n 	2224459199	Orionida	2/19/1995	t	0	0	2025-03-03
+136	Elvira piÃ±eiro	2221232006	Elviruri	9/19/1996	t	0	0	2025-03-03
+137	Andrea MÃ©ndez 	2228506076	Handymdz	12/4/1998	f	0	0	2025-03-03
+138	Tanya Galicia	2212405556	Tatysgirl	7/27/1987	t	0	0	2025-03-03
+139	TomÃ¡s Castillo 	7751549365	Tomitx_	4/28/1996	f	0	0	2025-03-03
+140	Priscila RodrÃ­guez 	2223575899	_prisc	6/21/1998	t	0	1	2025-03-03
+141	SebastiÃ¡n Ontiveros 	2221111998		3/18/1994	t	17	2	2025-03-03
+142	Paulina Arantxa Herrera	2225387774	Paulhgz	2/16/1998	t	17	0	2025-03-03
+143	Lev Schlegel	2461476378		8/20/1995	t	0	1	2025-03-03
+144	Alejandro Rebolledo	2294828959	Alexrebolledo_	7/26/2001	f	143	0	2025-03-03
+145	Mauricio Rodriguez	2211730636	Mauricio_loustaunau	4/24/1997	f	0	2	2025-03-03
+146	IvÃ¡n talavera 	2228583546	Ivanatalaverita	9/28/2001	f	145	0	2025-03-03
+147	Alejandro sosa	2293569276	Alex_scarrillo	3/19/1999	f	145	0	2025-03-03
+148	Seli SÃ¡nchez 	6674770836	Selischz	5/3/1992	t	0	0	2025-03-03
+149	Anahi RodrÃ­guez 	9931041106	Anahi.rgz	9/27/2005	f	0	0	2025-03-03
+150	Andrea rodriguez	9933597369	Argueez	9/8/1999	f	0	0	2025-03-03
+151	Eugenio Mora	2221062303	Eugeniomorp	7/7/1994	f	0	2	2025-03-03
+152	Jonatan Melchor Fuentes 	9511204012	Dahh.jonas	2/24/2004	f	0	0	2025-03-03
+153	Ixchel Vazquez 	9811212570	Paulabienetre	6/16/1999	f	0	10	2025-03-03
+154	Ana Gladys Roman	2223849416	Anagladysyoga	2/20/1988	f	0	2	2025-03-03
+155	Gladis Chavez	2224355276		4/12/1956	f	0	0	2025-03-03
+156	Renata Romero 	2212266604	_mr_ranita_	11/4/2005	f	154	0	2025-03-03
+157	Jessica Romero 	2227087391	Mont_jess	7/20/1986	f	154	0	2025-03-03
+158	Nadhezda Gaspar Perez	2224809860	Nadhez.gaspar	2/24/1977	f	0	0	2025-03-03
+159	Vanessa Utrilla	2229071361	Sailorjupiter5	3/20/2000	t	0	1	2025-03-03
+160	Ricardo Robles	2223587924	Rickgoldandsilverpawnshop	1/14/1997	t	159	0	2025-03-03
+161	Odette Fajardo 	5532037268	Odette.fajardo	12/29/1989	t	0	1	2025-03-03
+162	Artemisa GarcÃ­a 	5530696762	Artemisa_yunuen	12/31/1994	t	161	0	2025-03-03
+163	Paola NÃºÃ±ez 	9512268415	Porplacer	2/12/2000	t	0	0	2025-03-03
+164	Gerardo Alvarez	4441118080	Geralvarezp	3/17/1993	f	0	1	2025-03-03
+165	Eric Cetina	2288370969	Ehauvery	5/5/1997	f	164	0	2025-03-03
+166	Antonio rodriguez	2221132945		6/19/1969	f	140	0	2025-03-03
+167	Marjaa castellanos 	2212342999	M.a.r.j.a.a	9/3/1993	t	56	1	2025-03-03
+168	Dana ron	2293173319	Dana.ron	11/9/1993	f	167	0	2025-03-03
+169	Miguel Guzman	2282337548	Miike.enllamas	11/19/1990	t	0	0	2025-03-03
+170	MÃ³nica arteaga	7225056289		12/7/2005	f	27	0	2025-03-03
+171	Esmeralda Rosiles	2711975366	Esrosmart	9/21/1999	t	153	0	2025-03-03
+172	Adrian sosa	7221009433	Adrianwiedfeldt	7/2/1999	t	0	2	2025-03-03
+173	Alexis marquez	5580273188	Alexisgmx	5/7/2001	t	0	0	2025-03-03
+174	Antonella Gogeascoechea	2288354012	Antonellagohz	10/19/2001	f	59	0	2025-03-03
+175	Rosilu GutiÃ©rrez 	2291164690	Rosilu7	6/7/1996	t	153	0	2025-03-03
+176	Anais Salazar	4551400620	Anais.al.azar	8/11/2002	f	27	0	2025-03-03
+177	Salma Garcia	2214019282	Salmagdo	12/1/1997	f	153	0	2025-03-03
+178	Karla flores	2211464177	Karlafvcello	9/12/2001	t	27	2	2025-03-03
+179	Isabella moreira	5544510315	X.green._.goddess.x	4/30/2002	t	26	3	2025-03-03
+180	Valeria brebeen	2212685452	Valeriabrebeen	2/5/2001	t	0	3	2025-03-03
+181	Julia sanchez	2223362211	Julia.scj	5/18/2000	t	180	0	2025-03-03
+182	SebastiÃ¡n estrada	7441604123	Sebas.x14	7/20/2001	t	180	0	2025-03-03
+183	SebastiÃ¡n estrada	7441604123	Sebas.x14	7/20/2001	t	180	0	2025-03-03
+184	Ellie muro	2225309703	Ellie_mmv	8/22/1998	t	0	1	2025-03-03
+185	Amadeo segura	2214354475	Amadeo_s_	6/15/2004	t	184	0	2025-03-03
+186	Roberto Centeno	2231076652	Tito_cen	9/30/1998	t	0	1	2025-03-03
+187	Andrea Lopez Paez 	2224389088	Andreaapaeez	2/16/2002	t	186	0	2025-03-03
+188	Vian Flores	2215958087	V.i.a.n.n	6/11/1998	f	151	0	2025-03-03
+189	Carlos lara	2224863656	Blunox1604	4/16/1995	f	151	0	2025-03-03
+190	summer ren	2223281914	S4mmer_ren	8/26/1999	t	63	0	2025-03-03
+191	Antonio	2491107964	Marcanthony	1/24/2002	t	63	0	2025-03-03
+192	La Amandis	2228145712	La.amandisss	2/20/2004	t	63	0	2025-03-03
+193	Luis Arcadio	2211105134	Li.ft_______	6/24/1999	t	63	0	2025-03-03
+194	Gerardo leÃ³n 	9818214130	Gerardoleon.cvsn	12/30/1996	t	153	0	2025-03-03
+195	Sergio 	7714044761		9/4/2001	t	59	0	2025-03-03
+196	Jorge mexicano	2221112394	Jorgemexicano14	5/5/1999	f	122	0	2025-03-03
+197	Alondra goytia	9531113948	Aloondragoytia	8/8/1999	f	122	0	2025-03-03
+198	Adrian garcia	2229030204	Adrian@michus	7/3/1998	t	0	0	2025-03-03
+199	RamsÃ©s ulises	2214000594	Ramburger	10/20/1996	t	0	0	2025-03-03
+200	Aldo garcia	2212067313	Aldo garcia.g1	3/26/2000	t	0	0	2025-03-03
+201	Santiago torres	2226759098		10/6/1996	t	0	0	2025-03-03
+202	Santiago torres	2226759098		10/6/1996	t	0	1	2025-03-03
+203	Laura Cardenas 	5562456324	Amarillacb	5/31/1993	t	0	20	2025-03-03
+204	Mariana Gabriela RamÃ­rez Ponce 	2227080165	Marianarmzpo	2/6/1997	t	202	0	2025-03-03
+205	Luis Enrique guzman	2227083487	Luisgzno	5/5/1994	f	109	0	2025-03-03
+206	Silas	5559092750		6/18/2001	f	27	0	2025-03-03
+207	Giselle manrique	5568863094		3/15/2001	f	27	0	2025-03-03
+208	Deniss guerra	5539063194	Casatlacuache	1/30/1991	t	0	3	2025-03-03
+209	Frida Lara	5539737753	Fridalai	5/13/1994	t	208	0	2025-03-03
+210	Paola Ponce huerta	2222176899	Pao.ph10	10/1/1996	t	208	0	2025-03-03
+211	Marco HernÃ¡ndez Contreras 	2225723271		2/21/1986	t	208	0	2025-03-03
+212	Alejandra flores	2221524149	Alejandrafloresarce	12/19/2000	t	0	2	2025-03-03
+213	Enrique lombardini	5519084203	Luislombardini	8/9/1998	t	212	0	2025-03-03
+214	Alexis lopez	2213827951	Ale_lo_c	7/30/1999	t	212	0	2025-03-03
+215	SarahÃ­ aroyo	5531043176	Saris0308	8/3/1991	t	0	2	2025-03-03
+216	Mario olvera	2224029818	Marioolverav	4/16/1986	t	0	0	2025-03-03
+217	Paola dieguez carrillo	7775600105	Paola.diegueZ	2/4/2001	t	215	0	2025-03-03
+218	Romina Macias	2462086925	Romimaciaas	11/7/1999	t	215	0	2025-03-03
+219	Milena caÃ±on	2228470939	Mil.lenaria	6/13/1992	t	0	0	2025-03-03
+220	Valeria TreviÃ±o 	4434652178	Vale_tre	10/7/1996	t	0	2	2025-03-03
+221	Amauri Gracidas Sarmiento 	2227789395	Amaurygracidas.arte	1/5/1993	t	0	0	2025-03-03
+222	Claudia garcia	2225081688	Clauddy_	3/17/1995	t	220	0	2025-03-03
+223	Jhovanny Altamirano	2221236710	Jho_altamirano	9/18/1988	t	220	0	2025-03-03
+224	Azul Capdevielle	5548001505	_blue_cheese__	9/6/2001	t	0	0	2025-03-03
+225	SebastiÃ¡n VillagrÃ¡n	5537412956	_svillagran	5/1/1998	t	0	0	2025-03-03
+226	Fernanda Quezada	2225846269	Ferr_quezada	11/28/1993	t	0	1	2025-03-03
+227	Karen Morales 	2225540589	Krenmf	8/24/1991	t	226	0	2025-03-03
+228	David de los Santos	2221728211	David.dlsc	8/15/2001	t	20	0	2025-03-03
+229	Mary Paz	2221636228	Marypaz_ga	7/31/1985	t	0	0	2025-03-03
+230	Ramiro	2224179300	Willyneas.tat	9/16/1999	t	0	2	2025-03-03
+231	Iker	2222003282	Ikeruribe9	5/10/1999	t	230	0	2025-03-03
+232	Humberto 	2225233940	Humberto MÃ©ndez 	1/7/1999	t	230	0	2025-03-03
+233	Josefina astutti	9989370821	Josefinaastutti 	8/30/1988	f	96	0	2025-03-03
+234	JosÃ© RenÃ© Mendoza	2227682839		11/10/1960	t	7	0	2025-03-03
+235	Corayma reyes urrego	9995501513	Chi.koritaa	11/12/1998	t	73	0	2025-03-03
+236	Gabriel Juarez	2218250269	Gabri_el_ivan	6/10/1989	t	0	0	2025-03-03
+237	Fito DÃ­az Ordaz 	2228137260	Fito_064	6/4/2004	t	63	0	2025-03-03
+238	Alex Nurob	9621150063	Alexnurz	4/2/1994	f	0	0	2025-03-03
+239	Manel Martos	5539010870		6/3/1977	f	0	0	2025-03-03
+240	Montserrat Moran Linares	3411105919	adamichelada	12/2/1999	f	0	0	2025-03-03
+241	Fabio	2222511462	fabio_arnoldo	12/18/2001	t	0	0	2025-03-03
+242	Karla Flores	2211464177	karlafvcello	9/12/2021	t	0	0	2025-03-03
+243	Ximena Tapia	7225392647	xime__tapia	7/8/2022	t	0	0	2025-03-03
+244	Hannia Jara Contreras	2211234367	jara.hannia	4/12/2002	t	0	0	2025-03-03
+245	Gibran Godoy	9994119789	ggodoy	2/4/1989	t	0	0	2025-03-03
+246	Javier Soria	2211658728	soria_cuautencos	1/31/2002	t	179	0	2025-03-03
+247	Emilio Xoconostle	2211185639	Ermolindo	7/1/1996	t	0	0	2025-03-03
+248	Henry Swartwooe	2281930528	hrgt02	1/4/2002	t	0	0	2025-03-03
+249	Daniel Espinosa	5511584495	dani_y_ya	12/13/1999	t	0	0	2025-03-03
+250	Sara Reyes Lara	2225011185	malappecora	5/14/1999	t	0	0	2025-03-03
+251	Luis Eduardo Camarena 	2221582154	camosmic	1/26/2001	t	0	0	2025-03-03
+252	Mauricio Galvan	9932454234	mehmau	8/3/1996	t	0	0	2025-03-03
+253	Natasha Konz	5579229985	natshakonzz	12/25/1998	t	0	0	2025-03-03
+254	Ilana Flores	5559092750	ila_flo12	11/30/1998	t	0	1	2025-03-03
+255	Eugenia Chavelas	7226477697	eugeniacgia	10/4/2002	t	0	0	2025-03-03
+256	Adal Lagunes	2229543196	adalqarmando	3/14/1997	t	0	0	2025-03-03
+257	Urby Eduardo Marquez	9211150059	urby_edu	10/7/1992	t	0	0	2025-03-03
+258	Dilan Alexis HernÃ¡ndez	6647957852	ergotnauta	1/10/1995	t	0	0	2025-03-03
+259	Miguel Zapata	5538030274		11/24/1979	t	0	0	2025-03-03
+260	Amauri Gracidas	2227789395	amaurygracidas.arte	1/5/1993	t	0	0	2025-03-03
+261	Alicia Guadalupe Heredia	6647266967	heredia.alicia	1/24/1995	t	0	0	2025-03-03
+262	Erika Ledezma	2224896548	ledezmaakire	8/15/1974	t	0	0	2025-03-03
+263	Alejandra Torres	2224903523	jfowr	7/1/1993	t	0	0	2025-03-03
+264	David MartÃ­nez	2211736949	davicho.mg	4/22/2001	t	0	0	2025-03-03
+265	Elisa Castillo	2223077239		5/8/2003	f	0	0	2025-03-03
+266	Mar Gomez	4423694700	Margmzr	11/3/2002	t	0	0	2025-03-03
+267	JosÃ© Luis Meyo	2225125371	_solomeyo	7/18/1997	t	0	7	2025-03-03
+268	Nuria Arroyo	4421601140		12/15/2001	f	267	0	2025-03-03
+269	Javier Vargas	2299848390	chavchupics	1/19/1993	t	0	1	2025-03-03
+270	Carlos AragÃ³n	9371412731	aragonlugo	12/23/1998	f	0	0	2025-03-03
+271	Marie Oropeza	2228627604	_marieoropeza	11/15/2000	f	0	0	2025-03-03
+272	Regina Proal	2212105550	proal_regina	11/3/2000	t	0	0	2025-03-03
+273	Laura Borja Cisneros	2222501969	lau_borja_c	12/18/2000	t	0	3	2025-03-03
+274	Ercilia Roman	2223587496	ercirm	12/18/2000	t	0	0	2025-03-03
+275	Ainara Negrete	2291058112	ainaranegrete	2/20/1991	t	269	0	2025-03-03
+276	Blanka Sandoval	2211506605	Blanka_con_k_	9/5/1997	t	267	0	2025-03-03
+277	Patricio MagaÃ±a	9982401205		6/30/1999	t	0	0	2025-03-03
+278	TEST	1234856489		2/1/2222	f	0	0	2025-03-03
+279	Stephanie Quiroz	9212714726	stephani.q	10/3/1992	t	0	0	2025-03-03
+280	TEST	5555555555		11/12/1997	f	0	0	2025-03-03
+281	TEST	5555555555		11/12/1997	f	0	0	2025-03-03
+282	Jordi Fernandez	3223844233	Andres_bladell	8/29/2001	t	20	0	2025-03-03
+283	Abraham Esli	5587004197	Abraham_ag2	2/25/2003	t	27	0	2025-03-03
+284	test5	2222222222		11/14/1997	f	0	0	2025-03-03
+285	Alex Noriega	5528445303		7/1/1999	f	5	0	2025-03-03
+286	Adriano probano	1245454545		11/11/1996	f	0	0	2025-03-03
+287	Liliana munive	2225207277	Lina_murz	8/30/1988	t	0	1	2025-03-03
+288	AmÃ©rica munive	2223066483	Merimunive	11/12/1975	t	287	0	2025-03-03
+289	Gigie Fierro 	2222172027	@gigiefierro	6/16/1993	t	0	0	2025-03-03
+290	Carlos ornelas	2227066899	Charlieornelas7	6/7/1996	t	0	0	2025-03-03
+291	Uriel Hidalgo Lerma 	2224598870	Uriel.hidalgo.l	7/26/1987	t	0	0	2025-03-03
+292	Miguel GuzmÃ¡n 	2228813115	@miguelokchis	8/8/1995	t	0	0	2025-03-03
+293	Angela Pajara 	4423154198	angel.ixuk	3/20/1989	f	0	0	2025-03-03
+294	Paco RubÃ­n	2222776621	paco_rubin	10/7/1981	f	0	0	2025-03-03
+295	Hannia	2226535054	@hamisoto 	8/6/1998	t	141	1	2025-03-03
+296	Vanessa Utrilla	2229071361	sailorjupiter5	3/20/2000	t	0	0	2025-03-03
+297	Enrique Perez	2223420660	qp.moreno	8/15/1995	t	73	0	2025-03-03
+298	Kenia Moreno	222-752-6010		8/13/1998	t	295	0	2025-03-03
+299	Alejandro Solano	5560587876	@vicalexsolano	11/17/2024	t	12	0	2025-03-03
+300	Adolfo Jui 	5235468437	fof0_ken	6/28/2005	t	12	0	2025-03-03
+301	Mario Valencia N	2227054348		4/2/1985	t	25	0	2025-03-03
+302	Axel Coronel	2225602441	axel_thehuman	11/7/1995	t	141	0	2025-03-03
+303	melissa salazar	2224460011	floressmelissa	10/26/1998	t	73	0	2025-03-03
+304	Judith Cardenas 	6675253458		9/18/1990	f	0	0	2025-03-03
+305	Odette	2223389247		3/13/1998	t	0	0	2025-03-03
+306	Daniel PeÃ±uela	2225432208	pm.daniel	9/21/1999	t	0	0	2025-03-03
+307	Mariana Cabrera 	2228439428	_maar.cg	4/9/1998	t	0	0	2025-03-03
+308	Laura Leticia Ruiz Sandoval 	2224651478	Lettruiz	1/3/1990	t	0	0	2025-03-03
+309	Romoalda	2222939143	Miel	5/30/1988	t	0	0	2025-03-03
+310	bill bill	9711224671	queerbill	1/22/1990	t	0	0	2025-03-03
+311	Juan Angel NuÃ±ez 	2225772047	@juan.anm	4/12/1997	t	0	0	2025-03-03
+312	Mener M RamÃ­rez 	2222171133	Menerramirez	12/27/1982	t	0	0	2025-03-03
+313	Lino Terrones	5738012478	linocrte	12/18/1991	t	0	0	2025-03-03
+314	IvÃ¡n AlÃ­ Laguna 	9987344936	alo_ali_	12/17/1979	t	0	0	2025-03-03
+315	IvÃ¡n AlÃ­ Laguna 	9987344936	alo_ali_	12/17/1979	t	0	0	2025-03-03
+316	Diego alvarez	7773635349	Diegoalvarezquintana	8/3/2001	t	267	0	2025-03-03
+317	Marco bravo	2224261972	Marcosaysdoit	9/20/1990	t	267	0	2025-03-03
+318	Marissa Zarate	2224240274		4/8/1993	t	267	0	2025-03-03
+319	Alejandro bravo	2221271023	Alex.sanz612	12/6/2000	t	267	0	2025-03-03
+320	Josefina Delgado	5528093860		12/24/1962	f	0	0	2025-03-03
+321	Diego Ruiz gonzalez	2315935330	Yeyoruizz	8/10/2000	t	0	0	2025-03-03
+322	ERIC DIAZ	2224814262	Diaz_e7	2/28/2003	t	20	0	2025-03-03
+323	Pamela mazatle	2227738853	Pamemelas	8/28/1999	t	0	0	2025-03-03
+324	Pamela mazatle	2227738853	Pamemelas	8/28/1999	t	0	0	2025-03-03
+325	Aldito	5549456188		10/2/1983	f	69	0	2025-03-03
+326	Gia reyes	2211606439	Giareyezzz	8/8/2002	t	273	0	2025-03-03
+327	Luisa soriano	2227530422	Luisas_photobooth	12/27/1999	t	273	0	2025-03-03
+328	Victor Martinez 	7711605041	Domno_acerbus	2/26/1989	t	0	0	2025-03-03
+329	Damaso	2222010673	dam_ar	10/24/1991	t	0	0	2025-03-03
+330	Valeria 	2221270401	Valee_cuevas	1/2/2002	t	27	0	2025-03-03
+331	Rodrigo CÃ³rdova 	2212896701	@rockdrigocx	3/1/1999	t	153	0	2025-03-03
+332	Lizbeth	5580929768	@lizflaminghot_	8/3/2000	t	153	0	2025-03-03
+333	Karime 	2211678034		11/28/2000	t	153	0	2025-03-03
+334	Gabriel Isai Galaviz Loaiza 	2225797710	gabrielgalaviz__	9/14/1999	f	172	0	2025-03-03
+335	Chriss Badillo 	2216077679	chriss.badillo.mx	5/8/2025	t	89905	0	2025-03-03
+336	Omar CastaÃ±eda 	2221529790		10/7/1980	t	0	0	2025-03-03
+337	Max	2225241881		12/31/1997	t	0	0	2025-03-03
+338	Lizbeth	5580929768	@lizflaminghot_	8/3/2000	t	153	0	2025-03-03
+339	Rodrigo CÃ³rdova 	2212896701	@rockdrigocx	3/1/1999	t	153	0	2025-03-03
+340	Lizbeth	5580929768	@lizflaminghot_	8/3/2000	t	153	0	2025-03-03
+341	Gabriel Isai Galaviz Loaiza 	2225797710	gabrielgalaviz__	9/14/1999	f	172	0	2025-03-03
+342	Manuel Carvajal 	2212724557		5/29/1998	t	0	5	2025-03-03
+343	David LÃ³pez roman	2222222222	Davichotaa 	11/12/1991	t	1	0	2025-03-03
+344	Ana Sofia 	2212401715		2/15/2006	t	342	0	2025-03-03
+345	Yessica castillo 	2225680945	Yessica_castillo2407	7/24/2000	t	342	0	2025-03-03
+346	Yessica castillo 	2225680945	Yessica_castillo2407	7/24/2000	t	342	0	2025-03-03
+347	Natalia zuÃ±iga	2224460685		5/20/2001	t	342	0	2025-03-03
+348	IÃ±aki berumen	5577885831	Inaki_berumen_	6/9/2003	t	0	0	2025-03-03
+349	Ivonne cano	2212561949	Ivonneeecs	3/6/2003	f	0	0	2025-03-03
+350	Luis JuÃ¡rez 	2215281650	Karadefuchy	5/21/1989	t	0	0	2025-03-03
+351	Angel Cervantes 	5520382756	Angelcerva2	10/27/1989	t	0	2	2025-03-03
+352	Johanna HernÃ¡ndez 	2721327857		4/7/1988	t	351	0	2025-03-03
+353	Alvaro	9211217056		5/8/1992	t	351	0	2025-03-03
+354	Alejandra Corona	4432220874	_coralec	4/18/2002	t	13	0	2025-03-03
+355	Valeria GarcÃ­a 	4432866790	_val.gd	2/2/2002	f	13	0	2025-03-03
+356	Alejandra Corona	4432220874	_coralec	4/18/2002	t	13	0	2025-03-03
+357	Diego Segura	2211734883		12/27/1990	t	0	0	2025-03-03
+358	Emiliano NuÃ±ez	3318885367	@emiliano_nunez.va	9/21/2025	t	254	0	2025-03-03
+359	Ana Paula	6692407098	anapaula_riv	2/14/2025	t	179	0	2025-03-03
+360	Ana Paula	6692407098	anapaula_riv	2/14/2025	t	179	0	2025-03-03
+361	Issai 	9841588889	@issai_limias	8/18/1991	t	0	0	2025-03-03
+362	Ricardo Galindez Reyes	7773024452	Ricardo_galindez_25	1/3/2002	t	0	0	2025-03-03
+363	Mariana sanchez	2222998767	Marianaconeja	1/15/1985	f	0	0	2025-03-03
+364	Alejandra villegas 	2228480859	ale. Villegas 	3/30/2025	t	0	0	2025-03-03
+365	Emilia de la Vega	5519033347	em_v.c 	10/13/2000	t	0	2	2025-03-03
+366	Daniela Rojo 	2223810056	dannielarojo	9/13/1999	t	365	0	2025-03-03
+367	Estefania Cazares 	2223810056	staminagal	11/12/1990	t	365	0	2025-03-03
+368	Adri	6391069663	Adrianalzes	6/11/2004	t	0	0	2025-03-03
+369	DannyBoy	7223476266	Thedannyboy20	3/24/2025	t	0	0	2025-03-03
+370	Andre Molina JimÃ©nez 	2226341576	andru_mj	3/16/2003	t	0	1	2025-03-03
+371	dafne	2481796454	D4fffne	2/21/2000	f	370	0	2025-03-03
+372	Adri	6391069663	Adrianalzes	6/11/2004	t	0	0	2025-03-03
+373	Miguel Herrera	2225053409	Miguelherrmer	8/9/1997	t	342	0	2025-03-03
+374	Eduardo 	2204351093	Lalo zs 3	5/15/2002	t	0	0	2025-03-03
+375	Diego	2224977427	dsalamanca_c	6/23/2001	t	273	0	2025-03-03
+376	Adri	6391069663	Adrianalzes	6/11/2004	t	0	0	2025-03-03
+377	Adri	6391069663	Adrianalzes	6/11/2004	t	0	0	2025-03-03
+378	Ana	2221089518		6/9/2004	t	0	0	2025-03-03
+379	Adri	6391069663	Adrianalzes	6/11/2004	t	0	0	2025-03-03
+380	Scarlett	2214132106	scarlettav	3/25/1997	t	0	0	2025-03-03
+381	Anny Tablero 	7821474713	annytablero	10/8/1997	t	0	0	2025-03-03
+382	Mark 	2223445301	dibujosfeos.inc	3/13/1998	t	0	0	2025-03-03
+383	Adri	6391069663	Adrianalzes	6/11/2004	t	0	0	2025-03-03
+384	Adri	6391069663	Adrianalzes	6/11/2004	t	0	0	2025-03-03
+385	Patricia Rangel	4731193290	@patiipami	3/23/1993	f	203	0	2025-03-03
+386	Paulina Probst	1764263977		3/8/2001	t	0	2	2025-03-03
+387	Hannah Seita	2202456194		9/16/2005	t	386	0	2025-03-03
+388	Karla Flores 	2211464177	@karlafvcello	9/21/2001	t	178	0	2025-03-03
+389	Karla Flores 	2211464177	@karlafvcello	9/12/2001	t	178	0	2025-03-03
+390	Hannah Seita	2202456194		9/16/2005	t	386	0	2025-03-03
+391	Adri	6391069663	Adrianalzes	6/11/2004	t	0	0	2025-03-03
+392	Josselyn 	2221471716		4/23/2002	t	0	0	2025-03-03
+393	Josselyn 	2221471716		4/23/2002	t	0	0	2025-03-03
+394	Adri	6391069663	Adrianalzes	6/11/2004	t	0	0	2025-03-03
+395	Rafael Salguero Rivera	7712005369	Rafasalgriv		t	20	0	2025-03-03
+396	Adri	6391069663	Adrianalzes	6/11/2004	t	0	0	2025-03-03
+397	Alan	5529454183		2/27/2025	t	11	0	2025-03-03
+398	Daniella	5531486111	daniella.go	4/6/2000	t	12	0	2025-03-03
+399	Gigi	4271165985	gigiromanortega	12/6/2025	t	12	0	2025-03-03
+400	paulina	9211199628	paulinacomett	5/15/2000	t	12	0	2025-03-03
+401	paulina	9211199628	paulinacomett	5/15/2000	t	12	0	2025-03-03
+402	Gigi	4271165985	gigiromanortega	12/6/2025	t	12	0	2025-03-03
+403	Jesus	5549124079		12/5/1998	t	203	0	2025-03-03
+404	May	5623765965	maynativas	8/5/1991	t	203	0	2025-03-03
+405	Pilar	2227062458	Pilar	6/30/1994	t	203	0	2025-03-03
+406	Valeria de LeÃ³n 	9611441694	Valedeleonr	5/21/1996	t	203	0	2025-03-03
+407	Fabiola 	9211818646	espejodelmundo	4/24/1996	t	203	0	2025-03-03
+408	Daphne	2225327995	Daphneesparza	8/19/1993	t	203	0	2025-03-03
+409	Ruben	4772902646	@rubenolveram	4/23/1992	f	203	0	2025-03-03
+410	Santiago GÃ³mez 	5538512749	@muerte_en_sanborns	3/13/1997	t	203	0	2025-03-03
+411	Alfredo	2226637640			t	203	0	2025-03-03
+412	Carlos	2226080471	203	2/3/1989	t	203	0	2025-03-03
+413	Juan Marco Rivera	8111950268		8/20/1988	f	203	0	2025-03-03
+414	Violeta GuillÃ©n 	9612331769		2/1/1997	t	203	0	2025-03-03
+415	Violeta GuillÃ©n 	9612331769		2/28/1997	t	203	0	2025-03-03
+416	Daphne	2225327995	Daphneesparza	8/19/1993	t	203	0	2025-03-03
+417	Juan Marco Rivera	8111950268		8/20/1988	f	203	0	2025-03-03
+418	Carlos	2226080471	203	2/3/1989	t	203	0	2025-03-03
+419	Eric	5540582506		4/5/1987	t	1	0	2025-03-03
+420	Fabiola 	9211818646	espejodelmundo	4/24/1996	t	203	0	2025-03-03
+421	Valeria de LeÃ³n 	9611441694	Valedeleonr	5/21/1996	t	203	0	2025-03-03
+422	May	5623765965	maynativas	8/5/1991	t	203	0	2025-03-03
+423	Rut LomeÃ±a	2226803262		7/22/1993	f	2	0	2025-03-05
+424	Mario Barquero	2217705343	@mario_barquero	9/29/1999	t	0	0	2025-03-07
+425	Sebastian Jara	5539858121		12/1/2000	f	33	0	2025-03-07
+426	Alejandra 	7711898826		4/8/1991	t	5	0	2025-03-08
+427	Ruth Edith 	9631037687	@lacotzitia	7/26/2025	t	0	1	2025-03-08
+428	Anel Carrillo 	9631648044		2/13/2025	t	427	0	2025-03-08
+429	Fernando Escalante 	2226951944		7/13/1999	t	0	0	2025-03-08
+430	Mario Barquero	2217705343	@mario_barquero	9/29/1999	t	0	0	2025-03-08
+431	Diego Buenfil	9993570037	Diego_Buenfil 	3/21/2002	t	0	0	2025-03-16
+432	Mauricio Gener	2201751896	mau_gener	8/16/2001	t	0	0	2025-03-16
+\.
+
+
+                                                                                                                                                                                                                                                                                                                                                           3447.dat                                                                                            0000600 0004000 0002000 00000002440 14771153741 0014265 0                                                                                                    ustar 00postgres                        postgres                        0000000 0000000                                                                                                                                                                        1	Molletes Sencillos	70.00	Alimentos	\N
+2	Molletes Ingrediente	135.00	Alimentos	\N
+3	Tostadas Sencillas	85.00	Alimentos	\N
+4	Tostada Ingrediente	115.00	Alimentos	\N
+5	Nachos Sencillos	135.00	Alimentos	\N
+6	Nachos Ingrediente	175.00	Alimentos	\N
+7	ChicharrÃ­n Sencillo	68.04	Alimentos	\N
+8	ChicharrÃ­n Ingrediente	100.00	Alimentos	\N
+9	Chileatole	60.00	Alimentos	\N
+10	Cacahuates	90.00	Alimentos	\N
+11	Churritos	65.00	Alimentos	\N
+12	Palomitas	55.00	Alimentos	\N
+13	Natural .5 L	60.00	Pulque	\N
+14	Natural 1 L	100.00	Pulque	\N
+15	Natural 1.5 L	140.00	Pulque	\N
+16	Natural 5 L	425.00	Pulque	\N
+17	Temporada .5 L	70.00	Pulque	\N
+18	Temporada 1 L	125.00	Pulque	\N
+19	Temporada 1.5 L	175.00	Pulque	\N
+20	Temporada 5 L	535.00	Pulque	\N
+21	A la Carta .5 L	80.00	Pulque	\N
+22	A la Carta 1 L	145.00	Pulque	\N
+23	A la Carta 1.5 L	205.00	Pulque	\N
+24	A la Carta 5 L	640.00	Pulque	\N
+25	Especial .5 L	90.00	Pulque	\N
+26	Especial 1 L	160.00	Pulque	\N
+27	Especial 1.5 L	225.00	Pulque	\N
+28	Especial 5 L	710.00	Pulque	\N
+29	SangrÃ­a	75.00	Otras Bebidas	\N
+30	Licor CafÃ©	50.00	Otras Bebidas	\N
+31	Agua Sabor	55.00	Otras Bebidas	\N
+32	Copa Vino	120.00	Otras Bebidas	\N
+33	CafÃ©	85.00	Otras Bebidas	\N
+34	TÃ©	70.00	Otras Bebidas	\N
+35	Mezcal de la Casa	105.00	Otras Bebidas	\N
+36	Mezcal Extravagante	120.00	Otras Bebidas	\N
+\.
+
+
+                                                                                                                                                                                                                                restore.sql                                                                                         0000600 0004000 0002000 00000041007 14771153741 0015400 0                                                                                                    ustar 00postgres                        postgres                        0000000 0000000                                                                                                                                                                        --
+-- NOTE:
+--
+-- File paths need to be edited. Search for $$PATH$$ and
+-- replace it with the path to the directory containing
+-- the extracted data files.
+--
+--
+-- PostgreSQL database dump
+--
+
+-- Dumped from database version 17.4 (Debian 17.4-1.pgdg120+2)
+-- Dumped by pg_dump version 17.4
+
+SET statement_timeout = 0;
+SET lock_timeout = 0;
+SET idle_in_transaction_session_timeout = 0;
+SET transaction_timeout = 0;
+SET client_encoding = 'UTF8';
+SET standard_conforming_strings = on;
+SELECT pg_catalog.set_config('search_path', '', false);
+SET check_function_bodies = false;
+SET xmloption = content;
+SET client_min_messages = warning;
+SET row_security = off;
+
+DROP DATABASE regente;
+--
+-- Name: regente; Type: DATABASE; Schema: -; Owner: root
+--
+
+CREATE DATABASE regente WITH TEMPLATE = template0 ENCODING = 'UTF8' LOCALE_PROVIDER = libc LOCALE = 'en_US.utf8';
+
+
+ALTER DATABASE regente OWNER TO root;
+
+\connect regente
+
+SET statement_timeout = 0;
+SET lock_timeout = 0;
+SET idle_in_transaction_session_timeout = 0;
+SET transaction_timeout = 0;
+SET client_encoding = 'UTF8';
+SET standard_conforming_strings = on;
+SELECT pg_catalog.set_config('search_path', '', false);
+SET check_function_bodies = false;
+SET xmloption = content;
+SET client_min_messages = warning;
+SET row_security = off;
+
+SET default_tablespace = '';
+
+SET default_table_access_method = heap;
+
+--
+-- Name: detalles_orden; Type: TABLE; Schema: public; Owner: root
+--
+
+CREATE TABLE public.detalles_orden (
+    id integer NOT NULL,
+    orden_id integer NOT NULL,
+    producto_id integer NOT NULL,
+    cantidad integer DEFAULT 1,
+    precio_unitario numeric(10,2) NOT NULL,
+    empleado_id integer NOT NULL
+);
+
+
+ALTER TABLE public.detalles_orden OWNER TO root;
+
+--
+-- Name: detalles_orden_id_seq; Type: SEQUENCE; Schema: public; Owner: root
+--
+
+CREATE SEQUENCE public.detalles_orden_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.detalles_orden_id_seq OWNER TO root;
+
+--
+-- Name: detalles_orden_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: root
+--
+
+ALTER SEQUENCE public.detalles_orden_id_seq OWNED BY public.detalles_orden.id;
+
+
+--
+-- Name: empleados; Type: TABLE; Schema: public; Owner: root
+--
+
+CREATE TABLE public.empleados (
+    id integer NOT NULL,
+    nombre character varying(255) NOT NULL,
+    usuario character varying(50) NOT NULL,
+    password text NOT NULL,
+    rol text NOT NULL,
+    fecha_ingreso date DEFAULT CURRENT_DATE,
+    activo boolean DEFAULT true,
+    CONSTRAINT empleados_rol_check CHECK ((rol = ANY (ARRAY['admin'::text, 'mesero'::text, 'cocinero'::text, 'financiero'::text])))
+);
+
+
+ALTER TABLE public.empleados OWNER TO root;
+
+--
+-- Name: empleados_id_seq; Type: SEQUENCE; Schema: public; Owner: root
+--
+
+CREATE SEQUENCE public.empleados_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.empleados_id_seq OWNER TO root;
+
+--
+-- Name: empleados_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: root
+--
+
+ALTER SEQUENCE public.empleados_id_seq OWNED BY public.empleados.id;
+
+
+--
+-- Name: grados; Type: TABLE; Schema: public; Owner: root
+--
+
+CREATE TABLE public.grados (
+    id integer NOT NULL,
+    nombre text NOT NULL,
+    descuento numeric(5,2) NOT NULL
+);
+
+
+ALTER TABLE public.grados OWNER TO root;
+
+--
+-- Name: grados_id_seq; Type: SEQUENCE; Schema: public; Owner: root
+--
+
+CREATE SEQUENCE public.grados_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.grados_id_seq OWNER TO root;
+
+--
+-- Name: grados_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: root
+--
+
+ALTER SEQUENCE public.grados_id_seq OWNED BY public.grados.id;
+
+
+--
+-- Name: ordenes; Type: TABLE; Schema: public; Owner: root
+--
+
+CREATE TABLE public.ordenes (
+    orden_id integer NOT NULL,
+    preso_id integer,
+    nombre_cliente character varying(255),
+    total numeric(10,2) NOT NULL,
+    fecha timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    estado text DEFAULT 'abierta'::text,
+    empleado_id integer NOT NULL,
+    total_bruto numeric(10,2),
+    CONSTRAINT ordenes_estado_check CHECK ((estado = ANY (ARRAY['abierta'::text, 'cerrada'::text])))
+);
+
+
+ALTER TABLE public.ordenes OWNER TO root;
+
+--
+-- Name: ordenes_orden_id_seq; Type: SEQUENCE; Schema: public; Owner: root
+--
+
+CREATE SEQUENCE public.ordenes_orden_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.ordenes_orden_id_seq OWNER TO root;
+
+--
+-- Name: ordenes_orden_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: root
+--
+
+ALTER SEQUENCE public.ordenes_orden_id_seq OWNED BY public.ordenes.orden_id;
+
+
+--
+-- Name: pagos; Type: TABLE; Schema: public; Owner: root
+--
+
+CREATE TABLE public.pagos (
+    id integer NOT NULL,
+    orden_id integer,
+    metodo text NOT NULL,
+    monto numeric(10,2) NOT NULL,
+    fecha timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    empleado_id integer,
+    CONSTRAINT pagos_metodo_check CHECK ((metodo = ANY (ARRAY['efectivo'::text, 'tarjeta'::text, 'transferencia'::text, 'otro'::text])))
+);
+
+
+ALTER TABLE public.pagos OWNER TO root;
+
+--
+-- Name: pagos_id_seq; Type: SEQUENCE; Schema: public; Owner: root
+--
+
+CREATE SEQUENCE public.pagos_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.pagos_id_seq OWNER TO root;
+
+--
+-- Name: pagos_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: root
+--
+
+ALTER SEQUENCE public.pagos_id_seq OWNED BY public.pagos.id;
+
+
+--
+-- Name: preso_grado; Type: TABLE; Schema: public; Owner: root
+--
+
+CREATE TABLE public.preso_grado (
+    id integer NOT NULL,
+    preso_id integer,
+    grado_id integer,
+    fecha_otorgado date DEFAULT CURRENT_DATE
+);
+
+
+ALTER TABLE public.preso_grado OWNER TO root;
+
+--
+-- Name: preso_grado_id_seq; Type: SEQUENCE; Schema: public; Owner: root
+--
+
+CREATE SEQUENCE public.preso_grado_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.preso_grado_id_seq OWNER TO root;
+
+--
+-- Name: preso_grado_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: root
+--
+
+ALTER SEQUENCE public.preso_grado_id_seq OWNED BY public.preso_grado.id;
+
+
+--
+-- Name: presos; Type: TABLE; Schema: public; Owner: root
+--
+
+CREATE TABLE public.presos (
+    id integer NOT NULL,
+    reg_name text NOT NULL,
+    res_tel text NOT NULL,
+    igname text,
+    bday text NOT NULL,
+    mkt boolean NOT NULL,
+    cellmate integer NOT NULL,
+    referidos integer DEFAULT 0,
+    fecha_registro date DEFAULT CURRENT_DATE
+);
+
+
+ALTER TABLE public.presos OWNER TO root;
+
+--
+-- Name: presos_id_seq; Type: SEQUENCE; Schema: public; Owner: root
+--
+
+CREATE SEQUENCE public.presos_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.presos_id_seq OWNER TO root;
+
+--
+-- Name: presos_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: root
+--
+
+ALTER SEQUENCE public.presos_id_seq OWNED BY public.presos.id;
+
+
+--
+-- Name: productos; Type: TABLE; Schema: public; Owner: root
+--
+
+CREATE TABLE public.productos (
+    id integer NOT NULL,
+    nombre character varying(255) NOT NULL,
+    precio numeric(10,2) NOT NULL,
+    categoria character varying(50),
+    costo numeric(10,2)
+);
+
+
+ALTER TABLE public.productos OWNER TO root;
+
+--
+-- Name: productos_id_seq; Type: SEQUENCE; Schema: public; Owner: root
+--
+
+CREATE SEQUENCE public.productos_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.productos_id_seq OWNER TO root;
+
+--
+-- Name: productos_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: root
+--
+
+ALTER SEQUENCE public.productos_id_seq OWNED BY public.productos.id;
+
+
+--
+-- Name: detalles_orden id; Type: DEFAULT; Schema: public; Owner: root
+--
+
+ALTER TABLE ONLY public.detalles_orden ALTER COLUMN id SET DEFAULT nextval('public.detalles_orden_id_seq'::regclass);
+
+
+--
+-- Name: empleados id; Type: DEFAULT; Schema: public; Owner: root
+--
+
+ALTER TABLE ONLY public.empleados ALTER COLUMN id SET DEFAULT nextval('public.empleados_id_seq'::regclass);
+
+
+--
+-- Name: grados id; Type: DEFAULT; Schema: public; Owner: root
+--
+
+ALTER TABLE ONLY public.grados ALTER COLUMN id SET DEFAULT nextval('public.grados_id_seq'::regclass);
+
+
+--
+-- Name: ordenes orden_id; Type: DEFAULT; Schema: public; Owner: root
+--
+
+ALTER TABLE ONLY public.ordenes ALTER COLUMN orden_id SET DEFAULT nextval('public.ordenes_orden_id_seq'::regclass);
+
+
+--
+-- Name: pagos id; Type: DEFAULT; Schema: public; Owner: root
+--
+
+ALTER TABLE ONLY public.pagos ALTER COLUMN id SET DEFAULT nextval('public.pagos_id_seq'::regclass);
+
+
+--
+-- Name: preso_grado id; Type: DEFAULT; Schema: public; Owner: root
+--
+
+ALTER TABLE ONLY public.preso_grado ALTER COLUMN id SET DEFAULT nextval('public.preso_grado_id_seq'::regclass);
+
+
+--
+-- Name: presos id; Type: DEFAULT; Schema: public; Owner: root
+--
+
+ALTER TABLE ONLY public.presos ALTER COLUMN id SET DEFAULT nextval('public.presos_id_seq'::regclass);
+
+
+--
+-- Name: productos id; Type: DEFAULT; Schema: public; Owner: root
+--
+
+ALTER TABLE ONLY public.productos ALTER COLUMN id SET DEFAULT nextval('public.productos_id_seq'::regclass);
+
+
+--
+-- Data for Name: detalles_orden; Type: TABLE DATA; Schema: public; Owner: root
+--
+
+COPY public.detalles_orden (id, orden_id, producto_id, cantidad, precio_unitario, empleado_id) FROM stdin;
+\.
+COPY public.detalles_orden (id, orden_id, producto_id, cantidad, precio_unitario, empleado_id) FROM '$$PATH$$/3439.dat';
+
+--
+-- Data for Name: empleados; Type: TABLE DATA; Schema: public; Owner: root
+--
+
+COPY public.empleados (id, nombre, usuario, password, rol, fecha_ingreso, activo) FROM stdin;
+\.
+COPY public.empleados (id, nombre, usuario, password, rol, fecha_ingreso, activo) FROM '$$PATH$$/3441.dat';
+
+--
+-- Data for Name: grados; Type: TABLE DATA; Schema: public; Owner: root
+--
+
+COPY public.grados (id, nombre, descuento) FROM stdin;
+\.
+COPY public.grados (id, nombre, descuento) FROM '$$PATH$$/3450.dat';
+
+--
+-- Data for Name: ordenes; Type: TABLE DATA; Schema: public; Owner: root
+--
+
+COPY public.ordenes (orden_id, preso_id, nombre_cliente, total, fecha, estado, empleado_id, total_bruto) FROM stdin;
+\.
+COPY public.ordenes (orden_id, preso_id, nombre_cliente, total, fecha, estado, empleado_id, total_bruto) FROM '$$PATH$$/3443.dat';
+
+--
+-- Data for Name: pagos; Type: TABLE DATA; Schema: public; Owner: root
+--
+
+COPY public.pagos (id, orden_id, metodo, monto, fecha, empleado_id) FROM stdin;
+\.
+COPY public.pagos (id, orden_id, metodo, monto, fecha, empleado_id) FROM '$$PATH$$/3454.dat';
+
+--
+-- Data for Name: preso_grado; Type: TABLE DATA; Schema: public; Owner: root
+--
+
+COPY public.preso_grado (id, preso_id, grado_id, fecha_otorgado) FROM stdin;
+\.
+COPY public.preso_grado (id, preso_id, grado_id, fecha_otorgado) FROM '$$PATH$$/3452.dat';
+
+--
+-- Data for Name: presos; Type: TABLE DATA; Schema: public; Owner: root
+--
+
+COPY public.presos (id, reg_name, res_tel, igname, bday, mkt, cellmate, referidos, fecha_registro) FROM stdin;
+\.
+COPY public.presos (id, reg_name, res_tel, igname, bday, mkt, cellmate, referidos, fecha_registro) FROM '$$PATH$$/3445.dat';
+
+--
+-- Data for Name: productos; Type: TABLE DATA; Schema: public; Owner: root
+--
+
+COPY public.productos (id, nombre, precio, categoria, costo) FROM stdin;
+\.
+COPY public.productos (id, nombre, precio, categoria, costo) FROM '$$PATH$$/3447.dat';
+
+--
+-- Name: detalles_orden_id_seq; Type: SEQUENCE SET; Schema: public; Owner: root
+--
+
+SELECT pg_catalog.setval('public.detalles_orden_id_seq', 42, true);
+
+
+--
+-- Name: empleados_id_seq; Type: SEQUENCE SET; Schema: public; Owner: root
+--
+
+SELECT pg_catalog.setval('public.empleados_id_seq', 3, true);
+
+
+--
+-- Name: grados_id_seq; Type: SEQUENCE SET; Schema: public; Owner: root
+--
+
+SELECT pg_catalog.setval('public.grados_id_seq', 1, true);
+
+
+--
+-- Name: ordenes_orden_id_seq; Type: SEQUENCE SET; Schema: public; Owner: root
+--
+
+SELECT pg_catalog.setval('public.ordenes_orden_id_seq', 42, true);
+
+
+--
+-- Name: pagos_id_seq; Type: SEQUENCE SET; Schema: public; Owner: root
+--
+
+SELECT pg_catalog.setval('public.pagos_id_seq', 1, false);
+
+
+--
+-- Name: preso_grado_id_seq; Type: SEQUENCE SET; Schema: public; Owner: root
+--
+
+SELECT pg_catalog.setval('public.preso_grado_id_seq', 1, true);
+
+
+--
+-- Name: presos_id_seq; Type: SEQUENCE SET; Schema: public; Owner: root
+--
+
+SELECT pg_catalog.setval('public.presos_id_seq', 1, false);
+
+
+--
+-- Name: productos_id_seq; Type: SEQUENCE SET; Schema: public; Owner: root
+--
+
+SELECT pg_catalog.setval('public.productos_id_seq', 1, false);
+
+
+--
+-- Name: detalles_orden detalles_orden_pkey; Type: CONSTRAINT; Schema: public; Owner: root
+--
+
+ALTER TABLE ONLY public.detalles_orden
+    ADD CONSTRAINT detalles_orden_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: empleados empleados_pkey; Type: CONSTRAINT; Schema: public; Owner: root
+--
+
+ALTER TABLE ONLY public.empleados
+    ADD CONSTRAINT empleados_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: empleados empleados_usuario_key; Type: CONSTRAINT; Schema: public; Owner: root
+--
+
+ALTER TABLE ONLY public.empleados
+    ADD CONSTRAINT empleados_usuario_key UNIQUE (usuario);
+
+
+--
+-- Name: grados grados_nombre_key; Type: CONSTRAINT; Schema: public; Owner: root
+--
+
+ALTER TABLE ONLY public.grados
+    ADD CONSTRAINT grados_nombre_key UNIQUE (nombre);
+
+
+--
+-- Name: grados grados_pkey; Type: CONSTRAINT; Schema: public; Owner: root
+--
+
+ALTER TABLE ONLY public.grados
+    ADD CONSTRAINT grados_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: ordenes ordenes_pkey; Type: CONSTRAINT; Schema: public; Owner: root
+--
+
+ALTER TABLE ONLY public.ordenes
+    ADD CONSTRAINT ordenes_pkey PRIMARY KEY (orden_id);
+
+
+--
+-- Name: pagos pagos_pkey; Type: CONSTRAINT; Schema: public; Owner: root
+--
+
+ALTER TABLE ONLY public.pagos
+    ADD CONSTRAINT pagos_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: preso_grado preso_grado_pkey; Type: CONSTRAINT; Schema: public; Owner: root
+--
+
+ALTER TABLE ONLY public.preso_grado
+    ADD CONSTRAINT preso_grado_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: presos presos_pkey; Type: CONSTRAINT; Schema: public; Owner: root
+--
+
+ALTER TABLE ONLY public.presos
+    ADD CONSTRAINT presos_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: productos productos_pkey; Type: CONSTRAINT; Schema: public; Owner: root
+--
+
+ALTER TABLE ONLY public.productos
+    ADD CONSTRAINT productos_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: detalles_orden detalles_orden_empleado_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: root
+--
+
+ALTER TABLE ONLY public.detalles_orden
+    ADD CONSTRAINT detalles_orden_empleado_id_fkey FOREIGN KEY (empleado_id) REFERENCES public.empleados(id) ON DELETE CASCADE;
+
+
+--
+-- Name: detalles_orden detalles_orden_orden_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: root
+--
+
+ALTER TABLE ONLY public.detalles_orden
+    ADD CONSTRAINT detalles_orden_orden_id_fkey FOREIGN KEY (orden_id) REFERENCES public.ordenes(orden_id) ON DELETE CASCADE;
+
+
+--
+-- Name: detalles_orden detalles_orden_producto_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: root
+--
+
+ALTER TABLE ONLY public.detalles_orden
+    ADD CONSTRAINT detalles_orden_producto_id_fkey FOREIGN KEY (producto_id) REFERENCES public.productos(id) ON DELETE CASCADE;
+
+
+--
+-- Name: ordenes ordenes_empleado_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: root
+--
+
+ALTER TABLE ONLY public.ordenes
+    ADD CONSTRAINT ordenes_empleado_id_fkey FOREIGN KEY (empleado_id) REFERENCES public.empleados(id) ON DELETE CASCADE;
+
+
+--
+-- Name: ordenes ordenes_preso_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: root
+--
+
+ALTER TABLE ONLY public.ordenes
+    ADD CONSTRAINT ordenes_preso_id_fkey FOREIGN KEY (preso_id) REFERENCES public.presos(id) ON DELETE SET NULL;
+
+
+--
+-- Name: pagos pagos_empleado_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: root
+--
+
+ALTER TABLE ONLY public.pagos
+    ADD CONSTRAINT pagos_empleado_id_fkey FOREIGN KEY (empleado_id) REFERENCES public.empleados(id);
+
+
+--
+-- Name: pagos pagos_orden_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: root
+--
+
+ALTER TABLE ONLY public.pagos
+    ADD CONSTRAINT pagos_orden_id_fkey FOREIGN KEY (orden_id) REFERENCES public.ordenes(orden_id) ON DELETE CASCADE;
+
+
+--
+-- Name: preso_grado preso_grado_grado_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: root
+--
+
+ALTER TABLE ONLY public.preso_grado
+    ADD CONSTRAINT preso_grado_grado_id_fkey FOREIGN KEY (grado_id) REFERENCES public.grados(id) ON DELETE CASCADE;
+
+
+--
+-- Name: preso_grado preso_grado_preso_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: root
+--
+
+ALTER TABLE ONLY public.preso_grado
+    ADD CONSTRAINT preso_grado_preso_id_fkey FOREIGN KEY (preso_id) REFERENCES public.presos(id) ON DELETE CASCADE;
+
+
+--
+-- PostgreSQL database dump complete
+--
+
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         

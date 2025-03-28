@@ -22,7 +22,12 @@ export const getOpenOrdersWithPayments = async () => {
         SELECT COALESCE(SUM(monto), 0)
         FROM pagos
         WHERE orden_id = o.orden_id
-      ) AS total_pagado
+      ) AS total_pagado,
+      (
+        SELECT COALESCE(SUM(propina), 0)
+        FROM pagos
+        WHERE orden_id = o.orden_id
+      ) AS total_propina
     FROM ordenes o
     LEFT JOIN presos p ON o.preso_id = p.id
     WHERE o.estado = 'abierta'
@@ -32,14 +37,14 @@ export const getOpenOrdersWithPayments = async () => {
   return result.rows.map((orden) => {
     const diferencia = orden.total_pagado - orden.total_calculado;
     let estado_pago = "pendiente";
-    if (diferencia > 0) estado_pago = "propina";
-    else if (diferencia === 0) estado_pago = "pagado";
+    if (diferencia >= 0) estado_pago = "pagado";
 
     return {
       orden_id: orden.orden_id,
       cliente: orden.cliente,
       total: parseFloat(orden.total_calculado),
       total_pagado: parseFloat(orden.total_pagado),
+      total_propina: parseFloat(orden.total_propina),
       diferencia: parseFloat(diferencia.toFixed(2)),
       estado_pago,
     };
@@ -188,27 +193,35 @@ export const closeOrder = async (orden_id) => {
 
     // Calcular total con descuento
     const total_con_descuento = total_bruto * (1 - descuento_aplicable / 100);
-    const total_pagado = await getTotalPagado(orden_id);
-    
-    if (total_pagado < total_con_descuento) {
-      throw new Error("La orden aún no ha sido completamente pagada.");
-    }
-    
 
-    // Actualizar la orden con ambos totales y cerrar
-    const result = await client.query(
-      `UPDATE ordenes
-       SET total = $1,
-           total_bruto = $2,
-           estado = 'cerrada'
-       WHERE orden_id = $3
-       RETURNING *`,
-      [total_con_descuento.toFixed(2), total_bruto.toFixed(2), orden_id]
+    // Obtener pagos realizados
+    const pagos = await getTotalPagado(orden_id);
+    
+    // Verificar si se ha pagado lo suficiente
+    if (pagos.monto < total_con_descuento) {
+      throw new Error(`Pago insuficiente. Total: $${total_con_descuento.toFixed(2)}, Pagado: $${pagos.monto.toFixed(2)}`);
+    }
+
+    // Actualizar orden
+    await client.query(
+      `UPDATE ordenes 
+       SET estado = 'cerrada', 
+           total = $1, 
+           total_bruto = $2
+       WHERE orden_id = $3`,
+      [total_con_descuento, total_bruto, orden_id]
     );
 
     await client.query("COMMIT");
-    return result.rows[0];
-
+    return {
+      total_bruto,
+      total_neto: total_con_descuento,
+      descuento: total_bruto - total_con_descuento,
+      pagado: pagos.monto,
+      propina: pagos.propina,
+      propina_calculada: pagos.monto - total_con_descuento,
+      estado: "cerrada"
+    };
   } catch (err) {
     await client.query("ROLLBACK");
     throw err;
@@ -291,17 +304,19 @@ export const getOrderResumen = async (orden_id) => {
 
   // 3. Obtener pagos
   const pagosQuery = await pool.query(`
-    SELECT COALESCE(SUM(monto), 0) AS total_pagado
+    SELECT 
+      COALESCE(SUM(monto), 0) AS total_pagado,
+      COALESCE(SUM(propina), 0) AS total_propina
     FROM pagos
     WHERE orden_id = $1
   `, [orden_id]);
 
   const total_pagado = parseFloat(pagosQuery.rows[0].total_pagado);
+  const total_propina = parseFloat(pagosQuery.rows[0].total_propina);
   const diferencia = parseFloat((total_pagado - total).toFixed(2));
 
   let estado_pago = "pendiente";
-  if (diferencia > 0) estado_pago = "propina";
-  else if (diferencia === 0) estado_pago = "pagado";
+  if (diferencia >= 0) estado_pago = "pagado";
 
   return {
     orden_id,
@@ -309,6 +324,7 @@ export const getOrderResumen = async (orden_id) => {
     productos,
     total: parseFloat(total.toFixed(2)),
     total_pagado,
+    total_propina,
     diferencia,
     estado_pago
   };

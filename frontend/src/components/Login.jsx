@@ -10,7 +10,6 @@ export default function Login() {
     setError("");
 
     try {
-      console.log("testing");
       const res = await fetch("http://localhost:3000/employees/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
