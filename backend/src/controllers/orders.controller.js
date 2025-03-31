@@ -38,6 +38,14 @@ export const addOrder = async (req, res) => {
     return res.status(400).json({ error: "Debe enviarse 'preso_id' o 'nombre_cliente'" });
   }
 
+  // Validar que cada producto tenga la información correcta
+  for (const producto of productos) {
+    if (!producto.producto_id || !producto.cantidad) {
+      return res.status(400).json({ error: "Cada producto debe tener producto_id y cantidad" });
+    }
+    // sabor_id es opcional
+  }
+
   try {
     const newOrder = await createOrder({ preso_id, nombre_cliente, empleado_id, productos });
     res.status(201).json(newOrder);
@@ -62,6 +70,14 @@ export const addProducts = async (req, res) => {
 
   if (!productos || !empleado_id) {
     return res.status(400).json({ error: "Faltan datos: productos o empleado_id" });
+  }
+
+  // Validar que cada producto tenga la información correcta
+  for (const producto of productos) {
+    if (!producto.producto_id || !producto.cantidad) {
+      return res.status(400).json({ error: "Cada producto debe tener producto_id y cantidad" });
+    }
+    // sabor_id es opcional
   }
 
   try {

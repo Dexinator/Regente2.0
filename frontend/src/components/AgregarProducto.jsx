@@ -11,10 +11,40 @@ export default function AgregarProducto({ orden_id }) {
   const [cantidad, setCantidad] = useState(1);
   const [notas, setNotas] = useState("");
   const [enviando, setEnviando] = useState(false);
+  const [saboresDisponibles, setSaboresDisponibles] = useState([]);
+  const [saborSeleccionado, setSaborSeleccionado] = useState(null);
+  const [loadingSabores, setLoadingSabores] = useState(false);
 
   useEffect(() => {
     cargarProductos();
   }, []);
+
+  useEffect(() => {
+    if (productoSeleccionado) {
+      cargarSabores(productoSeleccionado.id);
+    } else {
+      setSaboresDisponibles([]);
+      setSaborSeleccionado(null);
+    }
+  }, [productoSeleccionado]);
+
+  const cargarSabores = async (productoId) => {
+    setLoadingSabores(true);
+    try {
+      const res = await fetch(`http://localhost:3000/products/sabores/producto/${productoId}`);
+      const data = await res.json();
+      
+      if (!res.ok) {
+        throw new Error(data.error || "Error al cargar sabores");
+      }
+      
+      setSaboresDisponibles(data);
+      setLoadingSabores(false);
+    } catch (error) {
+      console.error("Error cargando sabores:", error);
+      setLoadingSabores(false);
+    }
+  };
 
   const cargarProductos = async () => {
     setLoading(true);
@@ -71,12 +101,14 @@ export default function AgregarProducto({ orden_id }) {
     setProductoSeleccionado(producto);
     setCantidad(1);
     setNotas("");
+    setSaborSeleccionado(null);
   };
 
   const cancelarSeleccion = () => {
     setProductoSeleccionado(null);
     setCantidad(1);
     setNotas("");
+    setSaborSeleccionado(null);
   };
 
   const agregarProducto = async () => {
@@ -93,8 +125,9 @@ export default function AgregarProducto({ orden_id }) {
         body: JSON.stringify({
           producto_id: productoSeleccionado.id,
           cantidad,
+          sabor_id: saborSeleccionado ? saborSeleccionado.id : null,
           notas: notas.trim() || null,
-          precio: Number(productoSeleccionado.precio)
+          empleado_id: 1 // Temporal, después obtener del token o contexto
         })
       });
       
@@ -131,7 +164,6 @@ export default function AgregarProducto({ orden_id }) {
     );
   }
 
-  // Si hay un producto seleccionado, mostrar la pantalla de detalles
   if (productoSeleccionado) {
     return (
       <div className="bg-vino rounded-xl p-4 space-y-4">
@@ -147,6 +179,31 @@ export default function AgregarProducto({ orden_id }) {
         
         <p className="text-sm">{productoSeleccionado.descripcion}</p>
         <p className="text-amarillo font-bold">${productoSeleccionado.precio.toFixed(2)}</p>
+        
+        {loadingSabores ? (
+          <p className="text-sm text-gray-300">Cargando sabores...</p>
+        ) : saboresDisponibles.length > 0 ? (
+          <div className="pt-2">
+            <label className="block mb-2 font-bold">Selecciona un sabor:</label>
+            <select 
+              value={saborSeleccionado ? saborSeleccionado.id : ""}
+              onChange={(e) => {
+                const saborId = e.target.value;
+                const sabor = saboresDisponibles.find(s => s.id === parseInt(saborId));
+                setSaborSeleccionado(sabor || null);
+              }}
+              className="w-full px-4 py-2 rounded bg-negro text-white border border-amarillo"
+            >
+              <option value="">-- Selecciona un sabor --</option>
+              {saboresDisponibles.map(sabor => (
+                <option key={sabor.id} value={sabor.id}>
+                  {sabor.nombre} {sabor.categoria_nombre ? `(${sabor.categoria_nombre})` : ''}
+                  {sabor.precio_adicional > 0 ? ` +$${sabor.precio_adicional}` : ''}
+                </option>
+              ))}
+            </select>
+          </div>
+        ) : null}
         
         <div className="pt-4">
           <label className="block mb-2 font-bold">Cantidad:</label>
@@ -181,14 +238,26 @@ export default function AgregarProducto({ orden_id }) {
         <div className="flex justify-between items-center bg-negro/30 p-3 rounded mt-4">
           <div>
             <p className="text-sm">Total:</p>
-            <p className="text-lg font-bold">${(productoSeleccionado.precio * cantidad).toFixed(2)}</p>
+            <p className="text-lg font-bold">
+              ${(
+                productoSeleccionado.precio * cantidad + 
+                (saborSeleccionado ? (saborSeleccionado.precio_adicional || 0) * cantidad : 0)
+              ).toFixed(2)}
+            </p>
+            {saborSeleccionado && saborSeleccionado.precio_adicional > 0 && (
+              <p className="text-xs text-gray-300">
+                Incluye +${(saborSeleccionado.precio_adicional * cantidad).toFixed(2)} por sabor
+              </p>
+            )}
           </div>
           
           <button
             onClick={agregarProducto}
-            disabled={enviando}
+            disabled={enviando || (saboresDisponibles.length > 0 && !saborSeleccionado)}
             className={`bg-amarillo text-negro px-6 py-2 rounded-full font-bold ${
-              enviando ? "opacity-50" : "hover:bg-yellow-500"
+              enviando || (saboresDisponibles.length > 0 && !saborSeleccionado) 
+                ? "opacity-50 cursor-not-allowed" 
+                : "hover:bg-yellow-500"
             }`}
           >
             {enviando ? "Agregando..." : "Agregar a la Orden"}
@@ -200,7 +269,6 @@ export default function AgregarProducto({ orden_id }) {
 
   return (
     <div className="space-y-6">
-      {/* Barra de búsqueda */}
       <div className="relative">
         <input
           type="text"
@@ -212,7 +280,6 @@ export default function AgregarProducto({ orden_id }) {
         <span className="absolute left-3 top-3">🔍</span>
       </div>
       
-      {/* Categorías */}
       <div className="flex flex-wrap gap-2">
         {categorias.map((cat) => (
           <button
@@ -227,7 +294,6 @@ export default function AgregarProducto({ orden_id }) {
         ))}
       </div>
       
-      {/* Lista de productos */}
       <div className="space-y-3">
         {productosFiltrados().length === 0 ? (
           <p className="text-center text-gray-400 py-8">
@@ -257,7 +323,6 @@ export default function AgregarProducto({ orden_id }) {
         )}
       </div>
       
-      {/* Botón para volver */}
       <a 
         href={`/ordenes/${orden_id}`}
         className="block bg-vino text-white text-center py-3 px-6 rounded-full font-bold"

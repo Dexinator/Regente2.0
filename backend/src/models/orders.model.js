@@ -51,8 +51,6 @@ export const getOpenOrdersWithPayments = async () => {
   });
 };
 
-
-
 // Obtener una orden con sus productos
 export const getOrderWithDetails = async (orden_id) => {
   // Traemos los datos de la orden y el nombre del preso (si hay)
@@ -66,18 +64,21 @@ export const getOrderWithDetails = async (orden_id) => {
 
   if (orden.rows.length === 0) return null;
 
-  // Traemos los productos incluidos en la orden
+  // Traemos los productos incluidos en la orden con información de sabores
   const detalles = await pool.query(
-    `SELECT d.*, p.nombre AS nombre_producto, p.categoria
+    `SELECT d.*, p.nombre AS nombre_producto, p.categoria,
+            s.nombre AS sabor_nombre, s.precio_adicional AS sabor_precio_adicional,
+            cv.nombre AS sabor_categoria
      FROM detalles_orden d
      JOIN productos p ON d.producto_id = p.id
+     LEFT JOIN sabores s ON d.sabor_id = s.id
+     LEFT JOIN categorias_variantes cv ON s.categoria_id = cv.id
      WHERE d.orden_id = $1`,
     [orden_id]
   );
 
   return { ...orden.rows[0], detalles: detalles.rows };
 };
-
 
 // Crear nueva orden con detalles
 export const createOrder = async ({ preso_id, nombre_cliente, empleado_id, productos }) => {
@@ -100,7 +101,7 @@ export const createOrder = async ({ preso_id, nombre_cliente, empleado_id, produ
     const orden_id = ordenRes.rows[0].orden_id;
 
     // 2. Agregar productos
-    for (const { producto_id, cantidad } of productos) {
+    for (const { producto_id, cantidad, sabor_id } of productos) {
       const precioRes = await client.query(
         `SELECT precio FROM productos WHERE id = $1`,
         [producto_id]
@@ -111,10 +112,30 @@ export const createOrder = async ({ preso_id, nombre_cliente, empleado_id, produ
         throw new Error(`Producto con id ${producto_id} no encontrado`);
       }
 
+      // Verificar precio adicional del sabor si existe
+      let precio_adicional = 0;
+      if (sabor_id) {
+        const saborRes = await client.query(`
+          SELECT COALESCE(ps.precio_adicional, s.precio_adicional) as precio_adicional
+          FROM sabores s
+          LEFT JOIN producto_sabor ps ON s.id = ps.sabor_id AND ps.producto_id = $1
+          WHERE s.id = $2 AND s.disponible = true
+        `, [producto_id, sabor_id]);
+        
+        if (saborRes.rows.length === 0) {
+          throw new Error(`Sabor con id ${sabor_id} no encontrado o no disponible`);
+        }
+        
+        precio_adicional = parseFloat(saborRes.rows[0].precio_adicional || 0);
+      }
+
+      // Calcular precio final con posible adicional por sabor
+      const precio_final = precio_unitario + precio_adicional;
+
       await client.query(
-        `INSERT INTO detalles_orden (orden_id, producto_id, cantidad, precio_unitario, empleado_id)
-         VALUES ($1, $2, $3, $4, $5)`,
-        [orden_id, producto_id, cantidad, precio_unitario, empleado_id]
+        `INSERT INTO detalles_orden (orden_id, producto_id, cantidad, precio_unitario, empleado_id, sabor_id)
+         VALUES ($1, $2, $3, $4, $5, $6)`,
+        [orden_id, producto_id, cantidad, precio_final, empleado_id, sabor_id || null]
       );
     }
 
@@ -128,8 +149,6 @@ export const createOrder = async ({ preso_id, nombre_cliente, empleado_id, produ
     client.release();
   }
 };
-
-
 
 // Cerrar una orden con cálculo de descuento automático
 import { getTotalPagado } from "./pagos.model.js";
@@ -247,7 +266,7 @@ export const addProductsToOrder = async (orden_id, productos, empleado_id) => {
     }
 
     // Insertar cada producto
-    for (const { producto_id, cantidad } of productos) {
+    for (const { producto_id, cantidad, sabor_id } of productos) {
       const precioRes = await client.query(
         `SELECT precio FROM productos WHERE id = $1`,
         [producto_id]
@@ -257,10 +276,30 @@ export const addProductsToOrder = async (orden_id, productos, empleado_id) => {
         throw new Error(`Producto con id ${producto_id} no encontrado.`);
       }
 
+      // Verificar precio adicional del sabor si existe
+      let precio_adicional = 0;
+      if (sabor_id) {
+        const saborRes = await client.query(`
+          SELECT COALESCE(ps.precio_adicional, s.precio_adicional) as precio_adicional
+          FROM sabores s
+          LEFT JOIN producto_sabor ps ON s.id = ps.sabor_id AND ps.producto_id = $1
+          WHERE s.id = $2 AND s.disponible = true
+        `, [producto_id, sabor_id]);
+        
+        if (saborRes.rows.length === 0) {
+          throw new Error(`Sabor con id ${sabor_id} no encontrado o no disponible`);
+        }
+        
+        precio_adicional = parseFloat(saborRes.rows[0].precio_adicional || 0);
+      }
+
+      // Calcular precio final con posible adicional por sabor
+      const precio_final = precio_unitario + precio_adicional;
+
       await client.query(
-        `INSERT INTO detalles_orden (orden_id, producto_id, cantidad, precio_unitario, empleado_id)
-         VALUES ($1, $2, $3, $4, $5)`,
-        [orden_id, producto_id, cantidad, precio_unitario, empleado_id]
+        `INSERT INTO detalles_orden (orden_id, producto_id, cantidad, precio_unitario, empleado_id, sabor_id)
+         VALUES ($1, $2, $3, $4, $5, $6)`,
+        [orden_id, producto_id, cantidad, precio_final, empleado_id, sabor_id || null]
       );
     }
 

@@ -32,3 +32,68 @@ export const deleteProduct = async (id) => {
   const result = await pool.query("DELETE FROM productos WHERE id = $1 RETURNING *", [id]);
   return result.rows[0];
 };
+
+// Nuevas funciones para sabores
+
+export const getSaboresByProductoId = async (producto_id) => {
+  const result = await pool.query(`
+    SELECT s.id, s.nombre, s.descripcion, s.disponible, 
+           COALESCE(ps.precio_adicional, s.precio_adicional) as precio_adicional,
+           cv.nombre as categoria_nombre
+    FROM sabores s
+    JOIN producto_sabor ps ON s.id = ps.sabor_id
+    JOIN categorias_variantes cv ON s.categoria_id = cv.id
+    WHERE ps.producto_id = $1 AND s.disponible = true
+    ORDER BY cv.nombre, s.nombre
+  `, [producto_id]);
+  
+  return result.rows;
+};
+
+export const getSaboresByCategoria = async (categoria_producto) => {
+  const result = await pool.query(`
+    SELECT s.id, s.nombre, s.descripcion, s.disponible, s.precio_adicional,
+           cv.nombre as categoria_nombre, cv.id as categoria_id
+    FROM sabores s
+    JOIN categorias_variantes cv ON s.categoria_id = cv.id
+    JOIN categoria_producto_tipo_variante cptv ON cv.tipo = cptv.tipo_variante
+    WHERE cptv.categoria_producto = $1 AND s.disponible = true
+    ORDER BY cv.nombre, s.nombre
+  `, [categoria_producto]);
+  
+  return result.rows;
+};
+
+export const getAllCategoriaVariantes = async () => {
+  const result = await pool.query(`
+    SELECT cv.id, cv.nombre, cv.tipo, COUNT(s.id) as total_sabores
+    FROM categorias_variantes cv
+    LEFT JOIN sabores s ON cv.id = s.categoria_id
+    GROUP BY cv.id, cv.nombre, cv.tipo
+    ORDER BY cv.nombre
+  `);
+  
+  return result.rows;
+};
+
+export const getAllSabores = async () => {
+  const result = await pool.query(`
+    SELECT s.*, cv.nombre as categoria_nombre
+    FROM sabores s
+    JOIN categorias_variantes cv ON s.categoria_id = cv.id
+    ORDER BY cv.nombre, s.nombre
+  `);
+  
+  return result.rows;
+};
+
+export const getSaborById = async (id) => {
+  const result = await pool.query(`
+    SELECT s.*, cv.nombre as categoria_nombre
+    FROM sabores s
+    JOIN categorias_variantes cv ON s.categoria_id = cv.id
+    WHERE s.id = $1
+  `, [id]);
+  
+  return result.rows[0];
+};

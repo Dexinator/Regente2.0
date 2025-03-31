@@ -49,7 +49,8 @@ CREATE TABLE detalles_orden (
     producto_id INT NOT NULL REFERENCES productos(id) ON DELETE CASCADE, 
     cantidad INT DEFAULT 1, 
     precio_unitario NUMERIC(10,2) NOT NULL, 
-    empleado_id INT NOT NULL REFERENCES empleados(id) ON DELETE CASCADE -- ✅ Se agrega referencia a empleados
+    empleado_id INT NOT NULL REFERENCES empleados(id) ON DELETE CASCADE, -- ✅ Se agrega referencia a empleados
+    sabor_id INT REFERENCES sabores(id) ON DELETE SET NULL
 );
 
 CREATE TABLE public.pagos (
@@ -63,3 +64,41 @@ CREATE TABLE public.pagos (
     porcentaje_propina numeric(5,2),
     CONSTRAINT pagos_metodo_check CHECK ((metodo = ANY (ARRAY['efectivo'::text, 'tarjeta'::text, 'transferencia'::text, 'otro'::text])))
 );
+
+-- Nueva estructura para gestionar variantes/sabores de productos
+CREATE TABLE categorias_variantes (
+    id SERIAL PRIMARY KEY,
+    nombre VARCHAR(255) NOT NULL,
+    tipo VARCHAR(50) NOT NULL -- 'pulque', 'platillo', etc.
+);
+
+CREATE TABLE sabores (
+    id SERIAL PRIMARY KEY,
+    nombre VARCHAR(255) NOT NULL,
+    descripcion TEXT,
+    categoria_id INT REFERENCES categorias_variantes(id) ON DELETE CASCADE,
+    disponible BOOLEAN DEFAULT TRUE,
+    precio_adicional NUMERIC(10, 2) DEFAULT 0
+);
+
+CREATE TABLE producto_sabor (
+    id SERIAL PRIMARY KEY,
+    producto_id INT REFERENCES productos(id) ON DELETE CASCADE,
+    sabor_id INT REFERENCES sabores(id) ON DELETE CASCADE,
+    precio_adicional NUMERIC(10, 2) DEFAULT 0,
+    UNIQUE(producto_id, sabor_id)
+);
+
+-- Tabla de mapeo entre categorías de productos y tipos de variantes
+CREATE TABLE categoria_producto_tipo_variante (
+    id SERIAL PRIMARY KEY,
+    categoria_producto VARCHAR(50) NOT NULL, -- Debe coincidir con los valores en productos.categoria
+    tipo_variante VARCHAR(50) NOT NULL, -- Debe coincidir con los valores en categorias_variantes.tipo
+    UNIQUE(categoria_producto, tipo_variante)
+);
+
+-- Ejemplos de relaciones entre categorías y tipos de variantes
+-- INSERT INTO categoria_producto_tipo_variante (categoria_producto, tipo_variante) VALUES
+-- ('Tostadas', 'platillo'),
+-- ('Molletes', 'platillo'),
+-- ('Pulques', 'pulque');
