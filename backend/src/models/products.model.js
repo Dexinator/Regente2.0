@@ -48,7 +48,7 @@ export const getSaboresByProductoId = async (producto_id, tipo) => {
   
   // Usar los valores exactos de la base de datos
   if (tipo === 'sabor') {
-    query += " AND (cv.tipo = 'pulque_sabor' OR cv.tipo = 'ingrediente')";
+    query += " AND (cv.tipo = 'pulque_sabor' OR cv.tipo = 'ingredientes')";
   } else if (tipo === 'tamano') {
     query += " AND cv.tipo = 'tamaño'";
   }
