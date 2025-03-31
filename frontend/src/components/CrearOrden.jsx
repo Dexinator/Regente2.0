@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { getEmpleadoId } from "../utils/auth";
 
 export default function CrearOrden() {
     const [presos, setPresos] = useState([]);
@@ -177,103 +178,8 @@ export default function CrearOrden() {
         }
     };
 
-    // Después de seleccionar la cantidad, verificamos si tiene sabores
-    const continuarDespuesDeCantidad = async () => {
-        if (!productoSeleccionado) return;
 
-        const esPulque = productoSeleccionado.categoria === "Pulque";
-        console.log("¿Es pulque?", esPulque);
-        
-        // Para pulques, primero mostramos selección de sabores 
-        if (esPulque) {
-            const tieneSabores = await cargarSabores(productoSeleccionado.id);
-            console.log("¿Tiene sabores?", tieneSabores);
-            
-            if (tieneSabores) {
-                // Si tiene sabores, mostrar pantalla de selección de sabores
-                setProductoSeleccionado(productoSeleccionado);
-                setNotas(""); // Limpiar notas
-                setProductoSeleccionado(null);
-            } else {
-                // Si no tiene sabores (extraño para pulque), mostrar tamaños directamente
-                const tieneTamanos = await cargarTamanos(productoSeleccionado.id);
-                console.log("¿Tiene tamaños?", tieneTamanos);
-                
-                if (tieneTamanos) {
-                    setSeleccionTamano(true);
-                    setProductoSeleccionado(null);
-                } else {
-                    // Si no tiene sabores ni tamaños, mostrar notas
-                    setProductoEditandoNotas({...productoSeleccionado, sabor_id: null});
-                    setNotas("");
-                    setProductoSeleccionado(null);
-                }
-            }
-        } else {
-            // Para productos no-pulque, verificar si tiene sabores
-            const tieneSabores = await cargarSabores(productoSeleccionado.id);
-            console.log("¿Tiene sabores? (no-pulque)", tieneSabores);
-            
-            if (tieneSabores) {
-                // Si tiene sabores, mostrar selector
-                setProductoSeleccionado(productoSeleccionado);
-                setNotas(""); // Limpiar notas
-                setProductoSeleccionado(null);
-            } else {
-                // Si no tiene sabores, mostrar pantalla de notas primero
-                setProductoEditandoNotas({...productoSeleccionado, sabor_id: null});
-                setNotas("");
-                setProductoSeleccionado(null);
-            }
-        }
-    };
-
-    const agregarProductoConSabor = async (sabor) => {
-        console.log("Sabor seleccionado:", sabor);
-        if (!productoSeleccionado) return;
-        
-        const esPulque = productoSeleccionado.categoria === "Pulque";
-        
-        // Asegurarnos de que el precio adicional sea un número válido
-        const precioAdicionalSabor = parseFloat(sabor.precio_adicional) || 0;
-        
-        if (esPulque) {
-            // Para pulques, guardar sabor y mostrar tamaños
-            setSaborSeleccionado({
-                ...sabor,
-                precio_adicional: precioAdicionalSabor
-            });
-            
-            const tieneTamanos = await cargarTamanos(productoSeleccionado.id);
-            console.log("¿Tiene tamaños para este sabor?", tieneTamanos);
-            
-            if (tieneTamanos) {
-                setProductoSeleccionado(null);
-                setSeleccionTamano(true);
-            } else {
-                // Si no tiene tamaños, ir a notas
-                setProductoEditandoNotas({
-                    ...productoSeleccionado,
-                    sabor_id: sabor.id,
-                    sabor_nombre: sabor.nombre,
-                    sabor_categoria: sabor.categoria_nombre,
-                    precio_adicional: precioAdicionalSabor
-                });
-                setProductoSeleccionado(null);
-            }
-        } else {
-            // Para productos normales, ir a notas
-            setProductoEditandoNotas({
-                ...productoSeleccionado,
-                sabor_id: sabor.id,
-                sabor_nombre: sabor.nombre,
-                sabor_categoria: sabor.categoria_nombre,
-                precio_adicional: precioAdicionalSabor
-            });
-            setProductoSeleccionado(null);
-        }
-    };
-    
+ 
     // Nueva función para seleccionar tamaño
     const seleccionarTamano = (tamano) => {
         // Asegurarnos de que el precio adicional del tamaño sea un número válido
@@ -334,10 +240,7 @@ export default function CrearOrden() {
             tamano_nombre,
             tamano_precio 
         } = productoEditandoNotas;
-        
-        // Clave única para identificar este producto con este sabor, tamaño y notas
-        const uniqueKey = `${id}-${sabor_id || 0}-${tamano_id || 0}-${notas.trim() || ""}`;
-        
+              
         // Verificar si ya existe este producto con este sabor, tamaño y notas
         const yaExiste = productosSeleccionados.find(p => 
             p.id === id && 
@@ -436,7 +339,7 @@ export default function CrearOrden() {
                     preso_id: presoSeleccionado?.id,
                     nombre_cliente: presoSeleccionado ? presoSeleccionado.reg_name : nombreLibre,
                     total: productosSeleccionados.reduce((sum, prod) => sum + (prod.precio * prod.cantidad), 0),
-                    empleado_id: 1, // temporal, puedes leerlo del token luego
+                    empleado_id: getEmpleadoId(),
                     productos: productosSeleccionados.map(p => ({
                         producto_id: p.id,
                         cantidad: p.cantidad,

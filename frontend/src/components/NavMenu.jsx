@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { getUserRole, getUserName, decodeToken } from "../utils/auth";
 
 export default function NavMenu() {
   const [userRole, setUserRole] = useState(null);
@@ -7,22 +8,16 @@ export default function NavMenu() {
 
   useEffect(() => {
     // Obtener información del usuario del token
-    const token = localStorage.getItem("token");
-    if (token) {
-      try {
-        const payload = JSON.parse(atob(token.split(".")[1]));
-        setUserRole(payload.rol);
-        setUserName(payload.nombre || payload.usuario || "Usuario");
-        
-        // Redireccionar si está en una ruta no permitida
-        checkRoutePermission(payload.rol);
-      } catch (error) {
-        console.error("Error al decodificar el token", error);
-        // Si hay error con el token, redirigir al login
-        window.location.href = "/login";
-      }
+    const payload = decodeToken();
+    
+    if (payload) {
+      setUserRole(payload.rol);
+      setUserName(getUserName());
+      
+      // Redireccionar si está en una ruta no permitida
+      checkRoutePermission(payload.rol);
     } else {
-      // Si no hay token, redirigir al login
+      // Si no hay token o no se pudo decodificar, redirigir al login
       window.location.href = "/login";
     }
   }, []);

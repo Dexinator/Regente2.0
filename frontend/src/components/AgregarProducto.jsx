@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { getEmpleadoId } from "../utils/auth";
 
 export default function AgregarProducto({ orden_id }) {
   const [productos, setProductos] = useState([]);
@@ -348,9 +349,6 @@ export default function AgregarProducto({ orden_id }) {
       tamano_precio 
     } = productoEditandoNotas;
     
-    // Clave única para identificar este producto con este sabor, tamaño y notas
-    const uniqueKey = `${id}-${sabor_id || 0}-${tamano_id || 0}-${notas.trim() || ""}`;
-    
     // Verificar si ya existe este producto con este sabor, tamaño y notas
     const yaExiste = productosSeleccionados.find(p => 
       p.id === id && 
@@ -453,7 +451,7 @@ export default function AgregarProducto({ orden_id }) {
             notas: p.notas || null,
             precio_unitario: p.precio
           })),
-          empleado_id: 1 // Temporal, después obtener del token
+          empleado_id: getEmpleadoId()
         })
       });
       
