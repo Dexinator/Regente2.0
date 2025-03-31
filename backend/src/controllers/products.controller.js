@@ -41,8 +41,11 @@ export const removeProduct = async (req, res) => {
 
 // Nuevos controladores para sabores
 export const fetchSaboresByProductoId = async (req, res) => {
+  const { id } = req.params;
+  const { tipo } = req.query; // Obtener el parámetro tipo
+  
   try {
-    const sabores = await getSaboresByProductoId(req.params.id);
+    const sabores = await getSaboresByProductoId(id, tipo);
     res.json(sabores);
   } catch (err) {
     res.status(500).json({ error: "Error obteniendo sabores", detail: err.message });

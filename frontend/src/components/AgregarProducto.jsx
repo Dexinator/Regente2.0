@@ -11,9 +11,20 @@ export default function AgregarProducto({ orden_id }) {
   const [cantidad, setCantidad] = useState(1);
   const [notas, setNotas] = useState("");
   const [enviando, setEnviando] = useState(false);
+  
+  // Estados originales
   const [saboresDisponibles, setSaboresDisponibles] = useState([]);
-  const [saborSeleccionado, setSaborSeleccionado] = useState(null);
   const [loadingSabores, setLoadingSabores] = useState(false);
+  const [seleccionSabores, setSeleccionSabores] = useState(false);
+  const [productoEditandoNotas, setProductoEditandoNotas] = useState(null);
+  const [mostrarSeleccionCantidad, setMostrarSeleccionCantidad] = useState(false);
+  const [productosSeleccionados, setProductosSeleccionados] = useState([]);
+  
+  // Nuevos estados para tamaños
+  const [saborSeleccionado, setSaborSeleccionado] = useState(null);
+  const [tamanosDisponibles, setTamanosDisponibles] = useState([]);
+  const [loadingTamanos, setLoadingTamanos] = useState(false);
+  const [seleccionTamano, setSeleccionTamano] = useState(false);
 
   useEffect(() => {
     cargarProductos();
@@ -21,30 +32,13 @@ export default function AgregarProducto({ orden_id }) {
 
   useEffect(() => {
     if (productoSeleccionado) {
-      cargarSabores(productoSeleccionado.id);
+      setMostrarSeleccionCantidad(true);
+      setCantidad(1);
     } else {
       setSaboresDisponibles([]);
-      setSaborSeleccionado(null);
+      setTamanosDisponibles([]);
     }
   }, [productoSeleccionado]);
-
-  const cargarSabores = async (productoId) => {
-    setLoadingSabores(true);
-    try {
-      const res = await fetch(`http://localhost:3000/products/sabores/producto/${productoId}`);
-      const data = await res.json();
-      
-      if (!res.ok) {
-        throw new Error(data.error || "Error al cargar sabores");
-      }
-      
-      setSaboresDisponibles(data);
-      setLoadingSabores(false);
-    } catch (error) {
-      console.error("Error cargando sabores:", error);
-      setLoadingSabores(false);
-    }
-  };
 
   const cargarProductos = async () => {
     setLoading(true);
@@ -77,6 +71,78 @@ export default function AgregarProducto({ orden_id }) {
     }
   };
 
+  const cargarSabores = async (productoId) => {
+    setLoadingSabores(true);
+    try {
+      // Conseguir sabores con nuevo parámetro tipo=sabor
+      console.log("Cargando sabores para producto:", productoId);
+      const res = await fetch(`http://localhost:3000/products/sabores/producto/${productoId}?tipo=sabor`);
+      const data = await res.json();
+      
+      console.log("Sabores obtenidos:", data);
+      
+      if (!res.ok) {
+        throw new Error(data.error || "Error al cargar sabores");
+      }
+      
+      // Filtrar explícitamente para excluir cualquier tamaño que haya podido colarse
+      const soloSabores = data.filter(item => {
+        return !item.nombre.toLowerCase().includes('litro') && 
+               item.categoria_tipo !== 'tamaño';
+      });
+      
+      console.log("Sabores filtrados:", soloSabores);
+      setSaboresDisponibles(soloSabores);
+      setLoadingSabores(false);
+      return soloSabores.length > 0;
+    } catch (error) {
+      console.error("Error cargando sabores:", error);
+      setLoadingSabores(false);
+      return false;
+    }
+  };
+  
+  const cargarTamanos = async (productoId) => {
+    setLoadingTamanos(true);
+    try {
+      // Conseguir tamaños con nuevo parámetro tipo=tamano
+      console.log("Cargando tamaños para producto:", productoId);
+      const res = await fetch(`http://localhost:3000/products/sabores/producto/${productoId}?tipo=tamano`);
+      const data = await res.json();
+      
+      console.log("Tamaños obtenidos:", data);
+      
+      if (!res.ok) {
+        throw new Error(data.error || "Error al cargar tamaños");
+      }
+      
+      // Filtrar tamaños según la categoría del producto si es pulque
+      const producto = productos.find(p => p.id === parseInt(productoId));
+      let tamanosAplicables = data;
+      
+      if (producto && producto.categoria === "Pulque") {
+        // Para cada categoría, mostrar solo los tamaños aplicables
+        const categoriaEnNombre = producto.nombre.toLowerCase();
+        
+        tamanosAplicables = data.filter(t => {
+          const nombreTamano = t.nombre.toLowerCase();
+          // Mostrar "Medio litro" para todos, y los tamaños específicos para cada categoría
+          return nombreTamano === "medio litro" || 
+                 (nombreTamano.includes("litro") && nombreTamano.includes(categoriaEnNombre.split(' ')[0]));
+        });
+      }
+      
+      console.log("Tamaños filtrados:", tamanosAplicables);
+      setTamanosDisponibles(tamanosAplicables);
+      setLoadingTamanos(false);
+      return tamanosAplicables.length > 0;
+    } catch (error) {
+      console.error("Error cargando tamaños:", error);
+      setLoadingTamanos(false);
+      return false;
+    }
+  };
+
   const productosFiltrados = () => {
     let result = [...productos];
     
@@ -90,7 +156,7 @@ export default function AgregarProducto({ orden_id }) {
       const terminoBusqueda = busqueda.toLowerCase().trim();
       result = result.filter(p => 
         p.nombre.toLowerCase().includes(terminoBusqueda) ||
-        p.descripcion.toLowerCase().includes(terminoBusqueda)
+        (p.descripcion && p.descripcion.toLowerCase().includes(terminoBusqueda))
       );
     }
     
@@ -108,40 +174,299 @@ export default function AgregarProducto({ orden_id }) {
     setProductoSeleccionado(null);
     setCantidad(1);
     setNotas("");
+    setSeleccionSabores(false);
+    setProductoEditandoNotas(null);
+    setMostrarSeleccionCantidad(false);
+    setSeleccionTamano(false);
     setSaborSeleccionado(null);
   };
 
-  const agregarProducto = async () => {
+  const continuar = async () => {
     if (!productoSeleccionado) return;
+    
+    const esPulque = productoSeleccionado.categoria === "Pulque";
+    console.log("¿Es pulque?", esPulque);
+    
+    // Para pulques, primero mostramos selección de sabores 
+    if (esPulque) {
+      const tieneSabores = await cargarSabores(productoSeleccionado.id);
+      console.log("¿Tiene sabores?", tieneSabores);
+      
+      if (tieneSabores) {
+        // Si tiene sabores, mostrar pantalla de selección de sabores
+        setSeleccionSabores(true);
+        setSeleccionTamano(false);
+        setMostrarSeleccionCantidad(false);
+      } else {
+        // Si no tiene sabores (extraño para pulque), mostrar tamaños directamente
+        const tieneTamanos = await cargarTamanos(productoSeleccionado.id);
+        console.log("¿Tiene tamaños?", tieneTamanos);
+        
+        if (tieneTamanos) {
+          setSeleccionTamano(true);
+          setSeleccionSabores(false);
+          setMostrarSeleccionCantidad(false);
+        } else {
+          // Si no tiene sabores ni tamaños, mostrar notas
+          mostrarPantallaNotas(productoSeleccionado, null);
+          setMostrarSeleccionCantidad(false);
+        }
+      }
+    } else {
+      // Para productos no-pulque
+      const tieneSabores = await cargarSabores(productoSeleccionado.id);
+      console.log("¿Tiene sabores? (no-pulque)", tieneSabores);
+      
+      if (tieneSabores) {
+        // Si tiene sabores, ir a pantalla de selección
+        setSeleccionSabores(true);
+        setMostrarSeleccionCantidad(false);
+      } else {
+        // Si no tiene sabores, ir a notas
+        mostrarPantallaNotas(productoSeleccionado, null);
+        setMostrarSeleccionCantidad(false);
+      }
+    }
+  };
+
+  // Función modificada para manejar selección de sabores
+  const seleccionarSabor = async (sabor) => {
+    console.log("Sabor seleccionado:", sabor);
+    const esPulque = productoSeleccionado.categoria === "Pulque";
+    
+    if (esPulque) {
+      // Para pulques, guardamos el sabor y vamos a seleccionar tamaño
+      setSaborSeleccionado(sabor);
+      
+      const tieneTamanos = await cargarTamanos(productoSeleccionado.id);
+      console.log("¿Tiene tamaños para este sabor?", tieneTamanos);
+      
+      if (tieneTamanos) {
+        setSeleccionSabores(false);
+        setSeleccionTamano(true);
+      } else {
+        // Si por alguna razón no hay tamaños disponibles
+        mostrarPantallaNotas(productoSeleccionado, sabor);
+        setSeleccionSabores(false);
+      }
+    } else {
+      // Para otros productos, seguimos el flujo normal
+      mostrarPantallaNotas(productoSeleccionado, sabor);
+      setSeleccionSabores(false);
+    }
+  };
+
+  // Nueva función para seleccionar tamaño
+  const seleccionarTamano = (tamano) => {
+    // Combinamos el producto con sabor y tamaño, y vamos a notas
+    const datosCombinados = {
+      ...saborSeleccionado,
+      tamano_id: tamano.id,
+      tamano_nombre: tamano.nombre,
+      tamano_precio: parseFloat(tamano.precio_adicional || 0)
+    };
+    
+    mostrarPantallaNotas(productoSeleccionado, datosCombinados);
+    setSeleccionTamano(false);
+  };
+
+  const mostrarPantallaNotas = (producto, opcion) => {
+    if (!producto) return;
+    
+    if (opcion && opcion.tamano_id) {
+      // Si tenemos sabor y tamaño (para pulques)
+      setProductoEditandoNotas({
+        ...producto,
+        sabor_id: opcion.id,
+        sabor_nombre: opcion.nombre,
+        sabor_categoria: opcion.categoria_nombre,
+        precio_adicional: parseFloat(opcion.precio_adicional || 0),
+        tamano_id: opcion.tamano_id,
+        tamano_nombre: opcion.tamano_nombre,
+        tamano_precio: opcion.tamano_precio
+      });
+    } else if (opcion) {
+      // Solo sabor
+      setProductoEditandoNotas({
+        ...producto,
+        sabor_id: opcion.id,
+        sabor_nombre: opcion.nombre,
+        sabor_categoria: opcion.categoria_nombre,
+        precio_adicional: parseFloat(opcion.precio_adicional || 0)
+      });
+    } else {
+      // Sin opciones adicionales
+      setProductoEditandoNotas({
+        ...producto,
+        sabor_id: null,
+        sabor_nombre: null,
+        sabor_categoria: null,
+        precio_adicional: 0
+      });
+    }
+    
+    setNotas("");
+  };
+
+  const cancelarSeleccionSabor = () => {
+    setSeleccionSabores(false);
+    setMostrarSeleccionCantidad(true);
+    setSaborSeleccionado(null);
+  };
+
+  const cancelarSeleccionTamano = () => {
+    setSeleccionTamano(false);
+    setSeleccionSabores(true); // Volver a selección de sabor
+    setSaborSeleccionado(null);
+  };
+
+  const cancelarEditarNotas = () => {
+    setProductoEditandoNotas(null);
+    setNotas("");
+    
+    // Determinar a qué pantalla volver
+    if (productoSeleccionado?.categoria === "Pulque" && saborSeleccionado) {
+      setSeleccionTamano(true);
+    } else if (seleccionSabores) {
+      setSeleccionSabores(true);
+    } else {
+      setMostrarSeleccionCantidad(true);
+    }
+  };
+
+  const agregarProductoALista = () => {
+    if (!productoEditandoNotas) return;
+    
+    const { 
+      id, 
+      sabor_id, 
+      sabor_nombre, 
+      sabor_categoria, 
+      precio_adicional,
+      tamano_id,
+      tamano_nombre,
+      tamano_precio 
+    } = productoEditandoNotas;
+    
+    // Clave única para identificar este producto con este sabor, tamaño y notas
+    const uniqueKey = `${id}-${sabor_id || 0}-${tamano_id || 0}-${notas.trim() || ""}`;
+    
+    // Verificar si ya existe este producto con este sabor, tamaño y notas
+    const yaExiste = productosSeleccionados.find(p => 
+      p.id === id && 
+      p.sabor_id === sabor_id && 
+      p.tamano_id === tamano_id && 
+      ((p.notas || "") === (notas.trim() || ""))
+    );
+    
+    if (yaExiste) {
+      // Si ya existe, incrementar cantidad
+      setProductosSeleccionados(prev => 
+        prev.map(p => 
+          p.id === id && 
+          p.sabor_id === sabor_id && 
+          p.tamano_id === tamano_id && 
+          ((p.notas || "") === (notas.trim() || ""))
+            ? { ...p, cantidad: p.cantidad + cantidad } 
+            : p
+        )
+      );
+    } else {
+      // Calcular precio total con adicionales
+      let precioTotal = productoEditandoNotas.precio;
+      
+      if (precio_adicional) {
+        precioTotal += precio_adicional;
+      }
+      
+      if (tamano_precio) {
+        precioTotal += tamano_precio;
+      }
+      
+      // Agregar nuevo producto a la lista
+      setProductosSeleccionados(prev => [
+        ...prev, 
+        { 
+          ...productoEditandoNotas, 
+          cantidad,
+          precio_original: productoEditandoNotas.precio,
+          precio: precioTotal,
+          notas: notas.trim() || null
+        }
+      ]);
+    }
+    
+    // Limpiar estados
+    setProductoEditandoNotas(null);
+    setProductoSeleccionado(null);
+    setSaborSeleccionado(null);
+    setNotas("");
+    setCantidad(1);
+  };
+
+  const quitarProducto = (id, sabor_id, tamano_id, notas) => {
+    setProductosSeleccionados(prev => 
+      prev
+      .map(p => (
+        p.id === id && 
+        p.sabor_id === sabor_id && 
+        p.tamano_id === tamano_id &&
+        ((p.notas || "") === (notas || "")) 
+          ? { ...p, cantidad: p.cantidad - 1 } 
+          : p
+      ))
+      .filter(p => p.cantidad > 0)
+    );
+  };
+
+  const aumentarCantidad = (id, sabor_id, tamano_id, notas) => {
+    setProductosSeleccionados(prev =>
+      prev.map(p => 
+        p.id === id && 
+        p.sabor_id === sabor_id && 
+        p.tamano_id === tamano_id &&
+        ((p.notas || "") === (notas || ""))
+          ? { ...p, cantidad: p.cantidad + 1 }
+          : p
+      )
+    );
+  };
+
+  const agregarProducto = async () => {
+    if (productosSeleccionados.length === 0) {
+      alert("Agrega al menos un producto");
+      return;
+    }
     
     setEnviando(true);
     
     try {
       const res = await fetch(`http://localhost:3000/orders/${orden_id}/productos`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          producto_id: productoSeleccionado.id,
-          cantidad,
-          sabor_id: saborSeleccionado ? saborSeleccionado.id : null,
-          notas: notas.trim() || null,
-          empleado_id: 1 // Temporal, después obtener del token o contexto
+          productos: productosSeleccionados.map(p => ({
+            producto_id: p.id,
+            cantidad: p.cantidad,
+            sabor_id: p.sabor_id || null,
+            tamano_id: p.tamano_id || null,
+            notas: p.notas || null
+          })),
+          empleado_id: 1 // Temporal, después obtener del token
         })
       });
       
       const data = await res.json();
       
       if (!res.ok) {
-        throw new Error(data.error || "Error al agregar producto");
+        throw new Error(data.error || "Error al agregar productos");
       }
       
       // Redireccionar a la página de gestión de la orden
       window.location.href = `/ordenes/${orden_id}`;
     } catch (error) {
       console.error("Error:", error);
-      setError("No se pudo agregar el producto. Intenta de nuevo.");
+      setError("No se pudieron agregar los productos. Intenta de nuevo.");
       setEnviando(false);
     }
   };
@@ -164,7 +489,7 @@ export default function AgregarProducto({ orden_id }) {
     );
   }
 
-  if (productoSeleccionado) {
+  if (mostrarSeleccionCantidad && productoSeleccionado) {
     return (
       <div className="bg-vino rounded-xl p-4 space-y-4">
         <div className="flex justify-between items-center">
@@ -180,49 +505,178 @@ export default function AgregarProducto({ orden_id }) {
         <p className="text-sm">{productoSeleccionado.descripcion}</p>
         <p className="text-amarillo font-bold">${productoSeleccionado.precio.toFixed(2)}</p>
         
-        {loadingSabores ? (
-          <p className="text-sm text-gray-300">Cargando sabores...</p>
-        ) : saboresDisponibles.length > 0 ? (
-          <div className="pt-2">
-            <label className="block mb-2 font-bold">Selecciona un sabor:</label>
-            <select 
-              value={saborSeleccionado ? saborSeleccionado.id : ""}
-              onChange={(e) => {
-                const saborId = e.target.value;
-                const sabor = saboresDisponibles.find(s => s.id === parseInt(saborId));
-                setSaborSeleccionado(sabor || null);
-              }}
-              className="w-full px-4 py-2 rounded bg-negro text-white border border-amarillo"
-            >
-              <option value="">-- Selecciona un sabor --</option>
-              {saboresDisponibles.map(sabor => (
-                <option key={sabor.id} value={sabor.id}>
-                  {sabor.nombre} {sabor.categoria_nombre ? `(${sabor.categoria_nombre})` : ''}
-                  {sabor.precio_adicional > 0 ? ` +$${sabor.precio_adicional}` : ''}
-                </option>
-              ))}
-            </select>
-          </div>
-        ) : null}
-        
-        <div className="pt-4">
+        <div>
           <label className="block mb-2 font-bold">Cantidad:</label>
-          <div className="flex items-center gap-3 bg-negro rounded p-2">
-            <button 
-              onClick={() => setCantidad(prev => Math.max(1, prev - 1))}
-              className="bg-vino px-3 py-1 rounded-full font-bold"
-            >
-              -
-            </button>
-            <span className="flex-1 text-center text-xl font-bold">{cantidad}</span>
-            <button 
-              onClick={() => setCantidad(prev => prev + 1)}
-              className="bg-vino px-3 py-1 rounded-full font-bold"
-            >
-              +
-            </button>
+          <div className="flex flex-col items-center gap-3">
+            <div className="flex items-center gap-3 bg-negro rounded p-2 w-full">
+              <button 
+                onClick={() => setCantidad(prev => Math.max(1, prev - 1))}
+                className="bg-vino px-3 py-1 rounded-full font-bold"
+              >
+                -
+              </button>
+              <span className="flex-1 text-center text-xl font-bold">{cantidad}</span>
+              <button 
+                onClick={() => setCantidad(prev => prev + 1)}
+                className="bg-vino px-3 py-1 rounded-full font-bold"
+              >
+                +
+              </button>
+            </div>
+            
+            <div className="grid grid-cols-3 gap-2 w-full">
+              {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(num => (
+                <button 
+                  key={num}
+                  onClick={() => setCantidad(num)}
+                  className={`p-2 rounded-lg font-bold ${
+                    cantidad === num 
+                      ? 'bg-amarillo text-negro' 
+                      : 'bg-negro hover:bg-negro/80'
+                  }`}
+                >
+                  {num}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
+        
+        <button
+          onClick={continuar}
+          className="w-full bg-amarillo text-negro py-3 rounded-full font-bold hover:bg-yellow-500"
+        >
+          Continuar
+        </button>
+      </div>
+    );
+  }
+
+  if (seleccionSabores && saboresDisponibles.length > 0) {
+    return (
+      <div className="bg-vino rounded-xl p-4 space-y-4">
+        <div className="flex justify-between items-center">
+          <h2 className="text-xl font-bold">Selecciona un sabor para {productoSeleccionado.nombre} ({cantidad})</h2>
+          <button 
+            onClick={cancelarSeleccionSabor}
+            className="text-gray-300 hover:text-white"
+          >
+            ✕
+          </button>
+        </div>
+        
+        {loadingSabores ? (
+          <p className="text-center py-4">Cargando sabores disponibles...</p>
+        ) : (
+          <div className="grid grid-cols-1 gap-3 max-h-96 overflow-y-auto">
+            {saboresDisponibles.map(sabor => (
+              <button
+                key={sabor.id}
+                onClick={() => seleccionarSabor(sabor)}
+                className="bg-negro p-3 rounded text-left hover:bg-gray-800 flex justify-between items-center"
+              >
+                <div>
+                  <p className="font-bold">{sabor.nombre}</p>
+                  {sabor.categoria_nombre && (
+                    <p className="text-xs text-gray-400">{sabor.categoria_nombre}</p>
+                  )}
+                </div>
+                {sabor.precio_adicional > 0 && (
+                  <span className="bg-amarillo text-negro px-2 py-1 rounded-full text-xs font-bold">
+                    +${sabor.precio_adicional}
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  if (seleccionTamano && tamanosDisponibles.length > 0) {
+    return (
+      <div className="bg-vino rounded-xl p-4 space-y-4">
+        <div className="flex justify-between items-center">
+          <h2 className="text-xl font-bold">
+            Selecciona un tamaño para {productoSeleccionado.nombre} 
+            {saborSeleccionado ? ` (${saborSeleccionado.nombre})` : ''}
+          </h2>
+          <button 
+            onClick={cancelarSeleccionTamano}
+            className="text-gray-300 hover:text-white"
+          >
+            ✕
+          </button>
+        </div>
+        
+        {loadingTamanos ? (
+          <p className="text-center py-4">Cargando tamaños disponibles...</p>
+        ) : (
+          <div className="grid grid-cols-1 gap-3 max-h-96 overflow-y-auto">
+            {tamanosDisponibles.map(tamano => (
+              <button
+                key={tamano.id}
+                onClick={() => seleccionarTamano(tamano)}
+                className="bg-negro p-3 rounded text-left hover:bg-gray-800 flex justify-between items-center"
+              >
+                <div>
+                  <p className="font-bold">{tamano.nombre}</p>
+                  {tamano.descripcion && (
+                    <p className="text-xs text-gray-400">{tamano.descripcion}</p>
+                  )}
+                </div>
+                {tamano.precio_adicional > 0 && (
+                  <span className="bg-amarillo text-negro px-2 py-1 rounded-full text-xs font-bold">
+                    +${tamano.precio_adicional}
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  if (productoEditandoNotas) {
+    return (
+      <div className="bg-vino rounded-xl p-4 space-y-4">
+        <div className="flex justify-between items-center">
+          <h2 className="text-xl font-bold">{productoEditandoNotas.nombre} ({cantidad})</h2>
+          <button 
+            onClick={cancelarEditarNotas}
+            className="text-gray-300 hover:text-white"
+          >
+            ✕
+          </button>
+        </div>
+        
+        {productoEditandoNotas.sabor_id && (
+          <div className="bg-negro/30 p-3 rounded">
+            <p className="font-bold">Sabor seleccionado:</p>
+            <p>{productoEditandoNotas.sabor_nombre} 
+              {productoEditandoNotas.sabor_categoria ? ` (${productoEditandoNotas.sabor_categoria})` : ''}
+            </p>
+            {productoEditandoNotas.precio_adicional > 0 && (
+              <p className="text-xs text-amarillo mt-1">
+                Precio adicional: +${productoEditandoNotas.precio_adicional}
+              </p>
+            )}
+          </div>
+        )}
+        
+        {productoEditandoNotas.tamano_id && (
+          <div className="bg-negro/30 p-3 rounded mt-2">
+            <p className="font-bold">Tamaño seleccionado:</p>
+            <p>{productoEditandoNotas.tamano_nombre}</p>
+            {productoEditandoNotas.tamano_precio > 0 && (
+              <p className="text-xs text-amarillo mt-1">
+                Precio adicional: +${productoEditandoNotas.tamano_precio}
+              </p>
+            )}
+          </div>
+        )}
         
         <div>
           <label className="block mb-2 font-bold">Notas especiales:</label>
@@ -235,40 +689,81 @@ export default function AgregarProducto({ orden_id }) {
           />
         </div>
         
-        <div className="flex justify-between items-center bg-negro/30 p-3 rounded mt-4">
-          <div>
-            <p className="text-sm">Total:</p>
-            <p className="text-lg font-bold">
-              ${(
-                productoSeleccionado.precio * cantidad + 
-                (saborSeleccionado ? (saborSeleccionado.precio_adicional || 0) * cantidad : 0)
-              ).toFixed(2)}
-            </p>
-            {saborSeleccionado && saborSeleccionado.precio_adicional > 0 && (
-              <p className="text-xs text-gray-300">
-                Incluye +${(saborSeleccionado.precio_adicional * cantidad).toFixed(2)} por sabor
-              </p>
-            )}
-          </div>
-          
-          <button
-            onClick={agregarProducto}
-            disabled={enviando || (saboresDisponibles.length > 0 && !saborSeleccionado)}
-            className={`bg-amarillo text-negro px-6 py-2 rounded-full font-bold ${
-              enviando || (saboresDisponibles.length > 0 && !saborSeleccionado) 
-                ? "opacity-50 cursor-not-allowed" 
-                : "hover:bg-yellow-500"
-            }`}
-          >
-            {enviando ? "Agregando..." : "Agregar a la Orden"}
-          </button>
-        </div>
+        <button
+          onClick={agregarProductoALista}
+          className="w-full bg-amarillo text-negro py-3 rounded font-bold"
+        >
+          Agregar a la Orden
+        </button>
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
+      {productosSeleccionados.length > 0 && (
+        <div className="bg-negro rounded p-4 space-y-3">
+          <h3 className="font-bold text-amarillo">Productos seleccionados</h3>
+          {productosSeleccionados.map((prod, index) => (
+            <div key={index} className="flex justify-between items-start border-b border-gray-700 pb-2">
+              <div className="flex-1">
+                <p className="font-bold">{prod.nombre}</p>
+                {prod.sabor_nombre && (
+                  <p className="text-xs text-amarillo">
+                    Sabor: {prod.sabor_nombre} 
+                    {prod.sabor_categoria ? ` (${prod.sabor_categoria})` : ''}
+                    {prod.precio_adicional > 0 && ` +$${prod.precio_adicional}`}
+                  </p>
+                )}
+                {prod.tamano_nombre && (
+                  <p className="text-xs text-amarillo">
+                    Tamaño: {prod.tamano_nombre}
+                    {prod.tamano_precio > 0 && ` +$${prod.tamano_precio}`}
+                  </p>
+                )}
+                {prod.notas && (
+                  <p className="text-xs text-gray-400 mt-1 italic">
+                    Notas: {prod.notas}
+                  </p>
+                )}
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => quitarProducto(prod.id, prod.sabor_id, prod.tamano_id, prod.notas)}
+                  className="bg-vino text-white px-2 py-1 rounded-full text-xs"
+                >
+                  -
+                </button>
+                <span className="text-sm px-2">
+                  {prod.cantidad}
+                </span>
+                <button
+                  onClick={() => aumentarCantidad(prod.id, prod.sabor_id, prod.tamano_id, prod.notas)}
+                  className="bg-vino text-white px-2 py-1 rounded-full text-xs"
+                >
+                  +
+                </button>
+                <span className="text-sm ml-2">
+                  ${prod.precio.toFixed(2)}
+                </span>
+              </div>
+            </div>
+          ))}
+          <p className="font-bold text-right text-lg mt-4">
+            Total: ${productosSeleccionados.reduce((sum, prod) => sum + (prod.precio * prod.cantidad), 0).toFixed(2)}
+          </p>
+          <button
+            onClick={agregarProducto}
+            disabled={enviando}
+            className={`w-full bg-amarillo text-negro p-3 rounded font-bold ${
+              enviando ? "opacity-50 cursor-not-allowed" : "hover:bg-yellow-500"
+            } mt-4`}
+          >
+            {enviando ? "Agregando..." : "Confirmar y Agregar a la Orden"}
+          </button>
+        </div>
+      )}
+
       <div className="relative">
         <input
           type="text"
@@ -294,7 +789,7 @@ export default function AgregarProducto({ orden_id }) {
         ))}
       </div>
       
-      <div className="space-y-3">
+      <div className="space-y-3 max-h-80 overflow-y-auto">
         {productosFiltrados().length === 0 ? (
           <p className="text-center text-gray-400 py-8">
             No se encontraron productos
@@ -309,9 +804,11 @@ export default function AgregarProducto({ orden_id }) {
               <div className="flex justify-between items-start">
                 <div>
                   <h3 className="font-bold">{producto.nombre}</h3>
-                  <p className="text-sm text-gray-300 line-clamp-2">{producto.descripcion}</p>
+                  {producto.descripcion && (
+                    <p className="text-sm text-gray-300 line-clamp-2">{producto.descripcion}</p>
+                  )}
                 </div>
-                <p className="text-amarillo font-bold">${producto.precio.toFixed(2)}</p>
+                <p className="text-amarillo font-bold">${parseFloat(producto.precio).toFixed(2)}</p>
               </div>
               <div className="mt-2">
                 <span className="text-xs bg-negro/50 px-2 py-1 rounded">

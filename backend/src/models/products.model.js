@@ -35,18 +35,27 @@ export const deleteProduct = async (id) => {
 
 // Nuevas funciones para sabores
 
-export const getSaboresByProductoId = async (producto_id) => {
-  const result = await pool.query(`
+export const getSaboresByProductoId = async (producto_id, tipo) => {
+  let query = `
     SELECT s.id, s.nombre, s.descripcion, s.disponible, 
            COALESCE(ps.precio_adicional, s.precio_adicional) as precio_adicional,
-           cv.nombre as categoria_nombre
+           cv.nombre as categoria_nombre, cv.tipo as categoria_tipo
     FROM sabores s
     JOIN producto_sabor ps ON s.id = ps.sabor_id
     JOIN categorias_variantes cv ON s.categoria_id = cv.id
     WHERE ps.producto_id = $1 AND s.disponible = true
-    ORDER BY cv.nombre, s.nombre
-  `, [producto_id]);
+  `;
   
+  // Usar los valores exactos de la base de datos
+  if (tipo === 'sabor') {
+    query += " AND cv.tipo = 'pulque_sabor'";
+  } else if (tipo === 'tamano') {
+    query += " AND cv.tipo = 'tamaño'";
+  }
+  
+  query += " ORDER BY cv.nombre, s.nombre";
+  
+  const result = await pool.query(query, [producto_id]);
   return result.rows;
 };
 

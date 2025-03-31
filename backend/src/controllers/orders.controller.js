@@ -77,7 +77,7 @@ export const addProducts = async (req, res) => {
     if (!producto.producto_id || !producto.cantidad) {
       return res.status(400).json({ error: "Cada producto debe tener producto_id y cantidad" });
     }
-    // sabor_id es opcional
+    // sabor_id y notas son opcionales
   }
 
   try {

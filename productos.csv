@@ -1,0 +1,46 @@
+id,nombre,precio,categoria,costo
+1,Chileatole,50,Antojitos,15
+2,Cacahuates,45,Antojitos,13.5
+3,Churritos,50,Antojitos,15
+4,Palomitas,45,Antojitos,13.5
+5,Molletes,60,Cenas,18
+6,Tostadas,60,Cenas,18
+7,Nachos,80,Cenas,24
+8,Chicharrin,45,Cenas,13.5
+9,Cervezas Célebres,45,Cerveza,13.5
+10,Cerveza Popular,55,Cerveza,16.5
+11,Cerveza Tiburón,120,Cerveza,36
+12,Cerveza Heróica,120,Cerveza,36
+13,Cerveza Minerva,80,Cerveza,24
+14,Cerveza 420,250,Cerveza,75
+15,Hidromiel Yurnel,80,Cerveza,24
+16,Mezcal de la Casa,90,Mezcal,27
+17,Mezcal Alacrán,110,Mezcal,33
+18,Mezcal Cannábico,120,Mezcal,36
+19,Mezcal Pechuga,160,Mezcal,48
+20,Mezcal Retoño,130,Mezcal,39
+21,Sangría,70,Otras Bebidas,21
+22,Licor Café,50,Otras Bebidas,15
+23,Copa Vino,95,Otras Bebidas,28.5
+24,Rusa,50,Otras Bebidas,15
+25,Licor Especial,65,Otras Bebidas,19.5
+26,Toritos,55,Otras Bebidas,16.5
+27,Tepache,75,Otras Bebidas,22.5
+28,Tepache con Licor,105,Otras Bebidas,31.5
+29,Tepache con Mezcal,125,Otras Bebidas,37.5
+30,Tepachela,65,Otras Bebidas,19.5
+31,Natural,50,Pulque,15
+32,Temporada,60,Pulque,18
+33,A la Carta,70,Pulque,21
+34,Especial ,75,Pulque,22.5
+35,Convoy Pulquero,90,Pulque,27
+36,Infracción,85,Sentencias,25.5
+37,Apando,170,Sentencias,51
+38,Noche en los Separos,185,Sentencias,55.5
+39,Pena Capital,125,Sentencias,37.5
+40,Cadena perpetua,175,Sentencias,52.5
+41,Cadena perpetua vino,235,Sentencias,70.5
+42,Agua Sabor,45,Sin Alcohol,13.5
+43,Café,40,Sin Alcohol,12
+44,Té,30,Sin Alcohol,9
+45,Refresco,40,Sin Alcohol,12
