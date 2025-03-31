@@ -23,8 +23,8 @@ export default function HistorialCocina() {
     setError("");
     
     try {
-      // Adaptamos para usar un endpoint general de orders filtrando por fecha
-      const res = await fetch(`http://localhost:3000/orders?fecha=${fecha}&estado=preparado`);
+      // Usamos el nuevo endpoint para historial de cocina
+      const res = await fetch(`http://localhost:3000/orders/cocina/historial?fecha=${fecha}`);
       const data = await res.json();
       
       if (!res.ok) {
@@ -50,9 +50,8 @@ export default function HistorialCocina() {
       if (!historicoMap[item.orden_id]) {
         historicoMap[item.orden_id] = {
           orden_id: item.orden_id,
-          mesa: item.mesa || "Sin mesa",
           cliente: item.cliente || "Cliente sin nombre",
-          hora: new Date(item.tiempo_orden).toLocaleTimeString('es-ES', {
+          hora: new Date(item.tiempo_creacion).toLocaleTimeString('es-ES', {
             hour: '2-digit',
             minute: '2-digit'
           }),
@@ -60,39 +59,59 @@ export default function HistorialCocina() {
         };
       }
       
-      // Si el item tiene productos, los añadimos
-      if (item.productos) {
-        // Solo incluimos productos ya preparados
-        const productosPreparados = item.productos.filter(p => p.estado_cocina === "preparado");
-        
-        productosPreparados.forEach(prod => {
-          historicoMap[item.orden_id].productos.push({
-            producto_id: prod.producto_id,
-            detalle_id: prod.detalle_id,
-            nombre: prod.nombre,
-            cantidad: prod.cantidad,
-            notas: prod.notas,
-            hora_preparacion: prod.tiempo_preparacion ? 
-              new Date(prod.tiempo_preparacion).toLocaleTimeString('es-ES', {
-                hour: '2-digit',
-                minute: '2-digit'
-              }) : 'N/A'
-          });
-        });
-      }
+      // Añadimos el producto preparado con información de sabor y tamaño
+      historicoMap[item.orden_id].productos.push({
+        producto_id: item.producto_id,
+        detalle_id: item.detalle_id,
+        nombre: item.nombre,
+        categoria: item.categoria,
+        cantidad: item.cantidad,
+        notas: item.notas,
+        sabor_id: item.sabor_id,
+        sabor_nombre: item.sabor_nombre,
+        sabor_categoria: item.categoria_variante,
+        tamano_id: item.tamano_id,
+        tamano_nombre: item.tamano_nombre,
+        hora_preparacion: item.tiempo_preparacion ? 
+          new Date(item.tiempo_preparacion).toLocaleTimeString('es-ES', {
+            hour: '2-digit',
+            minute: '2-digit'
+          }) : 'N/A'
+      });
     });
     
     // Convertimos el objeto a un array y ordenamos por hora (más reciente primero)
     return Object.values(historicoMap)
-      .filter(orden => orden.productos.length > 0) // Solo órdenes con productos preparados
       .sort((a, b) => {
-        const horaA = a.hora.split(':').map(Number);
-        const horaB = b.hora.split(':').map(Number);
+        // Convierte hora en formato HH:MM a minutos para comparar
+        const getMinutes = (time) => {
+          const [hours, minutes] = time.split(':').map(Number);
+          return hours * 60 + minutes;
+        };
         
-        // Comparar hora y luego minutos
-        if (horaA[0] !== horaB[0]) return horaB[0] - horaA[0];
-        return horaB[1] - horaA[1];
+        // Para ordenar descendente (más reciente primero)
+        return getMinutes(b.hora) - getMinutes(a.hora);
       });
+  };
+
+  // Función para mostrar detalles del producto incluyendo sabor y tamaño
+  const formatearDetallesProducto = (producto) => {
+    let detalles = producto.nombre;
+    
+    // Para los pulques que tienen tanto sabor como tamaño
+    if (producto.categoria === 'Pulques' && producto.sabor_nombre && producto.tamano_nombre) {
+      detalles += ` - ${producto.sabor_nombre} (${producto.tamano_nombre})`;
+    } 
+    // Para productos que solo tienen sabor
+    else if (producto.sabor_nombre) {
+      detalles += ` - ${producto.sabor_nombre}`;
+    }
+    // Para productos que solo tienen tamaño
+    else if (producto.tamano_nombre) {
+      detalles += ` - ${producto.tamano_nombre}`;
+    }
+
+    return detalles;
   };
 
   const formatearFecha = (fechaStr) => {
@@ -155,7 +174,7 @@ export default function HistorialCocina() {
               </div>
               
               <p className="text-lg font-subtitulo mb-4">
-                {pedido.cliente} - Mesa: {pedido.mesa}
+                {pedido.cliente}
               </p>
               
               <div className="space-y-2">
@@ -166,7 +185,10 @@ export default function HistorialCocina() {
                   >
                     <div>
                       <p className="font-bold">
-                        {producto.cantidad}x {producto.nombre}
+                        {producto.cantidad}x {formatearDetallesProducto(producto)}
+                      </p>
+                      <p className="text-xs text-amarillo">
+                        {producto.categoria} {producto.sabor_categoria ? `- ${producto.sabor_categoria}`: ''}
                       </p>
                       {producto.notas && (
                         <p className="text-sm text-gray-300 italic">

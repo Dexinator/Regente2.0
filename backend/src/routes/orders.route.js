@@ -6,7 +6,10 @@ import {
   addOrder,
   closeOrderById,
   addProducts,
-  getOrderSummary
+  getOrderSummary,
+  fetchProductosPorPreparar,
+  fetchHistorialProductosPreparados,
+  updateEstadoProducto
 } from "../controllers/orders.controller.js";
 
 import { verifyToken, authorizeRoles } from "../middlewares/auth.js"; // ✅ IMPORTANTE
@@ -22,6 +25,11 @@ router.put("/:id/close",closeOrderById);
 router.post("/:id/productos", addProducts);
 router.get("/:id/resumen", getOrderSummary);
 
+// Nuevas rutas para la cocina
+router.get("/cocina/pendientes", fetchProductosPorPreparar);  // Productos por preparar
+router.get("/cocina/historial", fetchHistorialProductosPreparados); // Historial
+router.put("/detalle/:id", updateEstadoProducto);  // Actualizar estado de un producto
+
 /*
 router.put("/:id/close",
   verifyToken,                          // Primero verificamos el token
@@ -30,7 +38,5 @@ router.put("/:id/close",
 );
 
 */
-
- // Cerrar orden
 
 export default router;

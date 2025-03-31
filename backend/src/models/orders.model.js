@@ -312,3 +312,93 @@ export const getOrderResumen = async (orden_id) => {
     estado_pago
   };
 };
+
+// Obtener productos pendientes por preparar
+export const getProductosPorPreparar = async () => {
+  const query = `
+    SELECT 
+      d.id AS detalle_id, 
+      d.orden_id, 
+      d.producto_id, 
+      d.cantidad, 
+      d.notas,
+      d.tiempo_creacion,
+      d.sabor_id,
+      d.tamano_id,
+      p.nombre,
+      p.categoria,
+      COALESCE(pr.reg_name, o.nombre_cliente) AS cliente,
+      s.nombre AS sabor_nombre,
+      s.precio_adicional AS sabor_precio,
+      cv.nombre AS sabor_categoria,
+      t.nombre AS tamano_nombre,
+      t.precio_adicional AS tamano_precio
+    FROM detalles_orden d
+    JOIN productos p ON d.producto_id = p.id
+    JOIN ordenes o ON d.orden_id = o.orden_id
+    LEFT JOIN presos pr ON o.preso_id = pr.id
+    LEFT JOIN sabores s ON d.sabor_id = s.id
+    LEFT JOIN categorias_variantes cv ON s.categoria_id = cv.id
+    LEFT JOIN sabores t ON d.tamano_id = t.id
+    WHERE d.preparado = FALSE 
+    AND o.estado = 'abierta'
+    ORDER BY d.tiempo_creacion ASC
+  `;
+  
+  const result = await pool.query(query);
+  return result.rows;
+};
+
+// Obtener historial de productos preparados por fecha
+export const getHistorialProductosPreparados = async (fecha) => {
+  // Si no se proporciona una fecha, se usa la fecha actual
+  const fechaConsulta = fecha || new Date().toISOString().split('T')[0];
+  
+  const query = `
+    SELECT 
+      d.id AS detalle_id, 
+      d.orden_id, 
+      d.producto_id, 
+      d.cantidad, 
+      d.notas,
+      d.tiempo_creacion,
+      d.tiempo_preparacion,
+      d.sabor_id,
+      d.tamano_id,
+      p.nombre,
+      p.categoria,
+      COALESCE(pr.reg_name, o.nombre_cliente) AS cliente,
+      s.nombre AS sabor_nombre,
+      s.precio_adicional AS sabor_precio,
+      cv.nombre AS sabor_categoria,
+      t.nombre AS tamano_nombre,
+      t.precio_adicional AS tamano_precio
+    FROM detalles_orden d
+    JOIN productos p ON d.producto_id = p.id
+    JOIN ordenes o ON d.orden_id = o.orden_id
+    LEFT JOIN presos pr ON o.preso_id = pr.id
+    LEFT JOIN sabores s ON d.sabor_id = s.id
+    LEFT JOIN categorias_variantes cv ON s.categoria_id = cv.id
+    LEFT JOIN sabores t ON d.tamano_id = t.id
+    WHERE d.preparado = TRUE 
+    AND DATE(d.tiempo_preparacion) = $1
+    ORDER BY d.tiempo_preparacion DESC
+  `;
+  
+  const result = await pool.query(query, [fechaConsulta]);
+  return result.rows;
+};
+
+// Marcar un producto como preparado
+export const marcarProductoComoPreparado = async (detalle_id) => {
+  const query = `
+    UPDATE detalles_orden
+    SET preparado = TRUE,
+        tiempo_preparacion = CURRENT_TIMESTAMP
+    WHERE id = $1
+    RETURNING *
+  `;
+  
+  const result = await pool.query(query, [detalle_id]);
+  return result.rows[0];
+};

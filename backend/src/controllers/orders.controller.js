@@ -3,7 +3,10 @@ import {
   getOrderWithDetails,
   createOrder,
   closeOrder,
-  getOpenOrdersWithPayments
+  getOpenOrdersWithPayments,
+  getProductosPorPreparar,
+  getHistorialProductosPreparados,
+  marcarProductoComoPreparado
 } from "../models/orders.model.js";
 
 export const fetchOrders = async (req, res) => {
@@ -97,5 +100,42 @@ export const getOrderSummary = async (req, res) => {
     res.json(resumen);
   } catch (err) {
     res.status(500).json({ error: "Error generando resumen", detail: err.message });
+  }
+};
+
+// Obtener productos pendientes por preparar para cocina
+export const fetchProductosPorPreparar = async (req, res) => {
+  try {
+    const productos = await getProductosPorPreparar();
+    res.json(productos);
+  } catch (err) {
+    res.status(500).json({ error: "Error obteniendo productos por preparar", detail: err.message });
+  }
+};
+
+// Obtener historial de productos preparados por fecha
+export const fetchHistorialProductosPreparados = async (req, res) => {
+  try {
+    const { fecha } = req.query;
+    const historial = await getHistorialProductosPreparados(fecha);
+    res.json(historial);
+  } catch (err) {
+    res.status(500).json({ error: "Error obteniendo historial de productos", detail: err.message });
+  }
+};
+
+// Marcar un producto como preparado
+export const updateEstadoProducto = async (req, res) => {
+  try {
+    const detalle_id = req.params.id;
+    const producto = await marcarProductoComoPreparado(detalle_id);
+    
+    if (!producto) {
+      return res.status(404).json({ error: "Detalle de producto no encontrado" });
+    }
+    
+    res.json(producto);
+  } catch (err) {
+    res.status(500).json({ error: "Error al marcar producto como preparado", detail: err.message });
   }
 };

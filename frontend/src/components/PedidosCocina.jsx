@@ -7,6 +7,11 @@ export default function PedidosCocina() {
 
   useEffect(() => {
     cargarPedidos();
+    
+    // Configurar actualización automática cada 30 segundos
+    const intervalo = setInterval(cargarPedidos, 30000);
+    
+    return () => clearInterval(intervalo);
   }, []);
 
   const cargarPedidos = async () => {
@@ -14,8 +19,8 @@ export default function PedidosCocina() {
     setError("");
     
     try {
-      // Usamos el endpoint de órdenes abiertas y filtramos en frontend
-      const res = await fetch("http://localhost:3000/orders/open");
+      // Usamos el nuevo endpoint específico para cocina
+      const res = await fetch("http://localhost:3000/orders/cocina/pendientes");
       const data = await res.json();
       
       if (!res.ok) {
@@ -41,46 +46,42 @@ export default function PedidosCocina() {
       if (!pedidosMap[item.orden_id]) {
         pedidosMap[item.orden_id] = {
           orden_id: item.orden_id,
-          mesa: item.mesa || "Sin mesa",
           cliente: item.cliente || "Cliente sin nombre",
-          tiempo: item.tiempo_orden,
+          tiempo: item.tiempo_creacion,
           productos: []
         };
       }
       
-      // Si el item tiene productos, los añadimos
-      if (item.productos) {
-        item.productos.forEach(prod => {
-          // Solo incluimos productos pendientes por preparar
-          if (prod.estado_cocina !== "preparado") {
-            pedidosMap[item.orden_id].productos.push({
-              producto_id: prod.producto_id,
-              detalle_id: prod.detalle_id,
-              nombre: prod.nombre,
-              cantidad: prod.cantidad,
-              notas: prod.notas,
-              estado: prod.estado_cocina
-            });
-          }
-        });
-      }
+      // Añadimos el producto pendiente con información de sabor y tamaño
+      pedidosMap[item.orden_id].productos.push({
+        producto_id: item.producto_id,
+        detalle_id: item.detalle_id,
+        nombre: item.nombre,
+        categoria: item.categoria,
+        cantidad: item.cantidad,
+        notas: item.notas,
+        sabor_id: item.sabor_id,
+        sabor_nombre: item.sabor_nombre,
+        sabor_categoria: item.categoria_variante,
+        tamano_id: item.tamano_id,
+        tamano_nombre: item.tamano_nombre
+      });
     });
     
     // Convertimos el objeto a un array y ordenamos por tiempo (más antiguo primero)
     return Object.values(pedidosMap)
-      .filter(orden => orden.productos.length > 0) // Solo órdenes con productos pendientes
       .sort((a, b) => new Date(a.tiempo) - new Date(b.tiempo));
   };
 
   const marcarProductoComoPreparado = async (detalle_id) => {
     try {
-      // Adaptamos para usar un endpoint general de órdenes
+      // Usamos el nuevo endpoint para marcar como preparado
       const res = await fetch(`http://localhost:3000/orders/detalle/${detalle_id}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json"
         },
-        body: JSON.stringify({ estado_cocina: "preparado" })
+        body: JSON.stringify({}) // El estado se cambia automáticamente en el backend
       });
       
       const data = await res.json();
@@ -89,21 +90,22 @@ export default function PedidosCocina() {
         throw new Error(data.error || "Error al actualizar estado");
       }
       
-      // Actualizamos el estado localmente
+      // Actualizamos el estado localmente (quitamos el producto de la lista)
       setPedidos(prevPedidos => {
-        return prevPedidos.map(pedido => {
-          const productosActualizados = pedido.productos.map(producto => {
-            if (producto.detalle_id === detalle_id) {
-              return { ...producto, estado: "preparado" };
-            }
-            return producto;
-          });
+        const nuevoPedidos = prevPedidos.map(pedido => {
+          // Filtramos el producto que se acaba de marcar como preparado
+          const productosFiltrados = pedido.productos.filter(
+            producto => producto.detalle_id !== detalle_id
+          );
           
           return {
             ...pedido,
-            productos: productosActualizados
+            productos: productosFiltrados
           };
-        }).filter(pedido => pedido.productos.some(p => p.estado !== "preparado"));
+        });
+        
+        // Filtramos pedidos que ya no tienen productos pendientes
+        return nuevoPedidos.filter(pedido => pedido.productos.length > 0);
       });
       
     } catch (error) {
@@ -120,6 +122,26 @@ export default function PedidosCocina() {
     if (diferencia < 1) return "Menos de 1 minuto";
     if (diferencia === 1) return "1 minuto";
     return `${diferencia} minutos`;
+  };
+
+  // Función para mostrar detalles del producto incluyendo sabor y tamaño
+  const formatearDetallesProducto = (producto) => {
+    let detalles = producto.nombre;
+    
+    // Para los pulques que tienen tanto sabor como tamaño
+    if (producto.categoria === 'Pulques' && producto.sabor_nombre && producto.tamano_nombre) {
+      detalles += ` - ${producto.sabor_nombre} (${producto.tamano_nombre})`;
+    } 
+    // Para productos que solo tienen sabor
+    else if (producto.sabor_nombre) {
+      detalles += ` - ${producto.sabor_nombre}`;
+    }
+    // Para productos que solo tienen tamaño
+    else if (producto.tamano_nombre) {
+      detalles += ` - ${producto.tamano_nombre}`;
+    }
+
+    return detalles;
   };
 
   if (loading) {
@@ -177,43 +199,37 @@ export default function PedidosCocina() {
           </div>
           
           <p className="text-lg font-subtitulo mb-4">
-            {pedido.cliente} - Mesa: {pedido.mesa}
+            {pedido.cliente}
           </p>
           
           <div className="space-y-2">
-            {pedido.productos
-              .filter(producto => producto.estado !== "preparado")
-              .map((producto) => (
-                <div
-                  key={producto.detalle_id}
-                  className="flex justify-between items-center bg-negro/30 p-3 rounded"
-                >
-                  <div className="flex-1">
-                    <p className="font-bold">
-                      {producto.cantidad}x {producto.nombre}
+            {pedido.productos.map((producto) => (
+              <div
+                key={producto.detalle_id}
+                className="flex justify-between items-center bg-negro/30 p-3 rounded"
+              >
+                <div className="flex-1">
+                  <p className="font-bold">
+                    {producto.cantidad}x {formatearDetallesProducto(producto)}
+                  </p>
+                  <p className="text-xs text-amarillo">
+                    {producto.categoria} {producto.sabor_categoria ? `- ${producto.sabor_categoria}`: ''}
+                  </p>
+                  {producto.notas && (
+                    <p className="text-sm text-gray-300 italic">
+                      {producto.notas}
                     </p>
-                    {producto.notas && (
-                      <p className="text-sm text-gray-300 italic">
-                        {producto.notas}
-                      </p>
-                    )}
-                  </div>
-                  
-                  <button
-                    onClick={() => marcarProductoComoPreparado(producto.detalle_id)}
-                    className="bg-verde text-negro px-3 py-1 rounded-full font-bold"
-                  >
-                    Listo
-                  </button>
+                  )}
                 </div>
-              ))}
-              
-            {/* Si todos los productos de este pedido están preparados, mostrar mensaje */}
-            {pedido.productos.every(p => p.estado === "preparado") && (
-              <p className="text-center text-verde font-bold py-2">
-                ¡Todos los productos listos!
-              </p>
-            )}
+                
+                <button
+                  onClick={() => marcarProductoComoPreparado(producto.detalle_id)}
+                  className="bg-verde text-negro px-3 py-1 rounded-full font-bold"
+                >
+                  Listo
+                </button>
+              </div>
+            ))}
           </div>
         </div>
       ))}

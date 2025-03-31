@@ -50,7 +50,11 @@ CREATE TABLE detalles_orden (
     cantidad INT DEFAULT 1, 
     precio_unitario NUMERIC(10,2) NOT NULL, 
     empleado_id INT NOT NULL REFERENCES empleados(id) ON DELETE CASCADE, -- ✅ Se agrega referencia a empleados
-    sabor_id INT REFERENCES sabores(id) ON DELETE SET NULL
+    sabor_id INT REFERENCES sabores(id) ON DELETE SET NULL,
+    tamano_id INT REFERENCES sabores(id) ON DELETE SET NULL, -- Referencia al tamaño (también en tabla sabores)
+    preparado BOOLEAN DEFAULT FALSE, -- Indica si el producto ya fue preparado
+    tiempo_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP, -- Momento en que se creó el detalle
+    tiempo_preparacion TIMESTAMP -- Momento en que se marcó como preparado
 );
 
 CREATE TABLE public.pagos (
