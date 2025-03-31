@@ -6,30 +6,34 @@ export default function CrearOrden() {
     const [nombreLibre, setNombreLibre] = useState("");
     
     const [productos, setProductos] = useState([]);
-    const [seleccionados, setSeleccionados] = useState([]);
+    const [categorias, setCategorias] = useState([]);
+    const [categoriaSeleccionada, setCategoriaSeleccionada] = useState("todas");
+    const [busqueda, setBusqueda] = useState("");
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState("");
     
-    const [filtroNombre, setFiltroNombre] = useState("");
-    const [filtroCategoria, setFiltroCategoria] = useState("");
-    const [filtroPreso, setFiltroPreso] = useState("");
+    // Estados para selección de producto
+    const [productoSeleccionado, setProductoSeleccionado] = useState(null);
+    const [cantidad, setCantidad] = useState(1);
+    const [notas, setNotas] = useState("");
     
-    // Estados para manejar sabores
-    const [productoConSabor, setProductoConSabor] = useState(null);
+    // Estados para sabores
     const [saboresDisponibles, setSaboresDisponibles] = useState([]);
     const [loadingSabores, setLoadingSabores] = useState(false);
-
-    // Estado para manejar notas
-    const [notasProducto, setNotasProducto] = useState("");
+    const [seleccionSabores, setSeleccionSabores] = useState(false);
+    
+    // Estados para notas y cantidad
     const [productoEditandoNotas, setProductoEditandoNotas] = useState(null);
+    const [mostrarSeleccionCantidad, setMostrarSeleccionCantidad] = useState(false);
+    const [productosSeleccionados, setProductosSeleccionados] = useState([]);
     
-    // Estado para manejar cantidad
-    const [cantidad, setCantidad] = useState(1);
-    const [productoConCantidad, setProductoConCantidad] = useState(null);
-    
-    // Nuevos estados para tamaños
+    // Estados para tamaños
     const [saborSeleccionado, setSaborSeleccionado] = useState(null);
     const [tamanosDisponibles, setTamanosDisponibles] = useState([]);
     const [loadingTamanos, setLoadingTamanos] = useState(false);
     const [seleccionTamano, setSeleccionTamano] = useState(false);
+
+    const [filtroPreso, setFiltroPreso] = useState("");
 
     useEffect(() => {
         // Cargar presos
@@ -39,11 +43,49 @@ export default function CrearOrden() {
         .catch((err) => console.error("Error cargando presos:", err));
         
         // Cargar productos
-        fetch("http://localhost:3000/products")
-        .then((res) => res.json())
-        .then((data) => setProductos(data))
-        .catch((err) => console.error("Error cargando productos:", err));
+        cargarProductos();
     }, []);
+
+    useEffect(() => {
+        if (productoSeleccionado) {
+            setMostrarSeleccionCantidad(true);
+            setCantidad(1);
+        } else {
+            setSaboresDisponibles([]);
+            setTamanosDisponibles([]);
+        }
+    }, [productoSeleccionado]);
+
+    const cargarProductos = async () => {
+        setLoading(true);
+        setError("");
+        
+        try {
+            const res = await fetch("http://localhost:3000/products");
+            const data = await res.json();
+            
+            if (!res.ok) {
+                throw new Error(data.error || "Error al cargar productos");
+            }
+            
+            // Asegurarse de que el precio sea un número
+            const productosConPrecioNumerico = data.map(producto => ({
+                ...producto,
+                precio: Number(producto.precio)
+            }));
+            
+            setProductos(productosConPrecioNumerico);
+            
+            // Extraer categorías únicas
+            const cats = ["todas", ...new Set(productosConPrecioNumerico.map(p => p.categoria))];
+            setCategorias(cats);
+        } catch (error) {
+            console.error("Error:", error);
+            setError("No se pudieron cargar los productos. Intenta de nuevo.");
+        } finally {
+            setLoading(false);
+        }
+    };
     
     // Cargar sabores para un producto
     const cargarSabores = async (productoId) => {
@@ -56,20 +98,22 @@ export default function CrearOrden() {
             
             console.log("Sabores obtenidos:", data);
             
-            if (!res.ok) throw new Error("Error cargando sabores");
+            if (!res.ok) {
+                throw new Error(data.error || "Error al cargar sabores");
+            }
             
             // Filtrar explícitamente para excluir cualquier tamaño que haya podido colarse
             const soloSabores = data.filter(item => {
                 return !item.nombre.toLowerCase().includes('litro') && 
-                       item.categoria_tipo !== 'tamaño';
+                    item.categoria_tipo !== 'tamaño';
             });
             
             console.log("Sabores filtrados:", soloSabores);
             setSaboresDisponibles(soloSabores);
             setLoadingSabores(false);
             return soloSabores.length > 0;
-        } catch (err) {
-            console.error("Error cargando sabores:", err);
+        } catch (error) {
+            console.error("Error cargando sabores:", error);
             setLoadingSabores(false);
             return false;
         }
@@ -86,7 +130,9 @@ export default function CrearOrden() {
             
             console.log("Tamaños obtenidos:", data);
             
-            if (!res.ok) throw new Error("Error cargando tamaños");
+            if (!res.ok) {
+                throw new Error(data.error || "Error al cargar tamaños");
+            }
             
             // Filtrar tamaños según la categoría del producto si es pulque
             const producto = productos.find(p => p.id === parseInt(productoId));
@@ -98,8 +144,9 @@ export default function CrearOrden() {
                 
                 tamanosAplicables = data.filter(t => {
                     const nombreTamano = t.nombre.toLowerCase();
+                    // Mostrar "Medio litro" para todos, y los tamaños específicos para cada categoría
                     return nombreTamano === "medio litro" || 
-                           (nombreTamano.includes("litro") && nombreTamano.includes(categoriaEnNombre.split(' ')[0]));
+                        (nombreTamano.includes("litro") && nombreTamano.includes(categoriaEnNombre.split(' ')[0]));
                 });
             }
             
@@ -107,8 +154,8 @@ export default function CrearOrden() {
             setTamanosDisponibles(tamanosAplicables);
             setLoadingTamanos(false);
             return tamanosAplicables.length > 0;
-        } catch (err) {
-            console.error("Error cargando tamaños:", err);
+        } catch (error) {
+            console.error("Error cargando tamaños:", error);
             setLoadingTamanos(false);
             return false;
         }
@@ -116,149 +163,204 @@ export default function CrearOrden() {
     
     // Ahora al agregar un producto, primero mostramos la pantalla de cantidad
     const agregarProducto = (producto) => {
-        setProductoConCantidad(producto);
-        setCantidad(1);
-        setSaborSeleccionado(null);
+        // Verificar si el producto tiene sabores disponibles
+        if (producto.sabores_disponibles && producto.sabores_disponibles.length > 0) {
+            setProductoSeleccionado(producto);
+            setSeleccionSabores(true);
+            cargarSabores(producto.id);
+        } else {
+            setProductoEditandoNotas({
+                ...producto,
+                nombre: producto.nombre // Asegurarnos de incluir el nombre
+            });
+            setMostrarSeleccionCantidad(true);
+        }
     };
 
     // Después de seleccionar la cantidad, verificamos si tiene sabores
     const continuarDespuesDeCantidad = async () => {
-        if (!productoConCantidad) return;
+        if (!productoSeleccionado) return;
 
-        const esPulque = productoConCantidad.categoria === "Pulque";
+        const esPulque = productoSeleccionado.categoria === "Pulque";
         console.log("¿Es pulque?", esPulque);
         
         // Para pulques, primero mostramos selección de sabores 
         if (esPulque) {
-            const tieneSabores = await cargarSabores(productoConCantidad.id);
+            const tieneSabores = await cargarSabores(productoSeleccionado.id);
             console.log("¿Tiene sabores?", tieneSabores);
             
             if (tieneSabores) {
                 // Si tiene sabores, mostrar pantalla de selección de sabores
-                setProductoConSabor(productoConCantidad);
-                setNotasProducto(""); // Limpiar notas
-                setProductoConCantidad(null);
-                setSeleccionTamano(false);
+                setProductoSeleccionado(productoSeleccionado);
+                setNotas(""); // Limpiar notas
+                setProductoSeleccionado(null);
             } else {
                 // Si no tiene sabores (extraño para pulque), mostrar tamaños directamente
-                const tieneTamanos = await cargarTamanos(productoConCantidad.id);
+                const tieneTamanos = await cargarTamanos(productoSeleccionado.id);
                 console.log("¿Tiene tamaños?", tieneTamanos);
                 
                 if (tieneTamanos) {
                     setSeleccionTamano(true);
-                    setProductoConSabor(null);
-                    setProductoConCantidad(null);
+                    setProductoSeleccionado(null);
                 } else {
                     // Si no tiene sabores ni tamaños, mostrar notas
-                    setProductoEditandoNotas({...productoConCantidad, sabor_id: null});
-                    setNotasProducto("");
-                    setProductoConCantidad(null);
+                    setProductoEditandoNotas({...productoSeleccionado, sabor_id: null});
+                    setNotas("");
+                    setProductoSeleccionado(null);
                 }
             }
         } else {
             // Para productos no-pulque, verificar si tiene sabores
-            const tieneSabores = await cargarSabores(productoConCantidad.id);
+            const tieneSabores = await cargarSabores(productoSeleccionado.id);
             console.log("¿Tiene sabores? (no-pulque)", tieneSabores);
             
             if (tieneSabores) {
                 // Si tiene sabores, mostrar selector
-                setProductoConSabor(productoConCantidad);
-                setNotasProducto(""); // Limpiar notas
-                setProductoConCantidad(null);
+                setProductoSeleccionado(productoSeleccionado);
+                setNotas(""); // Limpiar notas
+                setProductoSeleccionado(null);
             } else {
                 // Si no tiene sabores, mostrar pantalla de notas primero
-                setProductoEditandoNotas({...productoConCantidad, sabor_id: null});
-                setNotasProducto("");
-                setProductoConCantidad(null);
+                setProductoEditandoNotas({...productoSeleccionado, sabor_id: null});
+                setNotas("");
+                setProductoSeleccionado(null);
             }
         }
     };
 
     const agregarProductoConSabor = async (sabor) => {
         console.log("Sabor seleccionado:", sabor);
-        if (!productoConSabor) return;
+        if (!productoSeleccionado) return;
         
-        const esPulque = productoConSabor.categoria === "Pulque";
+        const esPulque = productoSeleccionado.categoria === "Pulque";
+        
+        // Asegurarnos de que el precio adicional sea un número válido
+        const precioAdicionalSabor = parseFloat(sabor.precio_adicional) || 0;
         
         if (esPulque) {
             // Para pulques, guardar sabor y mostrar tamaños
-            setSaborSeleccionado(sabor);
+            setSaborSeleccionado({
+                ...sabor,
+                precio_adicional: precioAdicionalSabor
+            });
             
-            const tieneTamanos = await cargarTamanos(productoConSabor.id);
+            const tieneTamanos = await cargarTamanos(productoSeleccionado.id);
             console.log("¿Tiene tamaños para este sabor?", tieneTamanos);
             
             if (tieneTamanos) {
-                setProductoConSabor(null);
+                setProductoSeleccionado(null);
                 setSeleccionTamano(true);
             } else {
                 // Si no tiene tamaños, ir a notas
                 setProductoEditandoNotas({
-                    ...productoConSabor,
+                    ...productoSeleccionado,
                     sabor_id: sabor.id,
                     sabor_nombre: sabor.nombre,
                     sabor_categoria: sabor.categoria_nombre,
-                    precio_adicional: parseFloat(sabor.precio_adicional || 0)
+                    precio_adicional: precioAdicionalSabor
                 });
-                setProductoConSabor(null);
+                setProductoSeleccionado(null);
             }
         } else {
             // Para productos normales, ir a notas
             setProductoEditandoNotas({
-                ...productoConSabor,
+                ...productoSeleccionado,
                 sabor_id: sabor.id,
                 sabor_nombre: sabor.nombre,
                 sabor_categoria: sabor.categoria_nombre,
-                precio_adicional: parseFloat(sabor.precio_adicional || 0)
+                precio_adicional: precioAdicionalSabor
             });
-            setProductoConSabor(null);
+            setProductoSeleccionado(null);
         }
     };
     
     // Nueva función para seleccionar tamaño
     const seleccionarTamano = (tamano) => {
+        // Asegurarnos de que el precio adicional del tamaño sea un número válido
+        const precioAdicionalTamano = parseFloat(tamano.precio_adicional) || 0;
+        
         // Combinamos el producto con sabor y tamaño
         const datosCombinados = {
-            ...productoConSabor ?? productos.find(p => p.id === saborSeleccionado.producto_id),
+            ...productoSeleccionado ?? productos.find(p => p.id === saborSeleccionado.producto_id),
             sabor_id: saborSeleccionado?.id,
             sabor_nombre: saborSeleccionado?.nombre,
             sabor_categoria: saborSeleccionado?.categoria_nombre,
             precio_adicional: parseFloat(saborSeleccionado?.precio_adicional || 0),
             tamano_id: tamano.id,
             tamano_nombre: tamano.nombre,
-            tamano_precio: parseFloat(tamano.precio_adicional || 0)
+            tamano_precio: precioAdicionalTamano
         };
         
         setProductoEditandoNotas(datosCombinados);
         setSeleccionTamano(false);
     };
 
-    const confirmarAgregarProducto = () => {
+    const cancelarSeleccionSabor = () => {
+        setSeleccionSabores(false);
+        setMostrarSeleccionCantidad(true);
+        setSaborSeleccionado(null);
+    };
+    
+    const cancelarSeleccionTamano = () => {
+        setSeleccionTamano(false);
+        setSeleccionSabores(true); // Volver a selección de sabor
+        setSaborSeleccionado(null);
+    };
+
+    const cancelarEditarNotas = () => {
+        setProductoEditandoNotas(null);
+        setNotas("");
+        
+        // Determinar a qué pantalla volver
+        if (productoSeleccionado?.categoria === "Pulque" && saborSeleccionado) {
+            setSeleccionTamano(true);
+        } else if (seleccionSabores) {
+            setSeleccionSabores(true);
+        } else {
+            setMostrarSeleccionCantidad(true);
+        }
+    };
+
+    const agregarProductoALista = () => {
         if (!productoEditandoNotas) return;
         
-        const { id, sabor_id, sabor_nombre, sabor_categoria, precio_adicional, tamano_id, tamano_nombre, tamano_precio } = productoEditandoNotas;
+        const { 
+            id, 
+            sabor_id, 
+            sabor_nombre, 
+            sabor_categoria, 
+            precio_adicional,
+            tamano_id,
+            tamano_nombre,
+            tamano_precio 
+        } = productoEditandoNotas;
+        
+        // Clave única para identificar este producto con este sabor, tamaño y notas
+        const uniqueKey = `${id}-${sabor_id || 0}-${tamano_id || 0}-${notas.trim() || ""}`;
         
         // Verificar si ya existe este producto con este sabor, tamaño y notas
-        const yaExiste = seleccionados.find(
-            (p) => p.id === id && 
-                   p.sabor_id === sabor_id && 
-                   p.tamano_id === tamano_id &&
-                   ((p.notas || "") === (notasProducto || ""))
+        const yaExiste = productosSeleccionados.find(p => 
+            p.id === id && 
+            p.sabor_id === sabor_id && 
+            p.tamano_id === tamano_id && 
+            ((p.notas || "") === (notas.trim() || ""))
         );
         
         if (yaExiste) {
-            setSeleccionados((prev) =>
-                prev.map((p) =>
+            // Si ya existe, incrementar cantidad
+            setProductosSeleccionados(prev => 
+                prev.map(p => 
                     p.id === id && 
                     p.sabor_id === sabor_id && 
-                    p.tamano_id === tamano_id &&
-                    ((p.notas || "") === (notasProducto || ""))
+                    p.tamano_id === tamano_id && 
+                    ((p.notas || "") === (notas.trim() || ""))
                         ? { ...p, cantidad: p.cantidad + cantidad } 
                         : p
                 )
             );
         } else {
             // Calcular precio total con adicionales
-            let precioTotal = parseFloat(productoEditandoNotas.precio);
+            let precioTotal = productoEditandoNotas.precio;
             
             if (precio_adicional) {
                 precioTotal += precio_adicional;
@@ -268,62 +370,31 @@ export default function CrearOrden() {
                 precioTotal += tamano_precio;
             }
             
-            setSeleccionados((prev) => [
+            // Agregar nuevo producto a la lista
+            setProductosSeleccionados(prev => [
                 ...prev, 
                 { 
                     ...productoEditandoNotas, 
                     cantidad,
-                    precio_original: parseFloat(productoEditandoNotas.precio),
+                    precio_original: productoEditandoNotas.precio,
                     precio: precioTotal,
-                    notas: notasProducto.trim() || null
+                    notas: notas.trim() || null
                 }
             ]);
         }
         
         // Limpiar estados
         setProductoEditandoNotas(null);
-        setNotasProducto("");
+        setProductoSeleccionado(null);
         setSaborSeleccionado(null);
-    };
-
-    const cancelarSeleccionSabor = () => {
-        setProductoConSabor(null);
-        setProductoConCantidad(productoConSabor);
-    };
-    
-    const cancelarSeleccionTamano = () => {
-        setSeleccionTamano(false);
-        setProductoConSabor(productos.find(p => p.id === saborSeleccionado?.producto_id));
-        setSaborSeleccionado(null);
-    };
-
-    const cancelarAgregarProducto = () => {
-        setProductoEditandoNotas(null);
-        setNotasProducto("");
-        
-        // Si venimos de seleccionar tamaño, volver ahí
-        if (saborSeleccionado) {
-            setSeleccionTamano(true);
-        } 
-        // Si venimos de seleccionar sabor, volver ahí
-        else if (productoConSabor) {
-            setProductoConSabor(productoEditandoNotas);
-        } 
-        // Si venimos de cantidad, volver ahí
-        else {
-            setProductoConCantidad(productoEditandoNotas);
-        }
-    };
-
-    const cancelarSeleccionCantidad = () => {
-        setProductoConCantidad(null);
+        setNotas("");
         setCantidad(1);
     };
 
     const quitarProducto = (id, sabor_id, tamano_id, notas) => {
-        setSeleccionados((prev) =>
+        setProductosSeleccionados(prev => 
             prev
-            .map((p) => (
+            .map(p => (
                 p.id === id && 
                 p.sabor_id === sabor_id && 
                 p.tamano_id === tamano_id &&
@@ -331,82 +402,250 @@ export default function CrearOrden() {
                     ? { ...p, cantidad: p.cantidad - 1 } 
                     : p
             ))
-            .filter((p) => p.cantidad > 0)
+            .filter(p => p.cantidad > 0)
         );
     };
 
-    const aumentarProducto = (id, sabor_id, tamano_id, notas) => {
-        setSeleccionados((prev) =>
-            prev.map((p) => (
+    const aumentarCantidad = (id, sabor_id, tamano_id, notas) => {
+        setProductosSeleccionados(prev =>
+            prev.map(p => 
                 p.id === id && 
                 p.sabor_id === sabor_id && 
                 p.tamano_id === tamano_id &&
-                ((p.notas || "") === (notas || "")) 
-                    ? { ...p, cantidad: p.cantidad + 1 } 
+                ((p.notas || "") === (notas || ""))
+                    ? { ...p, cantidad: p.cantidad + 1 }
                     : p
-            ))
+            )
         );
     };
 
     const crearOrden = async () => {
-        if (!presoSeleccionado && !nombreLibre.trim()) {
-            alert("Debes seleccionar un cliente o escribir un nombre");
-            return;
-        }
-        if (seleccionados.length === 0) {
+        if (productosSeleccionados.length === 0) {
             alert("Agrega al menos un producto");
             return;
         }
         
-        const body = {
-            empleado_id: 1, // temporal, puedes leerlo del token luego
-            preso_id: presoSeleccionado ? Number(presoSeleccionado) : null,
-            nombre_cliente: nombreLibre || null,
-            productos: seleccionados.map((p) => ({
-                producto_id: p.id,
-                cantidad: p.cantidad,
-                precio_unitario: p.precio, // Enviar el precio unitario con adicionales incluidos
-                sabor_id: p.sabor_id || null,
-                tamano_id: p.tamano_id || null,
-                notas: p.notas || null
-            })),
-        };
-        
         try {
-            const res = await fetch("http://localhost:3000/orders", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(body),
+            const response = await fetch('http://localhost:3000/orders', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                },
+                body: JSON.stringify({
+                    preso_id: presoSeleccionado?.id,
+                    nombre_cliente: presoSeleccionado ? presoSeleccionado.reg_name : nombreLibre,
+                    total: productosSeleccionados.reduce((sum, prod) => sum + (prod.precio * prod.cantidad), 0),
+                    empleado_id: 1, // temporal, puedes leerlo del token luego
+                    productos: productosSeleccionados.map(p => ({
+                        producto_id: p.id,
+                        cantidad: p.cantidad,
+                        precio_unitario: p.precio,
+                        sabor_id: p.sabor_id,
+                        tamano_id: p.tamano_id,
+                        notas: p.notas
+                    }))
+                })
             });
-            
-            if (res.ok) {
-                alert("Orden creada con éxito");
-                window.location.href = "/ordenes";
-            } else {
-                const data = await res.json();
-                alert("Error al crear orden: " + data.error);
+
+            if (!response.ok) {
+                throw new Error('Error al crear la orden');
             }
-        } catch (err) {
-            alert("Error de conexión");
+
+            const data = await response.json();
+            alert("Orden creada con éxito");
+            window.location.href = "/ordenes";
+        } catch (error) {
+            console.error('Error:', error);
+            alert(error.message);
         }
     };
 
-    // Pantalla de selección de cantidad
-    if (productoConCantidad) {
+    const productosFiltrados = () => {
+        let result = [...productos];
+        
+        // Filtrar por categoría
+        if (categoriaSeleccionada !== "todas") {
+            result = result.filter(p => p.categoria === categoriaSeleccionada);
+        }
+        
+        // Filtrar por búsqueda
+        if (busqueda.trim()) {
+            const terminoBusqueda = busqueda.toLowerCase().trim();
+            result = result.filter(p => 
+                p.nombre.toLowerCase().includes(terminoBusqueda) ||
+                (p.descripcion && p.descripcion.toLowerCase().includes(terminoBusqueda))
+            );
+        }
+        
+        return result;
+    };
+
+    const seleccionarProducto = (producto) => {
+        setProductoSeleccionado(producto);
+        setCantidad(1);
+        setNotas("");
+        setSaborSeleccionado(null);
+    };
+
+    const cancelarSeleccion = () => {
+        setProductoSeleccionado(null);
+        setCantidad(1);
+        setNotas("");
+        setSeleccionSabores(false);
+        setProductoEditandoNotas(null);
+        setMostrarSeleccionCantidad(false);
+        setSeleccionTamano(false);
+        setSaborSeleccionado(null);
+    };
+
+    const continuar = async () => {
+        if (!productoSeleccionado) return;
+        
+        const esPulque = productoSeleccionado.categoria === "Pulque";
+        console.log("¿Es pulque?", esPulque);
+        
+        // Para pulques, primero mostramos selección de sabores 
+        if (esPulque) {
+            const tieneSabores = await cargarSabores(productoSeleccionado.id);
+            console.log("¿Tiene sabores?", tieneSabores);
+            
+            if (tieneSabores) {
+                // Si tiene sabores, mostrar pantalla de selección de sabores
+                setSeleccionSabores(true);
+                setSeleccionTamano(false);
+                setMostrarSeleccionCantidad(false);
+            } else {
+                // Si no tiene sabores (extraño para pulque), mostrar tamaños directamente
+                const tieneTamanos = await cargarTamanos(productoSeleccionado.id);
+                console.log("¿Tiene tamaños?", tieneTamanos);
+                
+                if (tieneTamanos) {
+                    setSeleccionTamano(true);
+                    setSeleccionSabores(false);
+                    setMostrarSeleccionCantidad(false);
+                } else {
+                    // Si no tiene sabores ni tamaños, mostrar notas
+                    mostrarPantallaNotas(productoSeleccionado, null);
+                    setMostrarSeleccionCantidad(false);
+                }
+            }
+        } else {
+            // Para productos no-pulque
+            const tieneSabores = await cargarSabores(productoSeleccionado.id);
+            console.log("¿Tiene sabores? (no-pulque)", tieneSabores);
+            
+            if (tieneSabores) {
+                // Si tiene sabores, ir a pantalla de selección
+                setSeleccionSabores(true);
+                setMostrarSeleccionCantidad(false);
+            } else {
+                // Si no tiene sabores, ir a notas
+                mostrarPantallaNotas(productoSeleccionado, null);
+                setMostrarSeleccionCantidad(false);
+            }
+        }
+    };
+
+    // Función para manejar selección de sabores
+    const seleccionarSabor = async (sabor) => {
+        console.log("Sabor seleccionado:", sabor);
+        const esPulque = productoSeleccionado.categoria === "Pulque";
+        
+        if (esPulque) {
+            // Para pulques, guardamos el sabor y vamos a seleccionar tamaño
+            setSaborSeleccionado(sabor);
+            
+            const tieneTamanos = await cargarTamanos(productoSeleccionado.id);
+            console.log("¿Tiene tamaños para este sabor?", tieneTamanos);
+            
+            if (tieneTamanos) {
+                setSeleccionSabores(false);
+                setSeleccionTamano(true);
+            } else {
+                // Si por alguna razón no hay tamaños disponibles
+                mostrarPantallaNotas(productoSeleccionado, sabor);
+                setSeleccionSabores(false);
+            }
+        } else {
+            // Para otros productos, seguimos el flujo normal
+            mostrarPantallaNotas(productoSeleccionado, sabor);
+            setSeleccionSabores(false);
+        }
+    };
+
+    const mostrarPantallaNotas = (producto, opcion) => {
+        if (!producto) return;
+        
+        if (opcion && opcion.tamano_id) {
+            // Si tenemos sabor y tamaño (para pulques)
+            setProductoEditandoNotas({
+                ...producto,
+                sabor_id: opcion.id,
+                sabor_nombre: opcion.nombre,
+                sabor_categoria: opcion.categoria_nombre,
+                precio_adicional: parseFloat(opcion.precio_adicional || 0),
+                tamano_id: opcion.tamano_id,
+                tamano_nombre: opcion.tamano_nombre,
+                tamano_precio: opcion.tamano_precio
+            });
+        } else if (opcion) {
+            // Solo sabor
+            setProductoEditandoNotas({
+                ...producto,
+                sabor_id: opcion.id,
+                sabor_nombre: opcion.nombre,
+                sabor_categoria: opcion.categoria_nombre,
+                precio_adicional: parseFloat(opcion.precio_adicional || 0)
+            });
+        } else {
+            // Sin opciones adicionales
+            setProductoEditandoNotas({
+                ...producto,
+                sabor_id: null,
+                sabor_nombre: null,
+                sabor_categoria: null,
+                precio_adicional: 0
+            });
+        }
+        
+        setNotas("");
+    };
+
+    // Renderización principal
+    if (loading) {
+        return <p className="text-center text-gray-400">Cargando productos...</p>;
+    }
+
+    if (error) {
+        return (
+            <div className="text-center text-red-500">
+                <p>{error}</p>
+                <button
+                    onClick={cargarProductos}
+                    className="mt-4 bg-vino px-4 py-2 rounded"
+                >
+                    Reintentar
+                </button>
+            </div>
+        );
+    }
+
+    if (mostrarSeleccionCantidad && productoSeleccionado) {
         return (
             <div className="bg-vino rounded-xl p-4 space-y-4">
                 <div className="flex justify-between items-center">
-                    <h2 className="text-xl font-bold">{productoConCantidad.nombre}</h2>
+                    <h2 className="text-xl font-bold">{productoSeleccionado.nombre}</h2>
                     <button 
-                        onClick={cancelarSeleccionCantidad}
+                        onClick={cancelarSeleccion}
                         className="text-gray-300 hover:text-white"
                     >
                         ✕
                     </button>
                 </div>
                 
-                <p className="text-sm">{productoConCantidad.descripcion}</p>
-                <p className="text-amarillo font-bold">${parseFloat(productoConCantidad.precio).toFixed(2)}</p>
+                <p className="text-sm">{productoSeleccionado.descripcion}</p>
+                <p className="text-amarillo font-bold">${productoSeleccionado.precio.toFixed(2)}</p>
                 
                 <div>
                     <label className="block mb-2 font-bold">Cantidad:</label>
@@ -446,7 +685,7 @@ export default function CrearOrden() {
                 </div>
                 
                 <button
-                    onClick={continuarDespuesDeCantidad}
+                    onClick={continuar}
                     className="w-full bg-amarillo text-negro py-3 rounded-full font-bold hover:bg-yellow-500"
                 >
                     Continuar
@@ -455,73 +694,11 @@ export default function CrearOrden() {
         );
     }
 
-    // Pantalla de edición de notas
-    if (productoEditandoNotas) {
+    if (seleccionSabores && saboresDisponibles.length > 0) {
         return (
             <div className="bg-vino rounded-xl p-4 space-y-4">
                 <div className="flex justify-between items-center">
-                    <h2 className="text-xl font-bold">{productoEditandoNotas.nombre} ({cantidad})</h2>
-                    <button 
-                        onClick={cancelarAgregarProducto}
-                        className="text-gray-300 hover:text-white"
-                    >
-                        ✕
-                    </button>
-                </div>
-                
-                {productoEditandoNotas.sabor_id && (
-                    <div className="bg-negro/30 p-3 rounded">
-                        <p className="font-bold">Sabor seleccionado:</p>
-                        <p>{productoEditandoNotas.sabor_nombre} 
-                           {productoEditandoNotas.sabor_categoria ? ` (${productoEditandoNotas.sabor_categoria})` : ''}
-                        </p>
-                        {productoEditandoNotas.precio_adicional > 0 && (
-                            <p className="text-xs text-amarillo mt-1">
-                                Precio adicional: +${productoEditandoNotas.precio_adicional}
-                            </p>
-                        )}
-                    </div>
-                )}
-                
-                {productoEditandoNotas.tamano_id && (
-                    <div className="bg-negro/30 p-3 rounded mt-2">
-                        <p className="font-bold">Tamaño seleccionado:</p>
-                        <p>{productoEditandoNotas.tamano_nombre}</p>
-                        {productoEditandoNotas.tamano_precio > 0 && (
-                            <p className="text-xs text-amarillo mt-1">
-                                Precio adicional: +${productoEditandoNotas.tamano_precio}
-                            </p>
-                        )}
-                    </div>
-                )}
-                
-                <div>
-                    <label className="block mb-2 font-bold">Notas especiales:</label>
-                    <textarea
-                        value={notasProducto}
-                        onChange={(e) => setNotasProducto(e.target.value)}
-                        placeholder="Sin cebolla, extra queso, etc."
-                        className="w-full px-4 py-2 rounded bg-negro text-white placeholder:text-gray-400 border border-amarillo"
-                        rows={3}
-                    />
-                </div>
-                
-                <button
-                    onClick={confirmarAgregarProducto}
-                    className="w-full bg-amarillo text-negro py-3 rounded font-bold"
-                >
-                    Agregar a la Orden
-                </button>
-            </div>
-        );
-    }
-
-    // Si hay un producto con sabores para seleccionar
-    if (productoConSabor) {
-        return (
-            <div className="bg-vino rounded-xl p-4 space-y-4">
-                <div className="flex justify-between items-center">
-                    <h2 className="text-xl font-bold">Selecciona un sabor para {productoConSabor.nombre} ({cantidad})</h2>
+                    <h2 className="text-xl font-bold">Selecciona un sabor para {productoSeleccionado.nombre} ({cantidad})</h2>
                     <button 
                         onClick={cancelarSeleccionSabor}
                         className="text-gray-300 hover:text-white"
@@ -537,7 +714,7 @@ export default function CrearOrden() {
                         {saboresDisponibles.map(sabor => (
                             <button
                                 key={sabor.id}
-                                onClick={() => agregarProductoConSabor(sabor)}
+                                onClick={() => seleccionarSabor(sabor)}
                                 className="bg-negro p-3 rounded text-left hover:bg-gray-800 flex justify-between items-center"
                             >
                                 <div>
@@ -558,15 +735,14 @@ export default function CrearOrden() {
             </div>
         );
     }
-    
-    // NUEVA pantalla de selección de tamaño
+
     if (seleccionTamano && tamanosDisponibles.length > 0) {
         return (
             <div className="bg-vino rounded-xl p-4 space-y-4">
                 <div className="flex justify-between items-center">
                     <h2 className="text-xl font-bold">
-                        Selecciona un tamaño 
-                        {saborSeleccionado ? ` para ${saborSeleccionado.nombre}` : ''}
+                        Selecciona un tamaño para {productoSeleccionado.nombre} 
+                        {saborSeleccionado ? ` (${saborSeleccionado.nombre})` : ''}
                     </h2>
                     <button 
                         onClick={cancelarSeleccionTamano}
@@ -605,8 +781,70 @@ export default function CrearOrden() {
         );
     }
 
+    if (productoEditandoNotas) {
+        return (
+            <div className="bg-vino rounded-xl p-4 space-y-4">
+                <div className="flex justify-between items-center">
+                    <h2 className="text-xl font-bold">{productoEditandoNotas.nombre} ({cantidad})</h2>
+                    <button 
+                        onClick={cancelarEditarNotas}
+                        className="text-gray-300 hover:text-white"
+                    >
+                        ✕
+                    </button>
+                </div>
+                
+                {productoEditandoNotas.sabor_id && (
+                    <div className="bg-negro/30 p-3 rounded">
+                        <p className="font-bold">Sabor seleccionado:</p>
+                        <p>{productoEditandoNotas.sabor_nombre} 
+                            {productoEditandoNotas.sabor_categoria ? ` (${productoEditandoNotas.sabor_categoria})` : ''}
+                        </p>
+                        {productoEditandoNotas.precio_adicional > 0 && (
+                            <p className="text-xs text-amarillo mt-1">
+                                Precio adicional: +${productoEditandoNotas.precio_adicional}
+                            </p>
+                        )}
+                    </div>
+                )}
+                
+                {productoEditandoNotas.tamano_id && (
+                    <div className="bg-negro/30 p-3 rounded mt-2">
+                        <p className="font-bold">Tamaño seleccionado:</p>
+                        <p>{productoEditandoNotas.tamano_nombre}</p>
+                        {productoEditandoNotas.tamano_precio > 0 && (
+                            <p className="text-xs text-amarillo mt-1">
+                                Precio adicional: +${productoEditandoNotas.tamano_precio}
+                            </p>
+                        )}
+                    </div>
+                )}
+                
+                <div>
+                    <label className="block mb-2 font-bold">Notas especiales:</label>
+                    <textarea
+                        value={notas}
+                        onChange={(e) => setNotas(e.target.value)}
+                        placeholder="Sin cebolla, extra queso, etc."
+                        className="w-full px-4 py-2 rounded bg-negro text-white placeholder:text-gray-400 border border-amarillo"
+                        rows={3}
+                    />
+                </div>
+                
+                <button
+                    onClick={agregarProductoALista}
+                    className="w-full bg-amarillo text-negro py-3 rounded font-bold"
+                >
+                    Agregar a la Orden
+                </button>
+            </div>
+        );
+    }
+
+    // Pantalla principal para selección de cliente y productos
     return (
         <div className="space-y-6">
+            {/* Sección de selección de cliente */}
             {!nombreLibre && (
                 <div>
                     <label className="block mb-2 text-amarillo font-bold">Cliente registrado</label>
@@ -620,10 +858,15 @@ export default function CrearOrden() {
                     />
 
                     <select
-                        value={presoSeleccionado || ""}
+                        value={presoSeleccionado?.id || ""}
                         onChange={(e) => {
-                            setPresoSeleccionado(e.target.value || null);
-                            setNombreLibre("");
+                            if (e.target.value) {
+                                const selectedPreso = presos.find(p => p.id == e.target.value);
+                                setPresoSeleccionado(selectedPreso);
+                                setNombreLibre("");
+                            } else {
+                                setPresoSeleccionado(null);
+                            }
                         }}
                         className="w-full bg-vino text-white p-2 rounded"
                     >
@@ -661,10 +904,10 @@ export default function CrearOrden() {
             
             {/* Lista de productos seleccionados */}
             <div className="space-y-3 my-6">
-                {seleccionados.length > 0 && (
+                {productosSeleccionados.length > 0 && (
                     <div className="bg-negro rounded p-4 space-y-3">
                         <h3 className="font-bold text-amarillo">Productos seleccionados</h3>
-                        {seleccionados.map((prod, index) => (
+                        {productosSeleccionados.map((prod, index) => (
                             <div key={index} className="flex justify-between items-start border-b border-gray-700 pb-2">
                                 <div className="flex-1">
                                     <p className="font-bold">{prod.nombre}</p>
@@ -698,7 +941,7 @@ export default function CrearOrden() {
                                         {prod.cantidad}
                                     </span>
                                     <button
-                                        onClick={() => aumentarProducto(prod.id, prod.sabor_id, prod.tamano_id, prod.notas)}
+                                        onClick={() => aumentarCantidad(prod.id, prod.sabor_id, prod.tamano_id, prod.notas)}
                                         className="bg-vino text-white px-2 py-1 rounded-full text-xs"
                                     >
                                         +
@@ -710,7 +953,7 @@ export default function CrearOrden() {
                             </div>
                         ))}
                         <p className="font-bold text-right text-lg mt-4">
-                            Total: ${seleccionados.reduce((sum, prod) => sum + (prod.precio * prod.cantidad), 0).toFixed(2)}
+                            Total: ${productosSeleccionados.reduce((sum, prod) => sum + (prod.precio * prod.cantidad), 0).toFixed(2)}
                         </p>
                         <button
                             onClick={crearOrden}
@@ -720,7 +963,7 @@ export default function CrearOrden() {
                         </button>
                     </div>
                 )}
-                {seleccionados.length === 0 && (
+                {productosSeleccionados.length === 0 && (
                     <div className="bg-negro/50 rounded p-4 text-center">
                         <p className="text-gray-400">No hay productos seleccionados</p>
                     </div>
@@ -730,63 +973,64 @@ export default function CrearOrden() {
             <hr className="my-6 border-amarillo" />
             <h2 className="text-lg font-bold text-amarillo">Seleccionar productos</h2>
             
+            {/* Filtros de productos */}
             <div className="space-y-4">
                 <div className="relative">
                     <input
                         type="text"
                         placeholder="Buscar producto..."
-                        value={filtroNombre}
-                        onChange={(e) => setFiltroNombre(e.target.value)}
+                        value={busqueda}
+                        onChange={(e) => setBusqueda(e.target.value)}
                         className="w-full px-4 py-3 pl-10 rounded-full bg-vino/70 text-white placeholder:text-gray-300"
                     />
                     <span className="absolute left-3 top-3">🔍</span>
                 </div>
                 
-                <select
-                    value={filtroCategoria}
-                    onChange={(e) => setFiltroCategoria(e.target.value)}
-                    className="w-full p-2 rounded bg-negro text-white border border-amarillo"
-                >
-                    <option value="">Todas las categorías</option>
-                    {[...new Set(productos.map(p => p.categoria).filter(Boolean))].map(cat => (
-                        <option key={cat} value={cat}>{cat}</option>
+                <div className="flex flex-wrap gap-2">
+                    {categorias.map((cat) => (
+                        <button
+                            key={cat}
+                            onClick={() => setCategoriaSeleccionada(cat)}
+                            className={`py-1 px-3 rounded-full text-sm font-bold ${
+                                categoriaSeleccionada === cat ? "bg-amarillo text-negro" : "bg-vino text-white"
+                            }`}
+                        >
+                            {cat.charAt(0).toUpperCase() + cat.slice(1)}
+                        </button>
                     ))}
-                </select>
+                </div>
             </div>
             
+            {/* Lista de productos */}
             <div className="space-y-3 max-h-80 overflow-y-auto">
-                {productos
-                    .filter((p) => {
-                        const textoBusqueda = filtroNombre.toLowerCase();
-                        const coincideNombre = p.nombre.toLowerCase().includes(textoBusqueda);
-                        const coincideCategoriaTexto = p.categoria && p.categoria.toLowerCase().includes(textoBusqueda);
-                        const coincideCategoriaDesplegable = filtroCategoria === "" || p.categoria === filtroCategoria;
-                        
-                        return (textoBusqueda === "" || coincideNombre || coincideCategoriaTexto) 
-                               && coincideCategoriaDesplegable;
-                    })
-                    .map((prod) => (
+                {productosFiltrados().length === 0 ? (
+                    <p className="text-center text-gray-400 py-8">
+                        No se encontraron productos
+                    </p>
+                ) : (
+                    productosFiltrados().map((producto) => (
                         <div
-                            key={prod.id}
-                            onClick={() => agregarProducto(prod)}
+                            key={producto.id}
+                            onClick={() => seleccionarProducto(producto)}
                             className="bg-vino/80 rounded-xl p-4 cursor-pointer hover:bg-vino transition"
                         >
                             <div className="flex justify-between items-start">
                                 <div>
-                                    <h3 className="font-bold">{prod.nombre}</h3>
-                                    {prod.descripcion && (
-                                        <p className="text-sm text-gray-300 line-clamp-2">{prod.descripcion}</p>
+                                    <h3 className="font-bold">{producto.nombre}</h3>
+                                    {producto.descripcion && (
+                                        <p className="text-sm text-gray-300 line-clamp-2">{producto.descripcion}</p>
                                     )}
                                 </div>
-                                <p className="text-amarillo font-bold">${parseFloat(prod.precio).toFixed(2)}</p>
+                                <p className="text-amarillo font-bold">${parseFloat(producto.precio).toFixed(2)}</p>
                             </div>
                             <div className="mt-2">
                                 <span className="text-xs bg-negro/50 px-2 py-1 rounded">
-                                    {prod.categoria}
+                                    {producto.categoria}
                                 </span>
                             </div>
                         </div>
-                    ))}
+                    ))
+                )}
             </div>
         </div>
     );

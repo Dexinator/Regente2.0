@@ -450,7 +450,8 @@ export default function AgregarProducto({ orden_id }) {
             cantidad: p.cantidad,
             sabor_id: p.sabor_id || null,
             tamano_id: p.tamano_id || null,
-            notas: p.notas || null
+            notas: p.notas || null,
+            precio_unitario: p.precio
           })),
           empleado_id: 1 // Temporal, después obtener del token
         })

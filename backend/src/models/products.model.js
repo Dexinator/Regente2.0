@@ -38,7 +38,7 @@ export const deleteProduct = async (id) => {
 export const getSaboresByProductoId = async (producto_id, tipo) => {
   let query = `
     SELECT s.id, s.nombre, s.descripcion, s.disponible, 
-           COALESCE(ps.precio_adicional, s.precio_adicional) as precio_adicional,
+           s.precio_adicional,
            cv.nombre as categoria_nombre, cv.tipo as categoria_tipo
     FROM sabores s
     JOIN producto_sabor ps ON s.id = ps.sabor_id
@@ -48,7 +48,7 @@ export const getSaboresByProductoId = async (producto_id, tipo) => {
   
   // Usar los valores exactos de la base de datos
   if (tipo === 'sabor') {
-    query += " AND cv.tipo = 'pulque_sabor'";
+    query += " AND (cv.tipo = 'pulque_sabor' OR cv.tipo = 'ingrediente')";
   } else if (tipo === 'tamano') {
     query += " AND cv.tipo = 'tamaño'";
   }

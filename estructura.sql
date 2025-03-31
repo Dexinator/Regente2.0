@@ -85,7 +85,6 @@ CREATE TABLE producto_sabor (
     id SERIAL PRIMARY KEY,
     producto_id INT REFERENCES productos(id) ON DELETE CASCADE,
     sabor_id INT REFERENCES sabores(id) ON DELETE CASCADE,
-    precio_adicional NUMERIC(10, 2) DEFAULT 0,
     UNIQUE(producto_id, sabor_id)
 );
 

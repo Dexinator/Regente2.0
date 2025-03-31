@@ -102,61 +102,11 @@ export const createOrder = async ({ preso_id, nombre_cliente, empleado_id, produ
 
     // 2. Agregar productos
     for (const { producto_id, cantidad, sabor_id, tamano_id, notas, precio_unitario } of productos) {
-      // Si el frontend proporciona el precio_unitario, usamos ese valor
-      let precio_final = precio_unitario;
-      
-      // Si no hay precio_unitario del frontend, calculamos el precio 
-      if (!precio_final) {
-        const precioRes = await client.query(
-          `SELECT precio FROM productos WHERE id = $1`,
-          [producto_id]
-        );
-        const precio_base = precioRes.rows[0]?.precio;
-
-        if (!precio_base) {
-          throw new Error(`Producto con id ${producto_id} no encontrado`);
-        }
-
-        // Verificar precio adicional del sabor si existe
-        let precio_adicional_sabor = 0;
-        if (sabor_id) {
-          const saborRes = await client.query(`
-            SELECT COALESCE(ps.precio_adicional, s.precio_adicional) as precio_adicional
-            FROM sabores s
-            LEFT JOIN producto_sabor ps ON s.id = ps.sabor_id AND ps.producto_id = $1
-            WHERE s.id = $2 AND s.disponible = true
-          `, [producto_id, sabor_id]);
-          
-          if (saborRes.rows.length === 0) {
-            throw new Error(`Sabor con id ${sabor_id} no encontrado o no disponible`);
-          }
-          
-          precio_adicional_sabor = parseFloat(saborRes.rows[0].precio_adicional || 0);
-        }
-        
-        // Verificar precio adicional del tamaño si existe
-        let precio_adicional_tamano = 0;
-        if (tamano_id) {
-          const tamanoRes = await client.query(`
-            SELECT COALESCE(ps.precio_adicional, s.precio_adicional) as precio_adicional
-            FROM sabores s
-            LEFT JOIN producto_sabor ps ON s.id = ps.sabor_id AND ps.producto_id = $1
-            WHERE s.id = $2 AND s.disponible = true
-          `, [producto_id, tamano_id]);
-          
-          if (tamanoRes.rows.length > 0) {
-            precio_adicional_tamano = parseFloat(tamanoRes.rows[0].precio_adicional || 0);
-          }
-        }
-
-        // Calcular precio final con posibles adicionales
-        precio_final = precio_base + precio_adicional_sabor + precio_adicional_tamano;
-      }
-
+      // Usar el precio_unitario enviado por el frontend
       await client.query(
         `INSERT INTO detalles_orden (orden_id, producto_id, cantidad, precio_unitario, empleado_id, sabor_id, tamano_id, notas)
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
-        [orden_id, producto_id, cantidad, precio_final, empleado_id, sabor_id || null, tamano_id || null, notas || null]
+        [orden_id, producto_id, cantidad, precio_unitario, empleado_id, sabor_id || null, tamano_id || null, notas || null]
       );
     }
 
@@ -287,57 +237,15 @@ export const addProductsToOrder = async (orden_id, productos, empleado_id) => {
     }
 
     // Insertar cada producto
-    for (const { producto_id, cantidad, sabor_id, tamano_id, notas } of productos) {
-      const precioRes = await client.query(
-        `SELECT precio FROM productos WHERE id = $1`,
-        [producto_id]
-      );
-      const precio_unitario = precioRes.rows[0]?.precio;
-      if (!precio_unitario) {
-        throw new Error(`Producto con id ${producto_id} no encontrado.`);
-      }
-
-      // Verificar precio adicional del sabor si existe
-      let precio_adicional_sabor = 0;
-      if (sabor_id) {
-        const saborRes = await client.query(`
-          SELECT COALESCE(ps.precio_adicional, s.precio_adicional) as precio_adicional
-          FROM sabores s
-          LEFT JOIN producto_sabor ps ON s.id = ps.sabor_id AND ps.producto_id = $1
-          WHERE s.id = $2 AND s.disponible = true
-        `, [producto_id, sabor_id]);
-        
-        if (saborRes.rows.length === 0) {
-          throw new Error(`Sabor con id ${sabor_id} no encontrado o no disponible`);
-        }
-        
-        precio_adicional_sabor = parseFloat(saborRes.rows[0].precio_adicional || 0);
-      }
-      
-      // Verificar precio adicional del tamaño si existe
-      let precio_adicional_tamano = 0;
-      if (tamano_id) {
-        const tamanoRes = await client.query(`
-          SELECT COALESCE(ps.precio_adicional, s.precio_adicional) as precio_adicional
-          FROM sabores s
-          LEFT JOIN producto_sabor ps ON s.id = ps.sabor_id AND ps.producto_id = $1
-          WHERE s.id = $2 AND s.disponible = true
-        `, [producto_id, tamano_id]);
-        
-        if (tamanoRes.rows.length > 0) {
-          precio_adicional_tamano = parseFloat(tamanoRes.rows[0].precio_adicional || 0);
-        }
-      }
-
-      // Calcular precio final con posibles adicionales
-      const precio_final = precio_unitario + precio_adicional_sabor + precio_adicional_tamano;
-
+    for (const { producto_id, cantidad, sabor_id, tamano_id, notas, precio_unitario } of productos) {
+      // Usar el precio_unitario enviado por el frontend
       await client.query(
         `INSERT INTO detalles_orden (orden_id, producto_id, cantidad, precio_unitario, empleado_id, sabor_id, tamano_id, notas)
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
-        [orden_id, producto_id, cantidad, precio_final, empleado_id, sabor_id || null, tamano_id || null, notas || null]
+        [orden_id, producto_id, cantidad, precio_unitario, empleado_id, sabor_id || null, tamano_id || null, notas || null]
       );
     }
+
 
     await client.query("COMMIT");
     return { mensaje: "Productos agregados correctamente" };
