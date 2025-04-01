@@ -9,7 +9,8 @@ import {
   getOrderSummary,
   fetchProductosPorPreparar,
   fetchHistorialProductosPreparados,
-  updateEstadoProducto
+  updateEstadoProducto,
+  cancelarProducto
 } from "../controllers/orders.controller.js";
 
 import { verifyToken, authorizeRoles } from "../middlewares/auth.js"; // ✅ IMPORTANTE
@@ -23,6 +24,7 @@ router.get("/:id", fetchOrderById);        // Una orden con detalles
 router.post("/", addOrder);                // Crear orden
 router.put("/:id/close",closeOrderById);
 router.post("/:id/productos", addProducts);
+router.post("/:id/cancelar", cancelarProducto); // Cancelar productos
 router.get("/:id/resumen", getOrderSummary);
 
 // Nuevas rutas para la cocina

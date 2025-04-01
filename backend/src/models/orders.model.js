@@ -81,20 +81,21 @@ export const getOrderWithDetails = async (orden_id) => {
 };
 
 // Crear nueva orden con detalles
-export const createOrder = async ({ preso_id, nombre_cliente, empleado_id, productos }) => {
+export const createOrder = async ({ preso_id, nombre_cliente, empleado_id, productos, num_personas = 1 }) => {
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
 
     // 1. Crear la orden (total y total_bruto inician en 0)
     const ordenRes = await client.query(
-      `INSERT INTO ordenes (preso_id, nombre_cliente, total, total_bruto, empleado_id)
-       VALUES ($1, $2, 0, 0, $3)
+      `INSERT INTO ordenes (preso_id, nombre_cliente, total, total_bruto, empleado_id, num_personas)
+       VALUES ($1, $2, 0, 0, $3, $4)
        RETURNING *`,
       [
         preso_id || null,
         preso_id ? null : nombre_cliente,
-        empleado_id
+        empleado_id,
+        num_personas
       ]
     );
 
@@ -259,17 +260,29 @@ export const addProductsToOrder = async (orden_id, productos, empleado_id) => {
 
 //Obtener resumen de orden
 export const getOrderResumen = async (orden_id) => {
-  // 1. Obtener productos de la orden
+  // 1. Obtener productos de la orden con detalle de cancelaciones
   const productosQuery = await pool.query(`
-    SELECT p.nombre, d.cantidad, d.precio_unitario,
-           (d.cantidad * d.precio_unitario) AS subtotal
+    SELECT 
+      p.id AS producto_id,
+      p.nombre, 
+      SUM(d.cantidad) AS cantidad, 
+      d.precio_unitario,
+      (SUM(d.cantidad) * d.precio_unitario) AS subtotal,
+      CASE 
+        WHEN d.precio_unitario < 0 THEN true 
+        ELSE false 
+      END AS es_cancelacion,
+      BOOL_OR(d.preparado) AS preparado
     FROM detalles_orden d
     JOIN productos p ON d.producto_id = p.id
     WHERE d.orden_id = $1
+    GROUP BY p.id, p.nombre, d.precio_unitario, d.producto_id, (d.precio_unitario < 0)
+    ORDER BY es_cancelacion, p.nombre
   `, [orden_id]);
 
   const productos = productosQuery.rows;
 
+  // Calcular total teniendo en cuenta precios negativos (cancelaciones)
   const total = productos.reduce(
     (acc, prod) => acc + parseFloat(prod.subtotal),
     0
@@ -277,13 +290,14 @@ export const getOrderResumen = async (orden_id) => {
 
   // 2. Obtener nombre del cliente
   const clienteQuery = await pool.query(`
-    SELECT COALESCE(pr.reg_name, o.nombre_cliente) AS cliente
+    SELECT COALESCE(pr.reg_name, o.nombre_cliente) AS cliente, o.num_personas
     FROM ordenes o
     LEFT JOIN presos pr ON o.preso_id = pr.id
     WHERE o.orden_id = $1
   `, [orden_id]);
 
   const cliente = clienteQuery.rows[0]?.cliente || "Cliente desconocido";
+  const num_personas = clienteQuery.rows[0]?.num_personas || 1;
 
   // 3. Obtener pagos
   const pagosQuery = await pool.query(`
@@ -304,6 +318,7 @@ export const getOrderResumen = async (orden_id) => {
   return {
     orden_id,
     cliente,
+    num_personas,
     productos,
     total: parseFloat(total.toFixed(2)),
     total_pagado,
@@ -401,4 +416,88 @@ export const marcarProductoComoPreparado = async (detalle_id) => {
   
   const result = await pool.query(query, [detalle_id]);
   return result.rows[0];
+};
+
+// Cancelar producto de una orden (registrar como precio negativo)
+export const cancelarProductoOrden = async (orden_id, producto_id, cantidad, empleado_id, razon_cancelacion = null) => {
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+
+    // Verificar que la orden esté abierta
+    const ordenCheck = await client.query(
+      `SELECT estado FROM ordenes WHERE orden_id = $1`,
+      [orden_id]
+    );
+    if (ordenCheck.rows.length === 0) throw new Error("Orden no encontrada.");
+    if (ordenCheck.rows[0].estado !== "abierta") {
+      throw new Error("La orden ya está cerrada.");
+    }
+
+    // Verificar que el producto exista en la orden y obtener su precio unitario
+    // Agregamos la condición de que no esté preparado
+    const productoCheck = await client.query(
+      `SELECT d.*, p.nombre 
+       FROM detalles_orden d
+       JOIN productos p ON d.producto_id = p.id
+       WHERE d.orden_id = $1 AND d.producto_id = $2 AND d.precio_unitario > 0 AND d.preparado = FALSE`,
+      [orden_id, producto_id]
+    );
+
+    if (productoCheck.rows.length === 0) {
+      // Verificar si está preparado para dar un mensaje específico
+      const preparadoCheck = await client.query(
+        `SELECT COUNT(*) as count
+         FROM detalles_orden 
+         WHERE orden_id = $1 AND producto_id = $2 AND precio_unitario > 0 AND preparado = TRUE`,
+        [orden_id, producto_id]
+      );
+      
+      if (parseInt(preparadoCheck.rows[0].count) > 0) {
+        throw new Error("No se puede cancelar un producto que ya está preparado.");
+      } else {
+        throw new Error("El producto no está en la orden o ya fue cancelado.");
+      }
+    }
+
+    // Verificar que la cantidad a cancelar no sea mayor que la cantidad ordenada
+    const cantidadTotal = productoCheck.rows.reduce((total, row) => total + row.cantidad, 0);
+    
+    // Obtener cantidad ya cancelada
+    const canceladosCheck = await client.query(
+      `SELECT SUM(cantidad) as cantidad_cancelada
+       FROM detalles_orden 
+       WHERE orden_id = $1 AND producto_id = $2 AND precio_unitario < 0`,
+      [orden_id, producto_id]
+    );
+    
+    const cantidadYaCancelada = parseInt(canceladosCheck.rows[0]?.cantidad_cancelada || 0);
+    const cantidadDisponible = cantidadTotal - cantidadYaCancelada;
+
+    if (cantidad > cantidadDisponible) {
+      throw new Error(`No se pueden cancelar ${cantidad} unidades. Solo hay ${cantidadDisponible} disponibles.`);
+    }
+
+    // Registrar la cancelación como un nuevo detalle con precio negativo
+    const precioUnitario = Math.abs(productoCheck.rows[0].precio_unitario) * -1; // Convertir a negativo
+    
+    await client.query(
+      `INSERT INTO detalles_orden (orden_id, producto_id, cantidad, precio_unitario, empleado_id, notas)
+       VALUES ($1, $2, $3, $4, $5, $6)`,
+      [orden_id, producto_id, cantidad, precioUnitario, empleado_id, razon_cancelacion ? `CANCELACIÓN: ${razon_cancelacion}` : 'CANCELACIÓN']
+    );
+
+    await client.query("COMMIT");
+    return { 
+      mensaje: "Producto cancelado correctamente",
+      producto: productoCheck.rows[0].nombre,
+      cantidad: cantidad,
+      precio_unitario: precioUnitario
+    };
+  } catch (err) {
+    await client.query("ROLLBACK");
+    throw err;
+  } finally {
+    client.release();
+  }
 };

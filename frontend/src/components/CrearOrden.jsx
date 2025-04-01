@@ -5,6 +5,7 @@ export default function CrearOrden() {
     const [presos, setPresos] = useState([]);
     const [presoSeleccionado, setPresoSeleccionado] = useState(null);
     const [nombreLibre, setNombreLibre] = useState("");
+    const [numPersonas, setNumPersonas] = useState(1);
     
     const [productos, setProductos] = useState([]);
     const [categorias, setCategorias] = useState([]);
@@ -340,6 +341,7 @@ export default function CrearOrden() {
                     nombre_cliente: presoSeleccionado ? presoSeleccionado.reg_name : nombreLibre,
                     total: productosSeleccionados.reduce((sum, prod) => sum + (prod.precio * prod.cantidad), 0),
                     empleado_id: getEmpleadoId(),
+                    num_personas: numPersonas,
                     productos: productosSeleccionados.map(p => ({
                         producto_id: p.id,
                         cantidad: p.cantidad,
@@ -804,6 +806,26 @@ export default function CrearOrden() {
                     />
                 </div>
             )}
+            
+            {/* Campo para número de personas */}
+            <div>
+                <label className="block mb-2 text-amarillo font-bold">Número de personas</label>
+                <div className="flex items-center gap-3 bg-negro rounded p-2 w-full">
+                    <button 
+                        onClick={() => setNumPersonas(prev => Math.max(1, prev - 1))}
+                        className="bg-vino px-3 py-1 rounded-full font-bold"
+                    >
+                        -
+                    </button>
+                    <span className="flex-1 text-center text-xl font-bold">{numPersonas}</span>
+                    <button 
+                        onClick={() => setNumPersonas(prev => prev + 1)}
+                        className="bg-vino px-3 py-1 rounded-full font-bold"
+                    >
+                        +
+                    </button>
+                </div>
+            </div>
             
             {/* Lista de productos seleccionados */}
             <div className="space-y-3 my-6">

@@ -9,6 +9,12 @@ export default function GestionOrden({ id }) {
   const [tipoPropina, setTipoPropina] = useState("fija"); // "fija" o "porcentaje"
   const [porcentajePropina, setPorcentajePropina] = useState(null);
   
+  // Estado para manejo de cancelaciones
+  const [mostrarCancelacion, setMostrarCancelacion] = useState(false);
+  const [productoACancelar, setProductoACancelar] = useState(null);
+  const [cantidadACancelar, setCantidadACancelar] = useState(1);
+  const [razonCancelacion, setRazonCancelacion] = useState("");
+  
   const cargarDatos = async () => {
     try {
       const resOrden = await fetch(`http://localhost:3000/orders/${id}/resumen`);
@@ -121,6 +127,68 @@ export default function GestionOrden({ id }) {
     setPorcentajePropina(null);
     setTipoPropina("fija");
   };
+
+  // Función para iniciar el proceso de cancelación de un producto
+  const iniciarCancelacion = (producto) => {
+    // Solo podemos cancelar productos reales, no cancelaciones, y no preparados
+    if (!producto.es_cancelacion && !producto.preparado) {
+      setProductoACancelar(producto);
+      setCantidadACancelar(1);
+      setMostrarCancelacion(true);
+    } else if (producto.preparado) {
+      alert("No se puede cancelar un producto que ya está preparado.");
+    }
+  };
+
+  // Función para cancelar un producto
+  const confirmarCancelacion = async () => {
+    try {
+      // Obtener el ID del empleado desde el token JWT
+      const token = localStorage.getItem("token");
+      if (!token) {
+        alert("Sesión no válida. Inicia sesión nuevamente.");
+        window.location.href = "/login";
+        return;
+      }
+
+      // Decodificar el token para obtener el ID del empleado
+      const payload = JSON.parse(atob(token.split(".")[1]));
+      const empleadoId = payload.id;
+
+      const response = await fetch(`http://localhost:3000/orders/${id}/cancelar`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          producto_id: productoACancelar.producto_id,
+          cantidad: cantidadACancelar,
+          empleado_id: empleadoId,
+          razon_cancelacion: razonCancelacion
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || "Error al cancelar el producto");
+      }
+
+      const resultado = await response.json();
+      alert(`Cancelación exitosa: ${resultado.cantidad} ${resultado.producto}`);
+      
+      // Cerrar modal y recargar datos
+      setMostrarCancelacion(false);
+      setProductoACancelar(null);
+      setCantidadACancelar(1);
+      setRazonCancelacion("");
+      await cargarDatos();
+      
+    } catch (error) {
+      console.error("Error:", error);
+      alert(error.message);
+    }
+  };
   
   if (!orden) return <p className="text-center">Cargando orden...</p>;
   
@@ -130,6 +198,9 @@ export default function GestionOrden({ id }) {
     <h2 className="font-subtitulo text-xl mb-2">{orden.cliente}</h2>
     <p>Total: ${orden.total.toFixed(2)}</p>
     <p>Pagado: ${orden.total_pagado.toFixed(2)}</p>
+    {orden.num_personas > 1 && (
+      <p>Personas: {orden.num_personas}</p>
+    )}
     {orden.total_propina > 0 && (
       <p className="text-green-400">Propina: ${orden.total_propina.toFixed(2)}</p>
     )}
@@ -143,17 +214,31 @@ export default function GestionOrden({ id }) {
     <h3 className="text-amarillo font-bold mb-2">Productos</h3>
     <ul className="space-y-1 text-sm">
     {Array.isArray(orden.productos) ? (
-      <ul className="space-y-1 text-sm">
+      <ul className="space-y-2 text-sm">
       {orden.productos.map((p, i) => (
-        <li key={i}>
-        {p.nombre} x{p.cantidad} — ${p.precio_unitario}
+        <li key={i} className={`flex justify-between items-center p-2 rounded ${p.es_cancelacion ? 'bg-red-950/30 line-through text-gray-400' : p.preparado ? 'bg-green-950/30' : 'bg-negro/30'}`}>
+          <div>
+            {p.nombre} x{p.cantidad} — ${parseFloat(p.precio_unitario).toFixed(2)}
+            {p.es_cancelacion && <span className="text-red-400 ml-2">CANCELACIÓN</span>}
+            {p.preparado && !p.es_cancelacion && <span className="text-green-400 ml-2">PREPARADO</span>}
+          </div>
+          {!p.es_cancelacion && !p.preparado && (
+            <button 
+              onClick={() => iniciarCancelacion(p)}
+              className="bg-red-800 text-white text-xs px-2 py-1 rounded"
+            >
+              Cancelar
+            </button>
+          )}
+          {!p.es_cancelacion && p.preparado && (
+            <span className="text-xs text-gray-400">No cancelable</span>
+          )}
         </li>
       ))}
       </ul>
     ) : (
       <p className="text-sm text-gray-400">No hay productos registrados.</p>
     )}
-    
     </ul>
     </div>
     
@@ -296,6 +381,62 @@ export default function GestionOrden({ id }) {
     ✅ Cerrar orden
     </button>
     </div>
+
+    {/* Modal de cancelación */}
+    {mostrarCancelacion && productoACancelar && (
+      <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50">
+        <div className="bg-vino p-6 rounded-lg w-full max-w-md">
+          <h3 className="text-xl font-bold mb-4 text-amarillo">Cancelar Producto</h3>
+          
+          <div className="mb-4">
+            <p className="mb-2"><span className="font-bold">Producto:</span> {productoACancelar.nombre}</p>
+            <p className="mb-4"><span className="font-bold">Disponible:</span> {productoACancelar.cantidad} unidades</p>
+            
+            <label className="block mb-2 font-bold">Cantidad a cancelar:</label>
+            <div className="flex items-center gap-3 bg-negro rounded p-2 w-full mb-4">
+              <button 
+                onClick={() => setCantidadACancelar(prev => Math.max(1, prev - 1))}
+                className="bg-amarillo text-negro px-3 py-1 rounded-full font-bold"
+              >
+                -
+              </button>
+              <span className="flex-1 text-center text-xl font-bold">{cantidadACancelar}</span>
+              <button 
+                onClick={() => setCantidadACancelar(prev => Math.min(productoACancelar.cantidad, prev + 1))}
+                className="bg-amarillo text-negro px-3 py-1 rounded-full font-bold"
+              >
+                +
+              </button>
+            </div>
+            
+            <label className="block mb-2 font-bold">Razón de cancelación:</label>
+            <textarea
+              value={razonCancelacion}
+              onChange={(e) => setRazonCancelacion(e.target.value)}
+              placeholder="Ej: Error en la orden, Cliente cambió de opinión..."
+              className="w-full px-4 py-2 rounded bg-negro text-white placeholder:text-gray-400 border border-amarillo"
+              rows={2}
+            />
+          </div>
+          
+          <div className="flex justify-end gap-2">
+            <button
+              onClick={() => setMostrarCancelacion(false)}
+              className="px-4 py-2 rounded bg-negro text-white"
+            >
+              Cancelar
+            </button>
+            <button
+              onClick={confirmarCancelacion}
+              className="px-4 py-2 rounded bg-red-600 text-white font-bold"
+              disabled={cantidadACancelar < 1 || cantidadACancelar > productoACancelar.cantidad}
+            >
+              Confirmar
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
     </section>
   );
 }

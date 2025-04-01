@@ -6,7 +6,8 @@ import {
   getOpenOrdersWithPayments,
   getProductosPorPreparar,
   getHistorialProductosPreparados,
-  marcarProductoComoPreparado
+  marcarProductoComoPreparado,
+  cancelarProductoOrden
 } from "../models/orders.model.js";
 
 export const fetchOrders = async (req, res) => {
@@ -31,7 +32,7 @@ export const fetchOrderById = async (req, res) => {
 };
 
 export const addOrder = async (req, res) => {
-  const { preso_id, nombre_cliente, empleado_id, productos } = req.body;
+  const { preso_id, nombre_cliente, empleado_id, productos, num_personas } = req.body;
 
   if (!empleado_id || !Array.isArray(productos) || productos.length === 0) {
     return res.status(400).json({ error: "Faltan datos obligatorios: productos o empleado_id" });
@@ -50,7 +51,7 @@ export const addOrder = async (req, res) => {
   }
 
   try {
-    const newOrder = await createOrder({ preso_id, nombre_cliente, empleado_id, productos });
+    const newOrder = await createOrder({ preso_id, nombre_cliente, empleado_id, productos, num_personas });
     res.status(201).json(newOrder);
   } catch (err) {
     res.status(500).json({ error: "Error creando la orden", detail: err.message });
@@ -137,5 +138,42 @@ export const updateEstadoProducto = async (req, res) => {
     res.json(producto);
   } catch (err) {
     res.status(500).json({ error: "Error al marcar producto como preparado", detail: err.message });
+  }
+};
+
+// Cancelar productos de una orden
+export const cancelarProducto = async (req, res) => {
+  try {
+    const orden_id = req.params.id;
+    const { producto_id, cantidad, empleado_id, razon_cancelacion } = req.body;
+
+    if (!producto_id || !cantidad || !empleado_id) {
+      return res.status(400).json({ 
+        error: "Datos incompletos", 
+        detail: "Se requiere producto_id, cantidad y empleado_id" 
+      });
+    }
+
+    if (cantidad <= 0) {
+      return res.status(400).json({ 
+        error: "Cantidad inválida", 
+        detail: "La cantidad debe ser mayor a 0" 
+      });
+    }
+
+    const resultado = await cancelarProductoOrden(
+      orden_id, 
+      producto_id, 
+      cantidad, 
+      empleado_id, 
+      razon_cancelacion
+    );
+
+    res.status(200).json(resultado);
+  } catch (err) {
+    res.status(500).json({ 
+      error: "Error al cancelar el producto", 
+      detail: err.message 
+    });
   }
 };

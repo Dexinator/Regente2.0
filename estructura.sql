@@ -39,7 +39,8 @@ CREATE TABLE ordenes (
     total NUMERIC(10, 2) NOT NULL, 
     fecha TIMESTAMP DEFAULT CURRENT_TIMESTAMP, 
     estado TEXT CHECK (estado IN ('abierta', 'cerrada')) DEFAULT 'abierta',
-    empleado_id INT NOT NULL REFERENCES empleados(id) ON DELETE CASCADE -- ✅ Se agrega referencia a empleados
+    empleado_id INT NOT NULL REFERENCES empleados(id) ON DELETE CASCADE, -- ✅ Se agrega referencia a empleados
+    num_personas INT DEFAULT 1 -- ✅ Nueva columna para registrar número de personas
 );
 
 detalles_orden
