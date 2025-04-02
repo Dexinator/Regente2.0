@@ -59,7 +59,7 @@ export default function HistorialCocina() {
         };
       }
       
-      // Añadimos el producto preparado con información de sabor y tamaño
+      // Añadimos el producto preparado con información de sabor, tamaño e ingrediente
       historicoMap[item.orden_id].productos.push({
         producto_id: item.producto_id,
         detalle_id: item.detalle_id,
@@ -69,9 +69,11 @@ export default function HistorialCocina() {
         notas: item.notas,
         sabor_id: item.sabor_id,
         sabor_nombre: item.sabor_nombre,
-        sabor_categoria: item.categoria_variante,
+        sabor_categoria: item.sabor_categoria,
         tamano_id: item.tamano_id,
         tamano_nombre: item.tamano_nombre,
+        ingrediente_id: item.ingrediente_id,
+        ingrediente_nombre: item.ingrediente_nombre,
         hora_preparacion: item.tiempo_preparacion ? 
           new Date(item.tiempo_preparacion).toLocaleTimeString('es-ES', {
             hour: '2-digit',
@@ -94,21 +96,25 @@ export default function HistorialCocina() {
       });
   };
 
-  // Función para mostrar detalles del producto incluyendo sabor y tamaño
+  // Función para mostrar detalles del producto incluyendo sabor, tamaño e ingrediente
   const formatearDetallesProducto = (producto) => {
     let detalles = producto.nombre;
+    const esPulque = producto.categoria === 'Pulque' || producto.categoria === 'Pulques';
+    const esCena = producto.categoria === 'Cena' || producto.categoria === 'Cenas';
     
-    // Para los pulques que tienen tanto sabor como tamaño
-    if (producto.categoria === 'Pulques' && producto.sabor_nombre && producto.tamano_nombre) {
-      detalles += ` - ${producto.sabor_nombre} (${producto.tamano_nombre})`;
-    } 
-    // Para productos que solo tienen sabor
-    else if (producto.sabor_nombre) {
+    // Añadir sabor si existe
+    if (producto.sabor_nombre) {
       detalles += ` - ${producto.sabor_nombre}`;
     }
-    // Para productos que solo tienen tamaño
-    else if (producto.tamano_nombre) {
-      detalles += ` - ${producto.tamano_nombre}`;
+    
+    // Añadir tamaño para pulques
+    if (esPulque && producto.tamano_nombre) {
+      detalles += ` (${producto.tamano_nombre})`;
+    }
+    
+    // Añadir ingrediente extra para cenas
+    if (esCena && producto.ingrediente_nombre) {
+      detalles += ` + ${producto.ingrediente_nombre}`;
     }
 
     return detalles;
@@ -188,7 +194,8 @@ export default function HistorialCocina() {
                         {producto.cantidad}x {formatearDetallesProducto(producto)}
                       </p>
                       <p className="text-xs text-amarillo">
-                        {producto.categoria} {producto.sabor_categoria ? `- ${producto.sabor_categoria}`: ''}
+                        {producto.categoria}
+                        {producto.sabor_categoria ? ` - ${producto.sabor_categoria}`: ''}
                       </p>
                       {producto.notas && (
                         <p className="text-sm text-gray-300 italic">

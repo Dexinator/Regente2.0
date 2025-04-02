@@ -68,11 +68,17 @@ export const getOrderWithDetails = async (orden_id) => {
   const detalles = await pool.query(
     `SELECT d.*, p.nombre AS nombre_producto, p.categoria,
             s.nombre AS sabor_nombre, s.precio_adicional AS sabor_precio_adicional,
-            cv.nombre AS sabor_categoria
+            cv.nombre AS sabor_categoria,
+            t.nombre AS tamano_nombre, t.precio_adicional AS tamano_precio_adicional,
+            i.nombre AS ingrediente_nombre, i.precio_adicional AS ingrediente_precio_adicional,
+            cvi.nombre AS ingrediente_categoria
      FROM detalles_orden d
      JOIN productos p ON d.producto_id = p.id
      LEFT JOIN sabores s ON d.sabor_id = s.id
      LEFT JOIN categorias_variantes cv ON s.categoria_id = cv.id
+     LEFT JOIN sabores t ON d.tamano_id = t.id
+     LEFT JOIN sabores i ON d.ingrediente_id = i.id
+     LEFT JOIN categorias_variantes cvi ON i.categoria_id = cvi.id
      WHERE d.orden_id = $1`,
     [orden_id]
   );
@@ -102,12 +108,12 @@ export const createOrder = async ({ preso_id, nombre_cliente, empleado_id, produ
     const orden_id = ordenRes.rows[0].orden_id;
 
     // 2. Agregar productos
-    for (const { producto_id, cantidad, sabor_id, tamano_id, notas, precio_unitario } of productos) {
+    for (const { producto_id, cantidad, sabor_id, tamano_id, ingrediente_id, notas, precio_unitario } of productos) {
       // Usar el precio_unitario enviado por el frontend
       await client.query(
-        `INSERT INTO detalles_orden (orden_id, producto_id, cantidad, precio_unitario, empleado_id, sabor_id, tamano_id, notas)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
-        [orden_id, producto_id, cantidad, precio_unitario, empleado_id, sabor_id || null, tamano_id || null, notas || null]
+        `INSERT INTO detalles_orden (orden_id, producto_id, cantidad, precio_unitario, empleado_id, sabor_id, tamano_id, ingrediente_id, notas)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+        [orden_id, producto_id, cantidad, precio_unitario, empleado_id, sabor_id || null, tamano_id || null, ingrediente_id || null, notas || null]
       );
     }
 
@@ -238,12 +244,12 @@ export const addProductsToOrder = async (orden_id, productos, empleado_id) => {
     }
 
     // Insertar cada producto
-    for (const { producto_id, cantidad, sabor_id, tamano_id, notas, precio_unitario } of productos) {
+    for (const { producto_id, cantidad, sabor_id, tamano_id, ingrediente_id, notas, precio_unitario } of productos) {
       // Usar el precio_unitario enviado por el frontend
       await client.query(
-        `INSERT INTO detalles_orden (orden_id, producto_id, cantidad, precio_unitario, empleado_id, sabor_id, tamano_id, notas)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
-        [orden_id, producto_id, cantidad, precio_unitario, empleado_id, sabor_id || null, tamano_id || null, notas || null]
+        `INSERT INTO detalles_orden (orden_id, producto_id, cantidad, precio_unitario, empleado_id, sabor_id, tamano_id, ingrediente_id, notas)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+        [orden_id, producto_id, cantidad, precio_unitario, empleado_id, sabor_id || null, tamano_id || null, ingrediente_id || null, notas || null]
       );
     }
 
@@ -272,11 +278,30 @@ export const getOrderResumen = async (orden_id) => {
         WHEN d.precio_unitario < 0 THEN true 
         ELSE false 
       END AS es_cancelacion,
-      BOOL_OR(d.preparado) AS preparado
+      BOOL_OR(d.preparado) AS preparado,
+      d.sabor_id,
+      s.nombre AS sabor_nombre,
+      cv.nombre AS sabor_categoria,
+      d.tamano_id,
+      t.nombre AS tamano_nombre,
+      t.precio_adicional AS tamano_precio,
+      s.precio_adicional AS sabor_precio,
+      d.ingrediente_id,
+      i.nombre AS ingrediente_nombre,
+      i.precio_adicional AS ingrediente_precio,
+      cvi.nombre AS ingrediente_categoria,
+      d.notas
     FROM detalles_orden d
     JOIN productos p ON d.producto_id = p.id
+    LEFT JOIN sabores s ON d.sabor_id = s.id
+    LEFT JOIN categorias_variantes cv ON s.categoria_id = cv.id
+    LEFT JOIN sabores t ON d.tamano_id = t.id
+    LEFT JOIN sabores i ON d.ingrediente_id = i.id
+    LEFT JOIN categorias_variantes cvi ON i.categoria_id = cvi.id
     WHERE d.orden_id = $1
-    GROUP BY p.id, p.nombre, d.precio_unitario, d.producto_id, (d.precio_unitario < 0)
+    GROUP BY p.id, p.nombre, d.precio_unitario, d.producto_id, (d.precio_unitario < 0), 
+             d.sabor_id, s.nombre, cv.nombre, d.tamano_id, t.nombre, t.precio_adicional, s.precio_adicional, 
+             d.ingrediente_id, i.nombre, i.precio_adicional, cvi.nombre, d.notas
     ORDER BY es_cancelacion, p.nombre
   `, [orden_id]);
 
@@ -340,6 +365,7 @@ export const getProductosPorPreparar = async () => {
       d.tiempo_creacion,
       d.sabor_id,
       d.tamano_id,
+      d.ingrediente_id,
       p.nombre,
       p.categoria,
       COALESCE(pr.reg_name, o.nombre_cliente) AS cliente,
@@ -347,7 +373,10 @@ export const getProductosPorPreparar = async () => {
       s.precio_adicional AS sabor_precio,
       cv.nombre AS sabor_categoria,
       t.nombre AS tamano_nombre,
-      t.precio_adicional AS tamano_precio
+      t.precio_adicional AS tamano_precio,
+      i.nombre AS ingrediente_nombre,
+      i.precio_adicional AS ingrediente_precio,
+      cvi.nombre AS ingrediente_categoria
     FROM detalles_orden d
     JOIN productos p ON d.producto_id = p.id
     JOIN ordenes o ON d.orden_id = o.orden_id
@@ -355,6 +384,8 @@ export const getProductosPorPreparar = async () => {
     LEFT JOIN sabores s ON d.sabor_id = s.id
     LEFT JOIN categorias_variantes cv ON s.categoria_id = cv.id
     LEFT JOIN sabores t ON d.tamano_id = t.id
+    LEFT JOIN sabores i ON d.ingrediente_id = i.id
+    LEFT JOIN categorias_variantes cvi ON i.categoria_id = cvi.id
     WHERE d.preparado = FALSE 
     AND o.estado = 'abierta'
     ORDER BY d.tiempo_creacion ASC
@@ -380,6 +411,7 @@ export const getHistorialProductosPreparados = async (fecha) => {
       d.tiempo_preparacion,
       d.sabor_id,
       d.tamano_id,
+      d.ingrediente_id,
       p.nombre,
       p.categoria,
       COALESCE(pr.reg_name, o.nombre_cliente) AS cliente,
@@ -387,7 +419,10 @@ export const getHistorialProductosPreparados = async (fecha) => {
       s.precio_adicional AS sabor_precio,
       cv.nombre AS sabor_categoria,
       t.nombre AS tamano_nombre,
-      t.precio_adicional AS tamano_precio
+      t.precio_adicional AS tamano_precio,
+      i.nombre AS ingrediente_nombre,
+      i.precio_adicional AS ingrediente_precio,
+      cvi.nombre AS ingrediente_categoria
     FROM detalles_orden d
     JOIN productos p ON d.producto_id = p.id
     JOIN ordenes o ON d.orden_id = o.orden_id
@@ -395,6 +430,8 @@ export const getHistorialProductosPreparados = async (fecha) => {
     LEFT JOIN sabores s ON d.sabor_id = s.id
     LEFT JOIN categorias_variantes cv ON s.categoria_id = cv.id
     LEFT JOIN sabores t ON d.tamano_id = t.id
+    LEFT JOIN sabores i ON d.ingrediente_id = i.id
+    LEFT JOIN categorias_variantes cvi ON i.categoria_id = cvi.id
     WHERE d.preparado = TRUE 
     AND DATE(d.tiempo_preparacion) = $1
     ORDER BY d.tiempo_preparacion DESC

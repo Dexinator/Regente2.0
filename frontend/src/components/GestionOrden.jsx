@@ -216,23 +216,61 @@ export default function GestionOrden({ id }) {
     {Array.isArray(orden.productos) ? (
       <ul className="space-y-2 text-sm">
       {orden.productos.map((p, i) => (
-        <li key={i} className={`flex justify-between items-center p-2 rounded ${p.es_cancelacion ? 'bg-red-950/30 line-through text-gray-400' : p.preparado ? 'bg-green-950/30' : 'bg-negro/30'}`}>
-          <div>
-            {p.nombre} x{p.cantidad} — ${parseFloat(p.precio_unitario).toFixed(2)}
-            {p.es_cancelacion && <span className="text-red-400 ml-2">CANCELACIÓN</span>}
-            {p.preparado && !p.es_cancelacion && <span className="text-green-400 ml-2">PREPARADO</span>}
+        <li key={i} className={`p-2 rounded ${p.es_cancelacion ? 'bg-red-950/30 line-through text-gray-400' : p.preparado ? 'bg-green-950/30' : 'bg-negro/30'}`}>
+          <div className="flex justify-between items-start">
+            <div>
+              <p className="font-bold">{p.nombre} x{p.cantidad} — ${parseFloat(p.precio_unitario).toFixed(2)}</p>
+              
+              {/* Información de sabor */}
+              {p.sabor_nombre && (
+                <p className="text-xs text-amarillo">
+                  Sabor: {p.sabor_nombre} 
+                  {p.sabor_categoria ? ` (${p.sabor_categoria})` : ''}
+                  {p.sabor_precio > 0 && ` +$${p.sabor_precio}`}
+                </p>
+              )}
+              
+              {/* Información de tamaño */}
+              {p.tamano_nombre && (
+                <p className="text-xs text-amarillo">
+                  Tamaño: {p.tamano_nombre}
+                  {p.tamano_precio > 0 && ` +$${p.tamano_precio}`}
+                </p>
+              )}
+              
+              {/* Información de ingrediente extra */}
+              {p.ingrediente_nombre && (
+                <p className="text-xs text-amarillo">
+                  Ingrediente Extra: {p.ingrediente_nombre}
+                  {p.ingrediente_precio > 0 && ` +$${p.ingrediente_precio}`}
+                </p>
+              )}
+              
+              {/* Notas especiales */}
+              {p.notas && (
+                <p className="text-xs text-gray-400 mt-1 italic">
+                  Notas: {p.notas}
+                </p>
+              )}
+              
+              {p.es_cancelacion && <span className="text-red-400 text-xs ml-2">CANCELACIÓN</span>}
+              {p.preparado && !p.es_cancelacion && <span className="text-green-400 text-xs ml-2">PREPARADO</span>}
+            </div>
+            
+            <div>
+              {!p.es_cancelacion && !p.preparado && (
+                <button 
+                  onClick={() => iniciarCancelacion(p)}
+                  className="bg-red-800 text-white text-xs px-2 py-1 rounded"
+                >
+                  Cancelar
+                </button>
+              )}
+              {!p.es_cancelacion && p.preparado && (
+                <span className="text-xs text-gray-400">No cancelable</span>
+              )}
+            </div>
           </div>
-          {!p.es_cancelacion && !p.preparado && (
-            <button 
-              onClick={() => iniciarCancelacion(p)}
-              className="bg-red-800 text-white text-xs px-2 py-1 rounded"
-            >
-              Cancelar
-            </button>
-          )}
-          {!p.es_cancelacion && p.preparado && (
-            <span className="text-xs text-gray-400">No cancelable</span>
-          )}
         </li>
       ))}
       </ul>
@@ -390,6 +428,36 @@ export default function GestionOrden({ id }) {
           
           <div className="mb-4">
             <p className="mb-2"><span className="font-bold">Producto:</span> {productoACancelar.nombre}</p>
+            
+            {/* Mostrar información de sabor en modal */}
+            {productoACancelar.sabor_nombre && (
+              <p className="text-sm mb-1">
+                <span className="font-bold">Sabor:</span> {productoACancelar.sabor_nombre}
+                {productoACancelar.sabor_categoria ? ` (${productoACancelar.sabor_categoria})` : ''}
+              </p>
+            )}
+            
+            {/* Mostrar información de tamaño en modal */}
+            {productoACancelar.tamano_nombre && (
+              <p className="text-sm mb-1">
+                <span className="font-bold">Tamaño:</span> {productoACancelar.tamano_nombre}
+              </p>
+            )}
+            
+            {/* Mostrar información de ingrediente extra en modal */}
+            {productoACancelar.ingrediente_nombre && (
+              <p className="text-sm mb-1">
+                <span className="font-bold">Ingrediente Extra:</span> {productoACancelar.ingrediente_nombre}
+              </p>
+            )}
+            
+            {/* Mostrar notas si existen */}
+            {productoACancelar.notas && (
+              <p className="text-sm mb-2 italic">
+                <span className="font-bold">Notas:</span> {productoACancelar.notas}
+              </p>
+            )}
+            
             <p className="mb-4"><span className="font-bold">Disponible:</span> {productoACancelar.cantidad} unidades</p>
             
             <label className="block mb-2 font-bold">Cantidad a cancelar:</label>

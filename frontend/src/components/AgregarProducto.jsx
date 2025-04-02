@@ -26,6 +26,11 @@ export default function AgregarProducto({ orden_id }) {
   const [tamanosDisponibles, setTamanosDisponibles] = useState([]);
   const [loadingTamanos, setLoadingTamanos] = useState(false);
   const [seleccionTamano, setSeleccionTamano] = useState(false);
+  
+  // Nuevos estados para ingredientes extra
+  const [ingredientesDisponibles, setIngredientesDisponibles] = useState([]);
+  const [loadingIngredientes, setLoadingIngredientes] = useState(false);
+  const [seleccionIngrediente, setSeleccionIngrediente] = useState(false);
 
   useEffect(() => {
     cargarProductos();
@@ -86,16 +91,10 @@ export default function AgregarProducto({ orden_id }) {
         throw new Error(data.error || "Error al cargar sabores");
       }
       
-      // Filtrar explícitamente para excluir cualquier tamaño que haya podido colarse
-      const soloSabores = data.filter(item => {
-        return !item.nombre.toLowerCase().includes('litro') && 
-               item.categoria_tipo !== 'tamaño';
-      });
-      
-      console.log("Sabores filtrados:", soloSabores);
-      setSaboresDisponibles(soloSabores);
+      // Confiamos en el backend para filtrar correctamente
+      setSaboresDisponibles(data);
       setLoadingSabores(false);
-      return soloSabores.length > 0;
+      return data.length > 0;
     } catch (error) {
       console.error("Error cargando sabores:", error);
       setLoadingSabores(false);
@@ -144,6 +143,30 @@ export default function AgregarProducto({ orden_id }) {
     }
   };
 
+  // Nueva función para cargar ingredientes extra
+  const cargarIngredientes = async (productoId) => {
+    setLoadingIngredientes(true);
+    try {
+      console.log("Cargando ingredientes para producto:", productoId);
+      const res = await fetch(`http://localhost:3000/products/sabores/producto/${productoId}?tipo=ingredientes`);
+      const data = await res.json();
+      
+      console.log("Ingredientes obtenidos:", data);
+      
+      if (!res.ok) {
+        throw new Error(data.error || "Error al cargar ingredientes");
+      }
+      
+      setIngredientesDisponibles(data);
+      setLoadingIngredientes(false);
+      return data.length > 0;
+    } catch (error) {
+      console.error("Error cargando ingredientes:", error);
+      setLoadingIngredientes(false);
+      return false;
+    }
+  };
+
   const productosFiltrados = () => {
     let result = [...productos];
     
@@ -179,6 +202,7 @@ export default function AgregarProducto({ orden_id }) {
     setProductoEditandoNotas(null);
     setMostrarSeleccionCantidad(false);
     setSeleccionTamano(false);
+    setSeleccionIngrediente(false);
     setSaborSeleccionado(null);
   };
 
@@ -186,7 +210,9 @@ export default function AgregarProducto({ orden_id }) {
     if (!productoSeleccionado) return;
     
     const esPulque = productoSeleccionado.categoria === "Pulque";
+    const esCena = productoSeleccionado.categoria === "Cenas" || productoSeleccionado.categoria === "Cena";
     console.log("¿Es pulque?", esPulque);
+    console.log("¿Es cena?", esCena);
     
     // Para pulques, primero mostramos selección de sabores 
     if (esPulque) {
@@ -197,6 +223,7 @@ export default function AgregarProducto({ orden_id }) {
         // Si tiene sabores, mostrar pantalla de selección de sabores
         setSeleccionSabores(true);
         setSeleccionTamano(false);
+        setSeleccionIngrediente(false);
         setMostrarSeleccionCantidad(false);
       } else {
         // Si no tiene sabores (extraño para pulque), mostrar tamaños directamente
@@ -206,6 +233,7 @@ export default function AgregarProducto({ orden_id }) {
         if (tieneTamanos) {
           setSeleccionTamano(true);
           setSeleccionSabores(false);
+          setSeleccionIngrediente(false);
           setMostrarSeleccionCantidad(false);
         } else {
           // Si no tiene sabores ni tamaños, mostrar notas
@@ -213,10 +241,37 @@ export default function AgregarProducto({ orden_id }) {
           setMostrarSeleccionCantidad(false);
         }
       }
-    } else {
-      // Para productos no-pulque
+    } else if (esCena) {
+      // Para productos de categoría Cena/Cenas
       const tieneSabores = await cargarSabores(productoSeleccionado.id);
-      console.log("¿Tiene sabores? (no-pulque)", tieneSabores);
+      console.log("¿Tiene sabores? (cenas)", tieneSabores);
+      
+      if (tieneSabores) {
+        // Si tiene sabores, mostrar pantalla de selección de sabores
+        setSeleccionSabores(true);
+        setSeleccionTamano(false);
+        setSeleccionIngrediente(false);
+        setMostrarSeleccionCantidad(false);
+      } else {
+        // Si no tiene sabores, comprobar si tiene ingredientes extra
+        const tieneIngredientes = await cargarIngredientes(productoSeleccionado.id);
+        console.log("¿Tiene ingredientes extra?", tieneIngredientes);
+        
+        if (tieneIngredientes) {
+          setSeleccionIngrediente(true);
+          setSeleccionSabores(false);
+          setSeleccionTamano(false);
+          setMostrarSeleccionCantidad(false);
+        } else {
+          // Si no tiene sabores ni ingredientes, mostrar notas
+          mostrarPantallaNotas(productoSeleccionado, null);
+          setMostrarSeleccionCantidad(false);
+        }
+      }
+    } else {
+      // Para otros productos no-pulque y no-cena
+      const tieneSabores = await cargarSabores(productoSeleccionado.id);
+      console.log("¿Tiene sabores? (otro producto)", tieneSabores);
       
       if (tieneSabores) {
         // Si tiene sabores, ir a pantalla de selección
@@ -234,6 +289,7 @@ export default function AgregarProducto({ orden_id }) {
   const seleccionarSabor = async (sabor) => {
     console.log("Sabor seleccionado:", sabor);
     const esPulque = productoSeleccionado.categoria === "Pulque";
+    const esCena = productoSeleccionado.categoria === "Cenas" || productoSeleccionado.categoria === "Cena";
     
     if (esPulque) {
       // Para pulques, guardamos el sabor y vamos a seleccionar tamaño
@@ -250,11 +306,52 @@ export default function AgregarProducto({ orden_id }) {
         mostrarPantallaNotas(productoSeleccionado, sabor);
         setSeleccionSabores(false);
       }
+    } else if (esCena) {
+      // Para cenas, guardamos el sabor y vamos a seleccionar ingrediente extra
+      setSaborSeleccionado(sabor);
+      
+      const tieneIngredientes = await cargarIngredientes(productoSeleccionado.id);
+      console.log("¿Tiene ingredientes extra para esta cena?", tieneIngredientes);
+      
+      if (tieneIngredientes) {
+        setSeleccionSabores(false);
+        setSeleccionIngrediente(true);
+      } else {
+        // Si no hay ingredientes disponibles
+        mostrarPantallaNotas(productoSeleccionado, sabor);
+        setSeleccionSabores(false);
+      }
     } else {
       // Para otros productos, seguimos el flujo normal
       mostrarPantallaNotas(productoSeleccionado, sabor);
       setSeleccionSabores(false);
     }
+  };
+
+  // Nueva función para seleccionar ingrediente extra
+  const seleccionarIngrediente = (ingrediente) => {
+    // Si el ingrediente es nulo, significa "Sin ingrediente extra"
+    if (!ingrediente) {
+      // Pasamos directamente a notas con el sabor seleccionado pero sin ingrediente
+      mostrarPantallaNotas(productoSeleccionado, {
+        ...saborSeleccionado,
+        ingrediente_id: null,
+        ingrediente_nombre: null,
+        ingrediente_precio: 0
+      });
+    } else {
+      // Combinamos el producto con sabor e ingrediente, y vamos a notas
+      const datosCombinados = {
+        ...saborSeleccionado,
+        ingrediente_id: ingrediente.id,
+        ingrediente_nombre: ingrediente.nombre,
+        ingrediente_precio: parseFloat(ingrediente.precio_adicional || 0)
+      };
+      
+      mostrarPantallaNotas(productoSeleccionado, datosCombinados);
+    }
+    
+    setSeleccionIngrediente(false);
   };
 
   // Nueva función para seleccionar tamaño
@@ -284,7 +381,22 @@ export default function AgregarProducto({ orden_id }) {
         precio_adicional: parseFloat(opcion.precio_adicional || 0),
         tamano_id: opcion.tamano_id,
         tamano_nombre: opcion.tamano_nombre,
-        tamano_precio: opcion.tamano_precio
+        tamano_precio: opcion.tamano_precio,
+        ingrediente_id: opcion.ingrediente_id || null,
+        ingrediente_nombre: opcion.ingrediente_nombre || null,
+        ingrediente_precio: opcion.ingrediente_precio || 0
+      });
+    } else if (opcion && opcion.ingrediente_id) {
+      // Si tenemos sabor e ingrediente extra (para cenas)
+      setProductoEditandoNotas({
+        ...producto,
+        sabor_id: opcion.id,
+        sabor_nombre: opcion.nombre,
+        sabor_categoria: opcion.categoria_nombre,
+        precio_adicional: parseFloat(opcion.precio_adicional || 0),
+        ingrediente_id: opcion.ingrediente_id,
+        ingrediente_nombre: opcion.ingrediente_nombre,
+        ingrediente_precio: opcion.ingrediente_precio
       });
     } else if (opcion) {
       // Solo sabor
@@ -293,7 +405,10 @@ export default function AgregarProducto({ orden_id }) {
         sabor_id: opcion.id,
         sabor_nombre: opcion.nombre,
         sabor_categoria: opcion.categoria_nombre,
-        precio_adicional: parseFloat(opcion.precio_adicional || 0)
+        precio_adicional: parseFloat(opcion.precio_adicional || 0),
+        ingrediente_id: null,
+        ingrediente_nombre: null,
+        ingrediente_precio: 0
       });
     } else {
       // Sin opciones adicionales
@@ -302,7 +417,10 @@ export default function AgregarProducto({ orden_id }) {
         sabor_id: null,
         sabor_nombre: null,
         sabor_categoria: null,
-        precio_adicional: 0
+        precio_adicional: 0,
+        ingrediente_id: null,
+        ingrediente_nombre: null,
+        ingrediente_precio: 0
       });
     }
     
@@ -321,6 +439,12 @@ export default function AgregarProducto({ orden_id }) {
     setSaborSeleccionado(null);
   };
 
+  const cancelarSeleccionIngrediente = () => {
+    setSeleccionIngrediente(false);
+    setSeleccionSabores(true); // Volver a selección de sabor
+    setSaborSeleccionado(null);
+  };
+
   const cancelarEditarNotas = () => {
     setProductoEditandoNotas(null);
     setNotas("");
@@ -328,6 +452,8 @@ export default function AgregarProducto({ orden_id }) {
     // Determinar a qué pantalla volver
     if (productoSeleccionado?.categoria === "Pulque" && saborSeleccionado) {
       setSeleccionTamano(true);
+    } else if ((productoSeleccionado?.categoria === "Cena" || productoSeleccionado?.categoria === "Cenas") && saborSeleccionado) {
+      setSeleccionIngrediente(true);
     } else if (seleccionSabores) {
       setSeleccionSabores(true);
     } else {
@@ -346,14 +472,18 @@ export default function AgregarProducto({ orden_id }) {
       precio_adicional,
       tamano_id,
       tamano_nombre,
-      tamano_precio 
+      tamano_precio,
+      ingrediente_id,
+      ingrediente_nombre,
+      ingrediente_precio
     } = productoEditandoNotas;
     
-    // Verificar si ya existe este producto con este sabor, tamaño y notas
+    // Verificar si ya existe este producto con este sabor, tamaño, ingrediente y notas
     const yaExiste = productosSeleccionados.find(p => 
       p.id === id && 
       p.sabor_id === sabor_id && 
       p.tamano_id === tamano_id && 
+      p.ingrediente_id === ingrediente_id &&
       ((p.notas || "") === (notas.trim() || ""))
     );
     
@@ -364,6 +494,7 @@ export default function AgregarProducto({ orden_id }) {
           p.id === id && 
           p.sabor_id === sabor_id && 
           p.tamano_id === tamano_id && 
+          p.ingrediente_id === ingrediente_id &&
           ((p.notas || "") === (notas.trim() || ""))
             ? { ...p, cantidad: p.cantidad + cantidad } 
             : p
@@ -379,6 +510,10 @@ export default function AgregarProducto({ orden_id }) {
       
       if (tamano_precio) {
         precioTotal += tamano_precio;
+      }
+      
+      if (ingrediente_precio) {
+        precioTotal += ingrediente_precio;
       }
       
       // Agregar nuevo producto a la lista
@@ -402,13 +537,14 @@ export default function AgregarProducto({ orden_id }) {
     setCantidad(1);
   };
 
-  const quitarProducto = (id, sabor_id, tamano_id, notas) => {
+  const quitarProducto = (id, sabor_id, tamano_id, ingrediente_id, notas) => {
     setProductosSeleccionados(prev => 
       prev
       .map(p => (
         p.id === id && 
         p.sabor_id === sabor_id && 
         p.tamano_id === tamano_id &&
+        p.ingrediente_id === ingrediente_id &&
         ((p.notas || "") === (notas || "")) 
           ? { ...p, cantidad: p.cantidad - 1 } 
           : p
@@ -417,12 +553,13 @@ export default function AgregarProducto({ orden_id }) {
     );
   };
 
-  const aumentarCantidad = (id, sabor_id, tamano_id, notas) => {
+  const aumentarCantidad = (id, sabor_id, tamano_id, ingrediente_id, notas) => {
     setProductosSeleccionados(prev =>
       prev.map(p => 
         p.id === id && 
         p.sabor_id === sabor_id && 
         p.tamano_id === tamano_id &&
+        p.ingrediente_id === ingrediente_id &&
         ((p.notas || "") === (notas || ""))
           ? { ...p, cantidad: p.cantidad + 1 }
           : p
@@ -448,6 +585,7 @@ export default function AgregarProducto({ orden_id }) {
             cantidad: p.cantidad,
             sabor_id: p.sabor_id || null,
             tamano_id: p.tamano_id || null,
+            ingrediente_id: p.ingrediente_id || null,
             notas: p.notas || null,
             precio_unitario: p.precio
           })),
@@ -638,6 +776,63 @@ export default function AgregarProducto({ orden_id }) {
     );
   }
 
+  if (seleccionIngrediente) {
+    return (
+      <div className="bg-vino rounded-xl p-4 space-y-4">
+        <div className="flex justify-between items-center">
+          <h2 className="text-xl font-bold">
+            Ingrediente extra para {productoSeleccionado.nombre} 
+            {saborSeleccionado ? ` (${saborSeleccionado.nombre})` : ''}
+          </h2>
+          <button 
+            onClick={cancelarSeleccionIngrediente}
+            className="text-gray-300 hover:text-white"
+          >
+            ✕
+          </button>
+        </div>
+        
+        {loadingIngredientes ? (
+          <p className="text-center py-4">Cargando ingredientes disponibles...</p>
+        ) : (
+          <div className="grid grid-cols-1 gap-3 max-h-96 overflow-y-auto">
+            {/* Opción para no agregar ingrediente extra */}
+            <button
+              onClick={() => seleccionarIngrediente(null)}
+              className="bg-negro p-3 rounded text-left hover:bg-gray-800 flex justify-between items-center"
+            >
+              <div>
+                <p className="font-bold">Sin ingrediente extra</p>
+                <p className="text-xs text-gray-400">Continuar sin añadir ingrediente</p>
+              </div>
+            </button>
+            
+            {/* Lista de ingredientes disponibles */}
+            {ingredientesDisponibles.map(ingrediente => (
+              <button
+                key={ingrediente.id}
+                onClick={() => seleccionarIngrediente(ingrediente)}
+                className="bg-negro p-3 rounded text-left hover:bg-gray-800 flex justify-between items-center"
+              >
+                <div>
+                  <p className="font-bold">{ingrediente.nombre}</p>
+                  {ingrediente.categoria_nombre && (
+                    <p className="text-xs text-gray-400">{ingrediente.categoria_nombre}</p>
+                  )}
+                </div>
+                {ingrediente.precio_adicional > 0 && (
+                  <span className="bg-amarillo text-negro px-2 py-1 rounded-full text-xs font-bold">
+                    +${ingrediente.precio_adicional}
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  }
+
   if (productoEditandoNotas) {
     return (
       <div className="bg-vino rounded-xl p-4 space-y-4">
@@ -672,6 +867,18 @@ export default function AgregarProducto({ orden_id }) {
             {productoEditandoNotas.tamano_precio > 0 && (
               <p className="text-xs text-amarillo mt-1">
                 Precio adicional: +${productoEditandoNotas.tamano_precio}
+              </p>
+            )}
+          </div>
+        )}
+        
+        {productoEditandoNotas.ingrediente_id && (
+          <div className="bg-negro/30 p-3 rounded mt-2">
+            <p className="font-bold">Ingrediente extra:</p>
+            <p>{productoEditandoNotas.ingrediente_nombre}</p>
+            {productoEditandoNotas.ingrediente_precio > 0 && (
+              <p className="text-xs text-amarillo mt-1">
+                Precio adicional: +${productoEditandoNotas.ingrediente_precio}
               </p>
             )}
           </div>
@@ -720,6 +927,12 @@ export default function AgregarProducto({ orden_id }) {
                     {prod.tamano_precio > 0 && ` +$${prod.tamano_precio}`}
                   </p>
                 )}
+                {prod.ingrediente_nombre && (
+                  <p className="text-xs text-amarillo">
+                    Ingrediente: {prod.ingrediente_nombre}
+                    {prod.ingrediente_precio > 0 && ` +$${prod.ingrediente_precio}`}
+                  </p>
+                )}
                 {prod.notas && (
                   <p className="text-xs text-gray-400 mt-1 italic">
                     Notas: {prod.notas}
@@ -728,7 +941,7 @@ export default function AgregarProducto({ orden_id }) {
               </div>
               <div className="flex items-center gap-2">
                 <button
-                  onClick={() => quitarProducto(prod.id, prod.sabor_id, prod.tamano_id, prod.notas)}
+                  onClick={() => quitarProducto(prod.id, prod.sabor_id, prod.tamano_id, prod.ingrediente_id, prod.notas)}
                   className="bg-vino text-white px-2 py-1 rounded-full text-xs"
                 >
                   -
@@ -737,7 +950,7 @@ export default function AgregarProducto({ orden_id }) {
                   {prod.cantidad}
                 </span>
                 <button
-                  onClick={() => aumentarCantidad(prod.id, prod.sabor_id, prod.tamano_id, prod.notas)}
+                  onClick={() => aumentarCantidad(prod.id, prod.sabor_id, prod.tamano_id, prod.ingrediente_id, prod.notas)}
                   className="bg-vino text-white px-2 py-1 rounded-full text-xs"
                 >
                   +
