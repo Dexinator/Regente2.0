@@ -10,6 +10,7 @@ import {
   fetchProductosPorPreparar,
   fetchHistorialProductosPreparados,
   updateEstadoProducto,
+  revertirEstadoProducto,
   cancelarProducto
 } from "../controllers/orders.controller.js";
 
@@ -17,20 +18,27 @@ import { verifyToken, authorizeRoles } from "../middlewares/auth.js"; // ✅ IMP
 
 const router = express.Router();
 
+// Rutas específicas para cocina (deben ir ANTES de las rutas con :id)
+router.get("/cocina", fetchProductosPorPreparar);  // Productos por preparar (nueva ruta principal)
+router.get("/cocina/pendientes", fetchProductosPorPreparar);  // Mantener la ruta anterior por compatibilidad
+router.get("/cocina/historial", fetchHistorialProductosPreparados); // Historial
 
+// Rutas para preparar/despreparar productos
+router.put("/detalle/:id/preparar", updateEstadoProducto);  // Marcar como preparado
+router.put("/detalle/:id/despreparar", revertirEstadoProducto);  // Marcar como NO preparado
+router.put("/detalle/:id", updateEstadoProducto);  // Mantener la ruta anterior por compatibilidad
+
+// Rutas generales
 router.get("/", fetchOrders);              // Todas las órdenes
 router.get("/open", fetchOpenOrders);      // Solo órdenes abiertas
-router.get("/:id", fetchOrderById);        // Una orden con detalles
 router.post("/", addOrder);                // Crear orden
-router.put("/:id/close",closeOrderById);
+
+// Rutas específicas con ID
+router.get("/:id/resumen", getOrderSummary);
+router.put("/:id/close", closeOrderById);
 router.post("/:id/productos", addProducts);
 router.post("/:id/cancelar", cancelarProducto); // Cancelar productos
-router.get("/:id/resumen", getOrderSummary);
-
-// Nuevas rutas para la cocina
-router.get("/cocina/pendientes", fetchProductosPorPreparar);  // Productos por preparar
-router.get("/cocina/historial", fetchHistorialProductosPreparados); // Historial
-router.put("/detalle/:id", updateEstadoProducto);  // Actualizar estado de un producto
+router.get("/:id", fetchOrderById);        // Una orden con detalles (debe ir AL FINAL)
 
 /*
 router.put("/:id/close",
@@ -38,7 +46,6 @@ router.put("/:id/close",
   authorizeRoles("admin", "mesero"),   // Luego verificamos el rol
   closeOrderById
 );
-
 */
 
 export default router;

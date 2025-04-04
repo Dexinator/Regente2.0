@@ -455,8 +455,22 @@ export const marcarProductoComoPreparado = async (detalle_id) => {
   return result.rows[0];
 };
 
+// Marcar un producto como NO preparado (despreparar)
+export const desprepararProducto = async (detalle_id) => {
+  const query = `
+    UPDATE detalles_orden
+    SET preparado = FALSE,
+        tiempo_preparacion = NULL
+    WHERE id = $1
+    RETURNING *
+  `;
+  
+  const result = await pool.query(query, [detalle_id]);
+  return result.rows[0];
+};
+
 // Cancelar producto de una orden (registrar como precio negativo)
-export const cancelarProductoOrden = async (orden_id, producto_id, cantidad, empleado_id, razon_cancelacion = null) => {
+export const cancelarProductoOrden = async (orden_id, producto_id, cantidad, empleado_id, razon_cancelacion = null, sabor_id = null, tamano_id = null, ingrediente_id = null) => {
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
@@ -472,13 +486,19 @@ export const cancelarProductoOrden = async (orden_id, producto_id, cantidad, emp
     }
 
     // Verificar que el producto exista en la orden y obtener su precio unitario
-    // Agregamos la condición de que no esté preparado
+    // Agregamos las variantes a la consulta
     const productoCheck = await client.query(
       `SELECT d.*, p.nombre 
        FROM detalles_orden d
        JOIN productos p ON d.producto_id = p.id
-       WHERE d.orden_id = $1 AND d.producto_id = $2 AND d.precio_unitario > 0 AND d.preparado = FALSE`,
-      [orden_id, producto_id]
+       WHERE d.orden_id = $1 
+       AND d.producto_id = $2 
+       AND d.precio_unitario > 0 
+       AND d.preparado = FALSE
+       AND (d.sabor_id = $3 OR ($3 IS NULL AND d.sabor_id IS NULL))
+       AND (d.tamano_id = $4 OR ($4 IS NULL AND d.tamano_id IS NULL))
+       AND (d.ingrediente_id = $5 OR ($5 IS NULL AND d.ingrediente_id IS NULL))`,
+      [orden_id, producto_id, sabor_id, tamano_id, ingrediente_id]
     );
 
     if (productoCheck.rows.length === 0) {
@@ -486,14 +506,20 @@ export const cancelarProductoOrden = async (orden_id, producto_id, cantidad, emp
       const preparadoCheck = await client.query(
         `SELECT COUNT(*) as count
          FROM detalles_orden 
-         WHERE orden_id = $1 AND producto_id = $2 AND precio_unitario > 0 AND preparado = TRUE`,
-        [orden_id, producto_id]
+         WHERE orden_id = $1 
+         AND producto_id = $2 
+         AND precio_unitario > 0 
+         AND preparado = TRUE
+         AND (sabor_id = $3 OR ($3 IS NULL AND sabor_id IS NULL))
+         AND (tamano_id = $4 OR ($4 IS NULL AND tamano_id IS NULL))
+         AND (ingrediente_id = $5 OR ($5 IS NULL AND ingrediente_id IS NULL))`,
+        [orden_id, producto_id, sabor_id, tamano_id, ingrediente_id]
       );
       
       if (parseInt(preparadoCheck.rows[0].count) > 0) {
         throw new Error("No se puede cancelar un producto que ya está preparado.");
       } else {
-        throw new Error("El producto no está en la orden o ya fue cancelado.");
+        throw new Error("El producto con esas características no está en la orden o ya fue cancelado.");
       }
     }
 
@@ -504,32 +530,51 @@ export const cancelarProductoOrden = async (orden_id, producto_id, cantidad, emp
     const canceladosCheck = await client.query(
       `SELECT SUM(cantidad) as cantidad_cancelada
        FROM detalles_orden 
-       WHERE orden_id = $1 AND producto_id = $2 AND precio_unitario < 0`,
-      [orden_id, producto_id]
+       WHERE orden_id = $1 
+       AND producto_id = $2 
+       AND precio_unitario < 0
+       AND (sabor_id = $3 OR ($3 IS NULL AND sabor_id IS NULL))
+       AND (tamano_id = $4 OR ($4 IS NULL AND tamano_id IS NULL))
+       AND (ingrediente_id = $5 OR ($5 IS NULL AND ingrediente_id IS NULL))`,
+      [orden_id, producto_id, sabor_id, tamano_id, ingrediente_id]
     );
     
     const cantidadYaCancelada = parseInt(canceladosCheck.rows[0]?.cantidad_cancelada || 0);
     const cantidadDisponible = cantidadTotal - cantidadYaCancelada;
 
-    if (cantidad > cantidadDisponible) {
-      throw new Error(`No se pueden cancelar ${cantidad} unidades. Solo hay ${cantidadDisponible} disponibles.`);
+    if (Math.abs(cantidad) > cantidadDisponible) {
+      throw new Error(`No se pueden cancelar ${Math.abs(cantidad)} unidades. Solo hay ${cantidadDisponible} disponibles.`);
     }
 
     // Registrar la cancelación como un nuevo detalle con precio negativo
     const precioUnitario = Math.abs(productoCheck.rows[0].precio_unitario) * -1; // Convertir a negativo
     
     await client.query(
-      `INSERT INTO detalles_orden (orden_id, producto_id, cantidad, precio_unitario, empleado_id, notas)
-       VALUES ($1, $2, $3, $4, $5, $6)`,
-      [orden_id, producto_id, cantidad, precioUnitario, empleado_id, razon_cancelacion ? `CANCELACIÓN: ${razon_cancelacion}` : 'CANCELACIÓN']
+      `INSERT INTO detalles_orden (orden_id, producto_id, cantidad, precio_unitario, empleado_id, notas, sabor_id, tamano_id, ingrediente_id)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+      [
+        orden_id, 
+        producto_id, 
+        cantidad, 
+        precioUnitario, 
+        empleado_id, 
+        razon_cancelacion ? `CANCELACIÓN: ${razon_cancelacion}` : 'CANCELACIÓN',
+        sabor_id,
+        tamano_id,
+        ingrediente_id
+      ]
     );
 
     await client.query("COMMIT");
+    // Agregamos los IDs de las variantes a la respuesta
     return { 
       mensaje: "Producto cancelado correctamente",
       producto: productoCheck.rows[0].nombre,
       cantidad: cantidad,
-      precio_unitario: precioUnitario
+      precio_unitario: precioUnitario,
+      sabor_id,
+      tamano_id,
+      ingrediente_id
     };
   } catch (err) {
     await client.query("ROLLBACK");

@@ -4,14 +4,20 @@ export default function PedidosCocina() {
   const [pedidos, setPedidos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [intervalId, setIntervalId] = useState(null);
 
   useEffect(() => {
+    // Al montar el componente, cargamos los pedidos iniciales
     cargarPedidos();
     
-    // Configurar actualización automática cada 30 segundos
-    const intervalo = setInterval(cargarPedidos, 30000);
+    // Configuramos recarga automática cada 30 segundos
+    const id = setInterval(cargarPedidos, 30000);
+    setIntervalId(id);
     
-    return () => clearInterval(intervalo);
+    // Al desmontar, limpiamos el intervalo
+    return () => {
+      if (intervalId) clearInterval(intervalId);
+    };
   }, []);
 
   const cargarPedidos = async () => {
@@ -19,17 +25,16 @@ export default function PedidosCocina() {
     setError("");
     
     try {
-      // Usamos el nuevo endpoint específico para cocina
-      const res = await fetch("http://localhost:3000/orders/cocina/pendientes");
+      const res = await fetch("http://localhost:3000/orders/cocina");
       const data = await res.json();
       
       if (!res.ok) {
         throw new Error(data.error || "Error al cargar pedidos");
       }
       
-      // Organizamos los datos para mostrarlos agrupados por orden
-      const pedidosOrganizados = organizarPedidos(data);
-      setPedidos(pedidosOrganizados);
+      // Organizamos los datos y procesamos cancelaciones
+      const productosOrganizados = organizarProductosPorTiempo(data);
+      setPedidos(productosOrganizados);
     } catch (error) {
       console.error("Error:", error);
       setError("No se pudieron cargar los pedidos. Intenta de nuevo.");
@@ -38,52 +43,112 @@ export default function PedidosCocina() {
     }
   };
 
-  const organizarPedidos = (data) => {
-    // Agrupamos los productos por orden_id
-    const pedidosMap = {};
+  // Organizar productos estrictamente por tiempo de creación
+  const organizarProductosPorTiempo = (data) => {
+    // 1. Agrupar por orden_id, producto_id, y variantes (sabor, tamaño, ingrediente)
+    const productosMap = {};
     
+    // Primero, procesamos todos los productos y separamos originales y cancelaciones
     data.forEach(item => {
-      if (!pedidosMap[item.orden_id]) {
-        pedidosMap[item.orden_id] = {
+      // Crear una clave única para cada variante de producto en cada orden
+      const clave = `${item.orden_id}_${item.producto_id}_${item.sabor_id || 'sin'}_${item.tamano_id || 'sin'}_${item.ingrediente_id || 'sin'}`;
+      
+      // Determinar si es una cancelación por el signo del precio o cantidad negativa
+      const esCancelacion = item.cantidad < 0;
+      
+      if (!productosMap[clave]) {
+        // Inicializamos el registro para este producto
+        productosMap[clave] = {
+          detalle_id: item.detalle_id,
           orden_id: item.orden_id,
           cliente: item.cliente || "Cliente sin nombre",
-          tiempo: item.tiempo_creacion,
-          productos: []
+          producto_id: item.producto_id,
+          nombre: item.nombre,
+          categoria: item.categoria,
+          cantidad_original: esCancelacion ? 0 : item.cantidad,
+          cantidad_final: esCancelacion ? 0 : item.cantidad,
+          notas: item.notas,
+          notas_originales: esCancelacion ? "" : item.notas, // Guardamos las notas originales
+          tiempo_creacion: item.tiempo_creacion,
+          hora: new Date(item.tiempo_creacion).toLocaleTimeString('es-ES', {
+            hour: '2-digit',
+            minute: '2-digit'
+          }),
+          sabor_id: item.sabor_id,
+          sabor_nombre: item.sabor_nombre,
+          sabor_categoria: item.sabor_categoria,
+          tamano_id: item.tamano_id,
+          tamano_nombre: item.tamano_nombre,
+          ingrediente_id: item.ingrediente_id,
+          ingrediente_nombre: item.ingrediente_nombre,
+          cancelaciones: [],
+          tiene_cancelaciones: false,
+          notas_cancelacion: "",
+          total_cancelado: 0,
+          cancelacion_completa: false
         };
+      } else if (!esCancelacion) {
+        // Si es un producto adicional (adición posterior), actualizamos la cantidad
+        productosMap[clave].cantidad_original += item.cantidad;
+        productosMap[clave].cantidad_final += item.cantidad;
+        
+        // Actualizamos notas originales si no existían
+        if (!productosMap[clave].notas_originales && item.notas) {
+          productosMap[clave].notas_originales = item.notas;
+        }
       }
       
-      // Añadimos el producto pendiente con información de sabor, tamaño e ingrediente
-      pedidosMap[item.orden_id].productos.push({
-        producto_id: item.producto_id,
-        detalle_id: item.detalle_id,
-        nombre: item.nombre,
-        categoria: item.categoria,
-        cantidad: item.cantidad,
-        notas: item.notas,
-        sabor_id: item.sabor_id,
-        sabor_nombre: item.sabor_nombre,
-        sabor_categoria: item.sabor_categoria,
-        tamano_id: item.tamano_id,
-        tamano_nombre: item.tamano_nombre,
-        ingrediente_id: item.ingrediente_id,
-        ingrediente_nombre: item.ingrediente_nombre
-      });
+      // Si es una cancelación, la registramos
+      if (esCancelacion) {
+        productosMap[clave].tiene_cancelaciones = true;
+        productosMap[clave].cantidad_final += item.cantidad; // Resta porque cantidad es negativa
+        productosMap[clave].total_cancelado += Math.abs(item.cantidad);
+        
+        // Si la cantidad final es 0 o menos, marcamos como cancelación completa
+        if (productosMap[clave].cantidad_final <= 0) {
+          productosMap[clave].cancelacion_completa = true;
+          productosMap[clave].cantidad_final = 0; // Aseguramos que nunca sea negativo
+        }
+        
+        // Guardamos registro de la cancelación
+        const notaCancelacion = item.notas ? item.notas.replace('CANCELACIÓN:', '').trim() : '';
+        productosMap[clave].cancelaciones.push({
+          cantidad: Math.abs(item.cantidad),
+          tiempo: new Date(item.tiempo_creacion).toLocaleTimeString('es-ES', {
+            hour: '2-digit',
+            minute: '2-digit'
+          }),
+          notas: notaCancelacion
+        });
+        
+        // Guardamos la última nota de cancelación para mostrarla en la tarjeta
+        if (notaCancelacion && !productosMap[clave].notas_cancelacion) {
+          productosMap[clave].notas_cancelacion = notaCancelacion;
+        }
+      }
     });
     
-    // Convertimos el objeto a un array y ordenamos por tiempo (más antiguo primero)
-    return Object.values(pedidosMap)
-      .sort((a, b) => new Date(a.tiempo) - new Date(b.tiempo));
+    // Convertimos el mapa a un array incluyendo también los que tienen cantidad cero
+    // pero que tienen cancelaciones (para que los cocineros estén informados)
+    const productos = Object.values(productosMap)
+      .filter(producto => {
+        // Incluimos productos con cantidad > 0 O productos cancelados completamente
+        return producto.cantidad_final > 0 || producto.cancelacion_completa;
+      })
+      .sort((a, b) => new Date(a.tiempo_creacion) - new Date(b.tiempo_creacion));
+    
+    console.log("Productos procesados:", productos);
+    return productos;
   };
 
-  const marcarProductoComoPreparado = async (detalle_id) => {
+  const marcarComoPreparado = async (detalle_id) => {
     try {
-      // Usamos el nuevo endpoint para marcar como preparado
-      const res = await fetch(`http://localhost:3000/orders/detalle/${detalle_id}`, {
+      const res = await fetch(`http://localhost:3000/orders/detalle/${detalle_id}/preparar`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json"
         },
-        body: JSON.stringify({}) // El estado se cambia automáticamente en el backend
+        body: JSON.stringify({})
       });
       
       const data = await res.json();
@@ -92,38 +157,14 @@ export default function PedidosCocina() {
         throw new Error(data.error || "Error al actualizar estado");
       }
       
-      // Actualizamos el estado localmente (quitamos el producto de la lista)
-      setPedidos(prevPedidos => {
-        const nuevoPedidos = prevPedidos.map(pedido => {
-          // Filtramos el producto que se acaba de marcar como preparado
-          const productosFiltrados = pedido.productos.filter(
-            producto => producto.detalle_id !== detalle_id
-          );
-          
-          return {
-            ...pedido,
-            productos: productosFiltrados
-          };
-        });
-        
-        // Filtramos pedidos que ya no tienen productos pendientes
-        return nuevoPedidos.filter(pedido => pedido.productos.length > 0);
-      });
-      
+      // Actualizamos el estado local eliminando el producto preparado
+      setPedidos(prevPedidos => 
+        prevPedidos.filter(producto => producto.detalle_id !== detalle_id)
+      );
     } catch (error) {
       console.error("Error al marcar como preparado:", error);
-      alert("Error al actualizar el estado del producto");
+      alert("Error: " + error.message);
     }
-  };
-
-  const calcularTiempoEspera = (tiempo) => {
-    const fechaPedido = new Date(tiempo);
-    const ahora = new Date();
-    const diferencia = Math.floor((ahora - fechaPedido) / (1000 * 60)); // diferencia en minutos
-    
-    if (diferencia < 1) return "Menos de 1 minuto";
-    if (diferencia === 1) return "1 minuto";
-    return `${diferencia} minutos`;
   };
 
   // Función para mostrar detalles del producto incluyendo sabor, tamaño e ingrediente
@@ -150,7 +191,7 @@ export default function PedidosCocina() {
     return detalles;
   };
 
-  if (loading) {
+  if (loading && pedidos.length === 0) {
     return <p className="text-center text-gray-400">Cargando pedidos...</p>;
   }
 
@@ -168,78 +209,122 @@ export default function PedidosCocina() {
     );
   }
 
-  if (pedidos.length === 0) {
-    return (
-      <div className="text-center">
-        <p className="text-2xl mb-4">No hay pedidos pendientes</p>
-        <p className="text-gray-400">Los nuevos pedidos aparecerán aquí</p>
+  return (
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <h2 className="text-xl font-subtitulo">Pedidos por preparar</h2>
         <button
           onClick={cargarPedidos}
-          className="mt-6 bg-vino px-4 py-2 rounded"
+          className="bg-vino text-white px-3 py-1 rounded text-sm hover:bg-amarillo hover:text-negro transition-colors"
         >
           Actualizar
         </button>
       </div>
-    );
-  }
-
-  return (
-    <div className="space-y-8">
-      <button
-        onClick={cargarPedidos}
-        className="bg-vino px-4 py-2 rounded mb-4 w-full"
-      >
-        Actualizar Pedidos
-      </button>
       
-      {pedidos.map((pedido) => (
-        <div
-          key={pedido.orden_id}
-          className="bg-vino rounded-xl p-4 shadow-md"
-        >
-          <div className="flex justify-between items-center mb-2">
-            <span className="text-sm text-amarillo font-bold">Orden #{pedido.orden_id}</span>
-            <span className="text-sm bg-negro px-2 py-1 rounded">
-              {calcularTiempoEspera(pedido.tiempo)}
-            </span>
-          </div>
-          
-          <p className="text-lg font-subtitulo mb-4">
-            {pedido.cliente}
-          </p>
-          
-          <div className="space-y-2">
-            {pedido.productos.map((producto) => (
-              <div
-                key={producto.detalle_id}
-                className="flex justify-between items-center bg-negro/30 p-3 rounded"
-              >
+      {pedidos.length === 0 ? (
+        <p className="text-center text-gray-400 py-8">
+          ¡No hay pedidos pendientes! 🎉
+        </p>
+      ) : (
+        <div className="space-y-3">
+          {pedidos.map((producto) => (
+            <div
+              key={producto.detalle_id}
+              className={`flex flex-col bg-vino/80 rounded-xl p-4 shadow-md 
+                ${producto.cancelacion_completa ? 'border-l-8 border-red-500' : 
+                  producto.tiene_cancelaciones ? 'border-l-4 border-red-500' : ''}`}
+            >
+              <div className="flex justify-between items-center mb-1">
+                <span className="text-sm text-amarillo font-bold">
+                  Orden #{producto.orden_id}
+                </span>
+                <span className="text-sm bg-negro px-2 py-1 rounded">
+                  {producto.hora}
+                </span>
+              </div>
+              
+              <p className="text-lg font-subtitulo mb-2">
+                {producto.cliente}
+              </p>
+              
+              {/* Producto con toda la información */}
+              <div className={`flex justify-between items-center p-3 rounded ${producto.cancelacion_completa ? 'bg-red-900/40' : 'bg-negro/30'}`}>
                 <div className="flex-1">
-                  <p className="font-bold">
-                    {producto.cantidad}x {formatearDetallesProducto(producto)}
-                  </p>
+                  <div className="flex items-center flex-wrap">
+                    <p className="font-bold">
+                      {producto.cantidad_final === 0 ? "0" : producto.cantidad_final}x {formatearDetallesProducto(producto)}
+                    </p>
+                    {producto.cancelacion_completa ? (
+                      <span className="ml-2 px-2 py-0.5 bg-red-500 text-white text-xs rounded-full animate-pulse">
+                        CANCELADO COMPLETAMENTE
+                      </span>
+                    ) : producto.tiene_cancelaciones && (
+                      <span className="ml-2 px-2 py-0.5 bg-amarillo text-negro text-xs rounded-full animate-pulse">
+                        Cancelación parcial, cantidad cancelada: {producto.total_cancelado}
+                      </span>
+                    )}
+                  </div>
+                  
                   <p className="text-xs text-amarillo">
                     {producto.categoria}
                     {producto.sabor_categoria ? ` - ${producto.sabor_categoria}`: ''}
                   </p>
-                  {producto.notas && (
-                    <p className="text-sm text-gray-300 italic">
-                      {producto.notas}
+                  
+                  {/* Mostrar variantes para facilitar identificación */}
+                  <div className="mt-1 flex flex-wrap gap-1">
+                    {producto.sabor_nombre && (
+                      <span className="text-xs bg-vino/70 px-2 py-0.5 rounded">
+                        Sabor: {producto.sabor_nombre}
+                      </span>
+                    )}
+                    {producto.tamano_nombre && (
+                      <span className="text-xs bg-vino/70 px-2 py-0.5 rounded">
+                        Tamaño: {producto.tamano_nombre}
+                      </span>
+                    )}
+                    {producto.ingrediente_nombre && (
+                      <span className="text-xs bg-vino/70 px-2 py-0.5 rounded">
+                        Ingrediente: {producto.ingrediente_nombre}
+                      </span>
+                    )}
+                  </div>
+                  
+                  {producto.tiene_cancelaciones && producto.notas_cancelacion && (
+                    <p className="text-sm text-red-300 italic mt-1">
+                      <span className="font-semibold">Motivo:</span> {producto.notas_cancelacion}
+                    </p>
+                  )}
+                  
+                  {/* Siempre mostrar las notas originales si existen */}
+                  {producto.notas_originales && (
+                    <p className="text-sm text-gray-300 italic mt-1">
+                      <span className="font-semibold">Notas originales:</span> {producto.notas_originales}
                     </p>
                   )}
                 </div>
                 
-                <button
-                  onClick={() => marcarProductoComoPreparado(producto.detalle_id)}
-                  className="bg-verde text-negro px-3 py-1 rounded-full font-bold"
-                >
-                  Listo
-                </button>
+                {!producto.cancelacion_completa && (
+                  <button
+                    onClick={() => marcarComoPreparado(producto.detalle_id)}
+                    className="bg-green-700 hover:bg-green-600 text-black font-bold px-4 py-2 rounded-lg transition-colors shadow-md flex items-center justify-center"
+                  >
+                    <span className="mr-1">✓</span> Preparado
+                  </button>
+                )}
+                
+                {producto.cancelacion_completa && (
+                  <button
+                    onClick={() => marcarComoPreparado(producto.detalle_id)}
+                    className="bg-red-700 hover:bg-red-600 text-white font-bold px-4 py-2 rounded-lg transition-colors shadow-md flex items-center justify-center"
+                  >
+                    <span className="mr-1">✓</span> Enterado
+                  </button>
+                )}
               </div>
-            ))}
-          </div>
+            </div>
+          ))}
         </div>
-      ))}
+      )}
     </div>
   );
 } 

@@ -7,6 +7,7 @@ import {
   getProductosPorPreparar,
   getHistorialProductosPreparados,
   marcarProductoComoPreparado,
+  desprepararProducto,
   cancelarProductoOrden
 } from "../models/orders.model.js";
 
@@ -141,11 +142,27 @@ export const updateEstadoProducto = async (req, res) => {
   }
 };
 
+// Marcar un producto como NO preparado (despreparar)
+export const revertirEstadoProducto = async (req, res) => {
+  try {
+    const detalle_id = req.params.id;
+    const producto = await desprepararProducto(detalle_id);
+    
+    if (!producto) {
+      return res.status(404).json({ error: "Detalle de producto no encontrado" });
+    }
+    
+    res.json(producto);
+  } catch (err) {
+    res.status(500).json({ error: "Error al marcar producto como no preparado", detail: err.message });
+  }
+};
+
 // Cancelar productos de una orden
 export const cancelarProducto = async (req, res) => {
   try {
     const orden_id = req.params.id;
-    const { producto_id, cantidad, empleado_id, razon_cancelacion } = req.body;
+    const { producto_id, cantidad, empleado_id, razon_cancelacion, sabor_id, tamano_id, ingrediente_id } = req.body;
 
     if (!producto_id || !cantidad || !empleado_id) {
       return res.status(400).json({ 
@@ -154,19 +171,29 @@ export const cancelarProducto = async (req, res) => {
       });
     }
 
-    if (cantidad <= 0) {
-      return res.status(400).json({ 
-        error: "Cantidad inválida", 
-        detail: "La cantidad debe ser mayor a 0" 
-      });
-    }
+    // Si la cantidad es positiva, convertirla a negativa para indicar cancelación
+    const cantidadFinal = cantidad < 0 ? cantidad : -Math.abs(cantidad);
+    
+    console.log("Recibiendo cancelación:", {
+      orden_id,
+      producto_id,
+      cantidad: cantidadFinal, 
+      empleado_id,
+      razon_cancelacion,
+      sabor_id,
+      tamano_id,
+      ingrediente_id
+    });
 
     const resultado = await cancelarProductoOrden(
       orden_id, 
       producto_id, 
-      cantidad, 
+      cantidadFinal, 
       empleado_id, 
-      razon_cancelacion
+      razon_cancelacion,
+      sabor_id || null,
+      tamano_id || null,
+      ingrediente_id || null
     );
 
     res.status(200).json(resultado);

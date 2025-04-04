@@ -155,18 +155,30 @@ export default function GestionOrden({ id }) {
       const payload = JSON.parse(atob(token.split(".")[1]));
       const empleadoId = payload.id;
 
+      // Convertir la cantidad a negativa para indicar que es una cancelación
+      const cantidadNegativa = Math.abs(cantidadACancelar) * -1;
+
+      // Preparar los datos del producto, incluyendo todas sus variantes
+      const datosProducto = {
+        producto_id: productoACancelar.producto_id,
+        cantidad: cantidadNegativa,
+        empleado_id: empleadoId,
+        razon_cancelacion: razonCancelacion,
+        // Incluimos las variantes solo si existen
+        sabor_id: productoACancelar.sabor_id || null,
+        tamano_id: productoACancelar.tamano_id || null,
+        ingrediente_id: productoACancelar.ingrediente_id || null
+      };
+
+      console.log("Enviando cancelación:", datosProducto);
+
       const response = await fetch(`http://localhost:3000/orders/${id}/cancelar`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           "Authorization": `Bearer ${token}`
         },
-        body: JSON.stringify({
-          producto_id: productoACancelar.producto_id,
-          cantidad: cantidadACancelar,
-          empleado_id: empleadoId,
-          razon_cancelacion: razonCancelacion
-        })
+        body: JSON.stringify(datosProducto)
       });
 
       if (!response.ok) {

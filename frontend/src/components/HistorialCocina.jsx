@@ -31,8 +31,11 @@ export default function HistorialCocina() {
         throw new Error(data.error || "Error al cargar historial");
       }
       
+      // Obtenemos todos los productos preparados en orden cronológico
+      const productosPreparados = data.sort((a, b) => new Date(a.tiempo_creacion) - new Date(b.tiempo_creacion));
+      
       // Organizamos los datos para mostrarlos agrupados por orden
-      const historicoOrganizado = organizarHistorial(data);
+      const historicoOrganizado = organizarHistorial(productosPreparados);
       setHistorial(historicoOrganizado);
     } catch (error) {
       console.error("Error:", error);
@@ -67,6 +70,7 @@ export default function HistorialCocina() {
         categoria: item.categoria,
         cantidad: item.cantidad,
         notas: item.notas,
+        tiempo_creacion: item.tiempo_creacion,
         sabor_id: item.sabor_id,
         sabor_nombre: item.sabor_nombre,
         sabor_categoria: item.sabor_categoria,
@@ -82,6 +86,11 @@ export default function HistorialCocina() {
       });
     });
     
+    // Para cada orden, ordenamos los productos por tiempo de creación
+    Object.values(historicoMap).forEach(pedido => {
+      pedido.productos.sort((a, b) => new Date(a.tiempo_creacion) - new Date(b.tiempo_creacion));
+    });
+    
     // Convertimos el objeto a un array y ordenamos por hora (más reciente primero)
     return Object.values(historicoMap)
       .sort((a, b) => {
@@ -94,6 +103,51 @@ export default function HistorialCocina() {
         // Para ordenar descendente (más reciente primero)
         return getMinutes(b.hora) - getMinutes(a.hora);
       });
+  };
+  
+  // Función para "despreparar" un producto (marcar como no preparado)
+  const desprepararProducto = async (detalle_id) => {
+    try {
+      const confirmar = window.confirm("¿Seguro que deseas marcar este producto como no preparado?");
+      if (!confirmar) return;
+      
+      const res = await fetch(`http://localhost:3000/orders/detalle/${detalle_id}/despreparar`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({})
+      });
+      
+      const data = await res.json();
+      
+      if (!res.ok) {
+        throw new Error(data.error || "Error al actualizar estado");
+      }
+      
+      // Actualizamos el estado localmente (quitamos el producto de la lista)
+      setHistorial(prevHistorial => {
+        const nuevoHistorial = prevHistorial.map(orden => {
+          // Filtramos el producto que se acaba de "despreparar"
+          const productosFiltrados = orden.productos.filter(
+            producto => producto.detalle_id !== detalle_id
+          );
+          
+          return {
+            ...orden,
+            productos: productosFiltrados
+          };
+        });
+        
+        // Filtramos órdenes que ya no tienen productos preparados
+        return nuevoHistorial.filter(orden => orden.productos.length > 0);
+      });
+      
+      alert("Producto marcado como no preparado correctamente");
+    } catch (error) {
+      console.error("Error al despreparar producto:", error);
+      alert("Error: " + error.message);
+    }
   };
 
   // Función para mostrar detalles del producto incluyendo sabor, tamaño e ingrediente
@@ -204,8 +258,16 @@ export default function HistorialCocina() {
                       )}
                     </div>
                     
-                    <div className="text-verde text-sm font-bold">
-                      {producto.hora_preparacion}
+                    <div className="flex items-center gap-2">
+                      <div className="text-verde text-sm font-bold">
+                        {producto.hora_preparacion}
+                      </div>
+                      <button
+                        onClick={() => desprepararProducto(producto.detalle_id)}
+                        className="bg-red-800 text-white text-xs px-2 py-1 rounded hover:bg-red-700"
+                      >
+                        Despreparar
+                      </button>
                     </div>
                   </div>
                 ))}
