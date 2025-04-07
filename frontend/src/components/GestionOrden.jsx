@@ -132,8 +132,34 @@ export default function GestionOrden({ id }) {
   const iniciarCancelacion = (producto) => {
     // Solo podemos cancelar productos reales, no cancelaciones, y no preparados
     if (!producto.es_cancelacion && !producto.preparado) {
-      setProductoACancelar(producto);
-      setCantidadACancelar(1);
+      // Buscar todas las cancelaciones para este producto específico (mismo sabor, tamaño, ingrediente)
+      let cantidadCancelada = 0;
+      
+      if (Array.isArray(orden.productos)) {
+        // Filtrar cancelaciones para el mismo producto con las mismas características
+        orden.productos.forEach(p => {
+          if (p.es_cancelacion && 
+              p.producto_id === producto.producto_id && 
+              p.sabor_id === producto.sabor_id && 
+              p.tamano_id === producto.tamano_id && 
+              p.ingrediente_id === producto.ingrediente_id) {
+            // Las cantidades canceladas son negativas, convertirlas a positivas para el cálculo
+            cantidadCancelada += Math.abs(p.cantidad);
+          }
+        });
+      }
+      
+      // Calcular cantidad real disponible para cancelar
+      const cantidadDisponible = Math.max(0, producto.cantidad - cantidadCancelada);
+      
+      // Guardar la cantidad disponible en el producto
+      const productoConDisponible = {
+        ...producto,
+        cantidad_disponible: cantidadDisponible
+      };
+      
+      setProductoACancelar(productoConDisponible);
+      setCantidadACancelar(cantidadDisponible > 0 ? 1 : 0);
       setMostrarCancelacion(true);
     } else if (producto.preparado) {
       alert("No se puede cancelar un producto que ya está preparado.");
@@ -420,7 +446,7 @@ export default function GestionOrden({ id }) {
     <div className="flex gap-2">
     <button
     onClick={() => window.location.href = `/ordenes/${id}/agregar`}
-    className="flex-1 bg-black/30 py-2 rounded font-bold"
+    className="flex-1 bg-vino py-2 rounded font-bold"
     >
     ➕ Agregar productos
     </button>
@@ -470,20 +496,29 @@ export default function GestionOrden({ id }) {
               </p>
             )}
             
-            <p className="mb-4"><span className="font-bold">Disponible:</span> {productoACancelar.cantidad} unidades</p>
+            <p className="mb-4">
+              <span className="font-bold">Disponible para cancelar:</span> {productoACancelar.cantidad_disponible} unidades
+              {productoACancelar.cantidad_disponible < productoACancelar.cantidad && (
+                <span className="text-xs text-red-300 ml-2">
+                  (Ya se han cancelado {productoACancelar.cantidad - productoACancelar.cantidad_disponible} unidades previamente)
+                </span>
+              )}
+            </p>
             
             <label className="block mb-2 font-bold">Cantidad a cancelar:</label>
             <div className="flex items-center gap-3 bg-negro rounded p-2 w-full mb-4">
               <button 
                 onClick={() => setCantidadACancelar(prev => Math.max(1, prev - 1))}
                 className="bg-amarillo text-negro px-3 py-1 rounded-full font-bold"
+                disabled={productoACancelar.cantidad_disponible <= 0}
               >
                 -
               </button>
               <span className="flex-1 text-center text-xl font-bold">{cantidadACancelar}</span>
               <button 
-                onClick={() => setCantidadACancelar(prev => Math.min(productoACancelar.cantidad, prev + 1))}
+                onClick={() => setCantidadACancelar(prev => Math.min(productoACancelar.cantidad_disponible, prev + 1))}
                 className="bg-amarillo text-negro px-3 py-1 rounded-full font-bold"
+                disabled={productoACancelar.cantidad_disponible <= 0}
               >
                 +
               </button>
@@ -509,7 +544,7 @@ export default function GestionOrden({ id }) {
             <button
               onClick={confirmarCancelacion}
               className="px-4 py-2 rounded bg-red-600 text-white font-bold"
-              disabled={cantidadACancelar < 1 || cantidadACancelar > productoACancelar.cantidad}
+              disabled={cantidadACancelar < 1 || cantidadACancelar > productoACancelar.cantidad_disponible || productoACancelar.cantidad_disponible <= 0}
             >
               Confirmar
             </button>
