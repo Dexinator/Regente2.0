@@ -19,10 +19,10 @@ export default function CrearOrden() {
     const [cantidad, setCantidad] = useState(1);
     const [notas, setNotas] = useState("");
     
-    // Estados para sabores
-    const [saboresDisponibles, setSaboresDisponibles] = useState([]);
-    const [loadingSabores, setLoadingSabores] = useState(false);
-    const [seleccionSabores, setSeleccionSabores] = useState(false);
+    // Estados para variantes (antes sabores)
+    const [variantesDisponibles, setVariantesDisponibles] = useState([]);
+    const [loadingVariantes, setLoadingVariantes] = useState(false);
+    const [seleccionVariantes, setSeleccionVariantes] = useState(false);
     
     // Estados para notas y cantidad
     const [productoEditandoNotas, setProductoEditandoNotas] = useState(null);
@@ -58,7 +58,7 @@ export default function CrearOrden() {
             setMostrarSeleccionCantidad(true);
             setCantidad(1);
         } else {
-            setSaboresDisponibles([]);
+            setVariantesDisponibles([]);
             setTamanosDisponibles([]);
             setIngredientesDisponibles([]);
         }
@@ -95,29 +95,27 @@ export default function CrearOrden() {
         }
     };
     
-    // Cargar sabores para un producto
-    const cargarSabores = async (productoId) => {
-        setLoadingSabores(true);
+    // Cargar variantes para un producto
+    const cargarVariantes = async (productoId) => {
+        setLoadingVariantes(true);
+        
         try {
-            // Conseguir sabores con nuevo parámetro tipo=sabor
-            console.log("Cargando sabores para producto:", productoId);
-            const res = await fetch(`http://localhost:3000/products/sabores/producto/${productoId}?tipo=sabor`);
+            // Conseguir variantes con nuevo parámetro tipo=sabor
+            console.log("Cargando variantes para producto:", productoId);
+            const res = await fetch(`http://localhost:3000/products/variantes/producto/${productoId}?tipo=sabor`);
             const data = await res.json();
             
-            console.log("Sabores obtenidos:", data);
-            
             if (!res.ok) {
-                throw new Error(data.error || "Error al cargar sabores");
+                console.log("Error obteniendo variantes:", data);
+                throw new Error(data.error || "Error al cargar variantes");
             }
             
-            // Confiamos en el backend para filtrar correctamente
-            setSaboresDisponibles(data);
-            setLoadingSabores(false);
-            return data.length > 0;
+            console.log("Variantes obtenidas:", data);
+            setVariantesDisponibles(data);
+            setLoadingVariantes(false);
         } catch (error) {
-            console.error("Error cargando sabores:", error);
-            setLoadingSabores(false);
-            return false;
+            console.error("Error cargando variantes:", error);
+            setLoadingVariantes(false);
         }
     };
     
@@ -127,7 +125,7 @@ export default function CrearOrden() {
         try {
             // Conseguir tamaños con nuevo parámetro tipo=tamano
             console.log("Cargando tamaños para producto:", productoId);
-            const res = await fetch(`http://localhost:3000/products/sabores/producto/${productoId}?tipo=tamano`);
+            const res = await fetch(`http://localhost:3000/products/variantes/producto/${productoId}?tipo=tamano`);
             const data = await res.json();
             
             console.log("Tamaños obtenidos:", data);
@@ -168,7 +166,7 @@ export default function CrearOrden() {
         setLoadingIngredientes(true);
         try {
             console.log("Cargando ingredientes para producto:", productoId);
-            const res = await fetch(`http://localhost:3000/products/sabores/producto/${productoId}?tipo=ingredientes`);
+            const res = await fetch(`http://localhost:3000/products/variantes/producto/${productoId}?tipo=ingredientes`);
             const data = await res.json();
             
             console.log("Ingredientes obtenidos:", data);
@@ -189,11 +187,11 @@ export default function CrearOrden() {
     
     // Ahora al agregar un producto, primero mostramos la pantalla de cantidad
     const agregarProducto = (producto) => {
-        // Verificar si el producto tiene sabores disponibles
-        if (producto.sabores_disponibles && producto.sabores_disponibles.length > 0) {
+        // Verificar si el producto tiene variantes disponibles
+        if (producto.variantes_disponibles && producto.variantes_disponibles.length > 0) {
             setProductoSeleccionado(producto);
-            setSeleccionSabores(true);
-            cargarSabores(producto.id);
+            setSeleccionVariantes(true);
+            cargarVariantes(producto.id);
         } else {
             setProductoEditandoNotas({
                 ...producto,
@@ -230,7 +228,7 @@ export default function CrearOrden() {
         setProductoSeleccionado(null);
         setCantidad(1);
         setNotas("");
-        setSeleccionSabores(false);
+        setSeleccionVariantes(false);
         setProductoEditandoNotas(null);
         setMostrarSeleccionCantidad(false);
         setSeleccionTamano(false);
@@ -264,21 +262,21 @@ export default function CrearOrden() {
         setSeleccionIngrediente(false);
     };
 
-    const cancelarSeleccionSabor = () => {
-        setSeleccionSabores(false);
+    const cancelarSeleccionVariante = () => {
+        setSeleccionVariantes(false);
         setMostrarSeleccionCantidad(true);
         setSaborSeleccionado(null);
     };
     
     const cancelarSeleccionTamano = () => {
         setSeleccionTamano(false);
-        setSeleccionSabores(true); // Volver a selección de sabor
+        setSeleccionVariantes(true); // Volver a selección de sabor
         setSaborSeleccionado(null);
     };
 
     const cancelarSeleccionIngrediente = () => {
         setSeleccionIngrediente(false);
-        setSeleccionSabores(true); // Volver a selección de sabor
+        setSeleccionVariantes(true); // Volver a selección de sabor
         setSaborSeleccionado(null);
     };
 
@@ -291,8 +289,8 @@ export default function CrearOrden() {
             setSeleccionTamano(true);
         } else if ((productoSeleccionado?.categoria === "Cena" || productoSeleccionado?.categoria === "Cenas") && saborSeleccionado) {
             setSeleccionIngrediente(true);
-        } else if (seleccionSabores) {
-            setSeleccionSabores(true);
+        } else if (seleccionVariantes) {
+            setSeleccionVariantes(true);
         } else {
             setMostrarSeleccionCantidad(true);
         }
@@ -485,12 +483,12 @@ export default function CrearOrden() {
         
         // Para pulques, primero mostramos selección de sabores 
         if (esPulque) {
-            const tieneSabores = await cargarSabores(productoSeleccionado.id);
+            const tieneSabores = await cargarVariantes(productoSeleccionado.id);
             console.log("¿Tiene sabores?", tieneSabores);
             
             if (tieneSabores) {
                 // Si tiene sabores, mostrar pantalla de selección de sabores
-                setSeleccionSabores(true);
+                setSeleccionVariantes(true);
                 setSeleccionTamano(false);
                 setSeleccionIngrediente(false);
                 setMostrarSeleccionCantidad(false);
@@ -501,7 +499,7 @@ export default function CrearOrden() {
                 
                 if (tieneTamanos) {
                     setSeleccionTamano(true);
-                    setSeleccionSabores(false);
+                    setSeleccionVariantes(false);
                     setSeleccionIngrediente(false);
                     setMostrarSeleccionCantidad(false);
                 } else {
@@ -512,12 +510,12 @@ export default function CrearOrden() {
             }
         } else if (esCena) {
             // Para productos de categoría Cena/Cenas
-            const tieneSabores = await cargarSabores(productoSeleccionado.id);
+            const tieneSabores = await cargarVariantes(productoSeleccionado.id);
             console.log("¿Tiene sabores? (cenas)", tieneSabores);
             
             if (tieneSabores) {
                 // Si tiene sabores, mostrar pantalla de selección de sabores
-                setSeleccionSabores(true);
+                setSeleccionVariantes(true);
                 setSeleccionTamano(false);
                 setSeleccionIngrediente(false);
                 setMostrarSeleccionCantidad(false);
@@ -528,7 +526,7 @@ export default function CrearOrden() {
                 
                 if (tieneIngredientes) {
                     setSeleccionIngrediente(true);
-                    setSeleccionSabores(false);
+                    setSeleccionVariantes(false);
                     setSeleccionTamano(false);
                     setMostrarSeleccionCantidad(false);
                 } else {
@@ -539,12 +537,12 @@ export default function CrearOrden() {
             }
         } else {
             // Para otros productos no-pulque y no-cena
-            const tieneSabores = await cargarSabores(productoSeleccionado.id);
+            const tieneSabores = await cargarVariantes(productoSeleccionado.id);
             console.log("¿Tiene sabores? (otro producto)", tieneSabores);
             
             if (tieneSabores) {
                 // Si tiene sabores, ir a pantalla de selección
-                setSeleccionSabores(true);
+                setSeleccionVariantes(true);
                 setMostrarSeleccionCantidad(false);
             } else {
                 // Si no tiene sabores, ir a notas
@@ -554,46 +552,46 @@ export default function CrearOrden() {
         }
     };
 
-    // Función para manejar selección de sabores
-    const seleccionarSabor = async (sabor) => {
-        console.log("Sabor seleccionado:", sabor);
+    // Función para manejar selección de variantes
+    const seleccionarVariante = async (variante) => {
+        console.log("Variante seleccionada:", variante);
         const esPulque = productoSeleccionado.categoria === "Pulque";
         const esCena = productoSeleccionado.categoria === "Cenas" || productoSeleccionado.categoria === "Cena";
         
         if (esPulque) {
             // Para pulques, guardamos el sabor y vamos a seleccionar tamaño
-            setSaborSeleccionado(sabor);
+            setSaborSeleccionado(variante);
             
             const tieneTamanos = await cargarTamanos(productoSeleccionado.id);
             console.log("¿Tiene tamaños para este sabor?", tieneTamanos);
             
             if (tieneTamanos) {
-                setSeleccionSabores(false);
+                setSeleccionVariantes(false);
                 setSeleccionTamano(true);
             } else {
                 // Si por alguna razón no hay tamaños disponibles
-                mostrarPantallaNotas(productoSeleccionado, sabor);
-                setSeleccionSabores(false);
+                mostrarPantallaNotas(productoSeleccionado, variante);
+                setSeleccionVariantes(false);
             }
         } else if (esCena) {
             // Para cenas, guardamos el sabor y vamos a seleccionar ingrediente extra
-            setSaborSeleccionado(sabor);
+            setSaborSeleccionado(variante);
             
             const tieneIngredientes = await cargarIngredientes(productoSeleccionado.id);
             console.log("¿Tiene ingredientes extra para esta cena?", tieneIngredientes);
             
             if (tieneIngredientes) {
-                setSeleccionSabores(false);
+                setSeleccionVariantes(false);
                 setSeleccionIngrediente(true);
             } else {
                 // Si no hay ingredientes disponibles
-                mostrarPantallaNotas(productoSeleccionado, sabor);
-                setSeleccionSabores(false);
+                mostrarPantallaNotas(productoSeleccionado, variante);
+                setSeleccionVariantes(false);
             }
         } else {
             // Para otros productos, seguimos el flujo normal
-            mostrarPantallaNotas(productoSeleccionado, sabor);
-            setSeleccionSabores(false);
+            mostrarPantallaNotas(productoSeleccionado, variante);
+            setSeleccionVariantes(false);
         }
     };
 
@@ -738,38 +736,38 @@ export default function CrearOrden() {
         );
     }
 
-    if (seleccionSabores && saboresDisponibles.length > 0) {
+    if (seleccionVariantes && variantesDisponibles.length > 0) {
         return (
             <div className="bg-vino rounded-xl p-4 space-y-4">
                 <div className="flex justify-between items-center">
                     <h2 className="text-xl font-bold">Selecciona un sabor para {productoSeleccionado.nombre} ({cantidad})</h2>
                     <button 
-                        onClick={cancelarSeleccionSabor}
+                        onClick={cancelarSeleccionVariante}
                         className="text-gray-300 hover:text-white"
                     >
                         ✕
                     </button>
                 </div>
                 
-                {loadingSabores ? (
-                    <p className="text-center py-4">Cargando sabores disponibles...</p>
+                {loadingVariantes ? (
+                    <p className="text-center py-4">Cargando variantes disponibles...</p>
                 ) : (
                     <div className="grid grid-cols-1 gap-3 max-h-96 overflow-y-auto">
-                        {saboresDisponibles.map(sabor => (
+                        {variantesDisponibles.map(variante => (
                             <button
-                                key={sabor.id}
-                                onClick={() => seleccionarSabor(sabor)}
+                                key={variante.id}
+                                onClick={() => seleccionarVariante(variante)}
                                 className="bg-negro p-3 rounded text-left hover:bg-gray-800 flex justify-between items-center"
                             >
                                 <div>
-                                    <p className="font-bold">{sabor.nombre}</p>
-                                    {sabor.categoria_nombre && (
-                                        <p className="text-xs text-gray-400">{sabor.categoria_nombre}</p>
+                                    <p className="font-bold">{variante.nombre}</p>
+                                    {variante.categoria_nombre && (
+                                        <p className="text-xs text-gray-400">{variante.categoria_nombre}</p>
                                     )}
                                 </div>
-                                {sabor.precio_adicional > 0 && (
+                                {variante.precio_adicional > 0 && (
                                     <span className="bg-amarillo text-negro px-2 py-1 rounded-full text-xs font-bold">
-                                        +${sabor.precio_adicional}
+                                        +${variante.precio_adicional}
                                     </span>
                                 )}
                             </button>

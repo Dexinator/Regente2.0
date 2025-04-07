@@ -74,10 +74,10 @@ export const getOrderWithDetails = async (orden_id) => {
             cvi.nombre AS ingrediente_categoria
      FROM detalles_orden d
      JOIN productos p ON d.producto_id = p.id
-     LEFT JOIN sabores s ON d.sabor_id = s.id
+     LEFT JOIN variantes s ON d.sabor_id = s.id
      LEFT JOIN categorias_variantes cv ON s.categoria_id = cv.id
-     LEFT JOIN sabores t ON d.tamano_id = t.id
-     LEFT JOIN sabores i ON d.ingrediente_id = i.id
+     LEFT JOIN variantes t ON d.tamano_id = t.id
+     LEFT JOIN variantes i ON d.ingrediente_id = i.id
      LEFT JOIN categorias_variantes cvi ON i.categoria_id = cvi.id
      WHERE d.orden_id = $1`,
     [orden_id]
@@ -293,10 +293,10 @@ export const getOrderResumen = async (orden_id) => {
       d.notas
     FROM detalles_orden d
     JOIN productos p ON d.producto_id = p.id
-    LEFT JOIN sabores s ON d.sabor_id = s.id
+    LEFT JOIN variantes s ON d.sabor_id = s.id
     LEFT JOIN categorias_variantes cv ON s.categoria_id = cv.id
-    LEFT JOIN sabores t ON d.tamano_id = t.id
-    LEFT JOIN sabores i ON d.ingrediente_id = i.id
+    LEFT JOIN variantes t ON d.tamano_id = t.id
+    LEFT JOIN variantes i ON d.ingrediente_id = i.id
     LEFT JOIN categorias_variantes cvi ON i.categoria_id = cvi.id
     WHERE d.orden_id = $1
     GROUP BY p.id, p.nombre, d.precio_unitario, d.producto_id, (d.precio_unitario < 0), 
@@ -381,10 +381,10 @@ export const getProductosPorPreparar = async () => {
     JOIN productos p ON d.producto_id = p.id
     JOIN ordenes o ON d.orden_id = o.orden_id
     LEFT JOIN presos pr ON o.preso_id = pr.id
-    LEFT JOIN sabores s ON d.sabor_id = s.id
+    LEFT JOIN variantes s ON d.sabor_id = s.id
     LEFT JOIN categorias_variantes cv ON s.categoria_id = cv.id
-    LEFT JOIN sabores t ON d.tamano_id = t.id
-    LEFT JOIN sabores i ON d.ingrediente_id = i.id
+    LEFT JOIN variantes t ON d.tamano_id = t.id
+    LEFT JOIN variantes i ON d.ingrediente_id = i.id
     LEFT JOIN categorias_variantes cvi ON i.categoria_id = cvi.id
     WHERE d.preparado = FALSE 
     AND o.estado = 'abierta'
@@ -427,10 +427,10 @@ export const getHistorialProductosPreparados = async (fecha) => {
     JOIN productos p ON d.producto_id = p.id
     JOIN ordenes o ON d.orden_id = o.orden_id
     LEFT JOIN presos pr ON o.preso_id = pr.id
-    LEFT JOIN sabores s ON d.sabor_id = s.id
+    LEFT JOIN variantes s ON d.sabor_id = s.id
     LEFT JOIN categorias_variantes cv ON s.categoria_id = cv.id
-    LEFT JOIN sabores t ON d.tamano_id = t.id
-    LEFT JOIN sabores i ON d.ingrediente_id = i.id
+    LEFT JOIN variantes t ON d.tamano_id = t.id
+    LEFT JOIN variantes i ON d.ingrediente_id = i.id
     LEFT JOIN categorias_variantes cvi ON i.categoria_id = cvi.id
     WHERE d.preparado = TRUE 
     AND DATE(d.tiempo_preparacion) = $1
@@ -581,5 +581,36 @@ export const cancelarProductoOrden = async (orden_id, producto_id, cantidad, emp
     throw err;
   } finally {
     client.release();
+  }
+};
+
+/**
+ * Obtiene los productos incluidos en una orden específica con todos los detalles
+ */
+const getProductosByOrdenId = async (ordenId) => {
+  try {
+    // Traemos los productos incluidos en la orden con información de variantes
+    const [detalles] = await pool.query(
+      `SELECT d.id, d.orden_id, d.producto_id, p.nombre as producto_nombre, 
+      p.categoria as producto_categoria, d.cantidad, d.precio_unitario, 
+      d.sabor_id, v1.nombre as sabor_nombre, cv1.nombre as sabor_categoria,
+      d.tamano_id, v2.nombre as tamano_nombre,
+      d.ingrediente_id, v3.nombre as ingrediente_nombre,
+      d.notas, d.estado, d.tiempo_preparacion, d.cancelado,
+      e.nombre as empleado_nombre
+      FROM detalles_orden d
+      JOIN productos p ON d.producto_id = p.id
+      JOIN empleados e ON d.empleado_id = e.id
+      LEFT JOIN variantes v1 ON d.sabor_id = v1.id
+      LEFT JOIN categorias_variantes cv1 ON v1.categoria_id = cv1.id
+      LEFT JOIN variantes v2 ON d.tamano_id = v2.id
+      LEFT JOIN variantes v3 ON d.ingrediente_id = v3.id
+      WHERE d.orden_id = ?`,
+      [ordenId]
+    );
+    return detalles;
+  } catch (error) {
+    console.error('Error en getProductosByOrdenId: ', error);
+    throw error;
   }
 };

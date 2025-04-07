@@ -9,7 +9,7 @@
   - [Órdenes](#endpoints-órdenes)
   - [Cocina](#endpoints-cocina)
   - [Productos](#endpoints-productos)
-  - [Sabores/Variantes](#endpoints-sabores)
+  - [Variantes](#endpoints-variantes)
   - [Clientes](#endpoints-clientes)
   - [Pagos](#endpoints-pagos)
   - [Reportes](#endpoints-reportes)
@@ -463,104 +463,115 @@ DELETE /products/:id
 }
 ```
 
-### Endpoints: Sabores
+### Endpoints: Variantes
 
-#### Obtener sabores por producto
+#### Obtener todas las variantes
 
 ```
-GET /products/sabores/producto/:id
+GET /products/variantes
 ```
 
-**Respuesta:**
+#### Respuesta
+
 ```json
 [
   {
     "id": "integer",
     "nombre": "string",
+    "categoria": "string",
     "descripcion": "string",
-    "categoria_id": "integer",
-    "categoria_nombre": "string",
-    "disponible": "boolean",
-    "precio_adicional": "number"
+    "precio_adicional": "decimal",
+    "activo": "boolean",
+    "fecha_registro": "timestamp"
   }
 ]
 ```
 
-#### Obtener sabores por categoría
+#### Obtener variantes por producto
 
 ```
-GET /products/sabores/categoria/:categoria
+GET /products/variantes/:producto_id
 ```
 
-**Respuesta:**
+#### Parámetros
+
+| Nombre | Tipo | Descripción |
+|--------|------|-------------|
+| producto_id | integer | ID del producto |
+
+#### Respuesta
+
 ```json
 [
   {
     "id": "integer",
     "nombre": "string",
+    "categoria": "string",
     "descripcion": "string",
-    "categoria_id": "integer",
-    "categoria_nombre": "string",
-    "disponible": "boolean",
-    "precio_adicional": "number"
+    "precio_adicional": "decimal",
+    "activo": "boolean",
+    "fecha_registro": "timestamp"
   }
 ]
 ```
 
-#### Obtener categorías de variantes
+#### Obtener variantes por tipo
 
 ```
-GET /products/sabores/categorias
+GET /products/variantes/tipo/:tipo
 ```
 
-**Respuesta:**
+#### Parámetros
+
+| Nombre | Tipo | Descripción |
+|--------|------|-------------|
+| tipo | string | Tipo de variante (ej: "sabor", "tamaño", "ingrediente") |
+
+#### Respuesta
+
 ```json
 [
   {
     "id": "integer",
     "nombre": "string",
-    "tipo": "string"
-  }
-]
-```
-
-#### Obtener todos los sabores
-
-```
-GET /products/sabores/todos
-```
-
-**Respuesta:**
-```json
-[
-  {
-    "id": "integer",
-    "nombre": "string",
+    "categoria": "string",
     "descripcion": "string",
-    "categoria_id": "integer",
-    "categoria_nombre": "string",
-    "disponible": "boolean",
-    "precio_adicional": "number"
+    "precio_adicional": "decimal",
+    "categoria_id": "integer"
   }
 ]
 ```
 
-#### Obtener sabor específico
+#### Crear una variante
 
 ```
-GET /products/sabores/:id
+POST /products/variantes
 ```
 
-**Respuesta:**
+#### Body
+
+```json
+{
+  "nombre": "string",
+  "categoria": "string",
+  "descripcion": "string",
+  "precio_adicional": "decimal",
+  "categoria_id": "integer"
+}
+```
+
+#### Respuesta
+
 ```json
 {
   "id": "integer",
   "nombre": "string",
+  "categoria": "string",
   "descripcion": "string",
+  "precio_adicional": "decimal",
   "categoria_id": "integer",
-  "categoria_nombre": "string",
-  "disponible": "boolean",
-  "precio_adicional": "number"
+  "activo": "boolean",
+  "fecha_registro": "timestamp"
 }
 ```
 
@@ -945,7 +956,7 @@ GET /reports/presos/top
 }
 ```
 
-### Sabor/Variante
+### Variante
 ```json
 {
   "id": "integer",

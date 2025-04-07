@@ -12,51 +12,99 @@ CREATE TABLE presos (
     fecha_registro DATE DEFAULT CURRENT_DATE
 );
 
-Productos
+-- TABLAS DE CATÁLOGO
+CREATE TABLE categorias (
+  id SERIAL PRIMARY KEY,
+  nombre VARCHAR(100) NOT NULL,
+  descripcion TEXT,
+  activo BOOLEAN DEFAULT TRUE,
+  fecha_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 CREATE TABLE productos (
-    id SERIAL PRIMARY KEY, 
-    nombre VARCHAR(255) NOT NULL, 
-    precio NUMERIC(10, 2) NOT NULL, 
-    categoria VARCHAR(50)
+  id SERIAL PRIMARY KEY,
+  nombre VARCHAR(100) NOT NULL,
+  descripcion TEXT,
+  precio_base DECIMAL(10, 2) NOT NULL,
+  categoria_id INT REFERENCES categorias(id) ON DELETE CASCADE,
+  imagen VARCHAR(255),
+  activo BOOLEAN DEFAULT TRUE,
+  fecha_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-Empleados
-CREATE TABLE empleados (
-    id SERIAL PRIMARY KEY, 
-    nombre VARCHAR(255) NOT NULL, 
-    usuario VARCHAR(50) UNIQUE NOT NULL, 
-    password TEXT NOT NULL, 
-    rol TEXT CHECK (rol IN ('admin', 'mesero', 'cocinero', 'financiero')) NOT NULL, 
-    fecha_ingreso DATE DEFAULT CURRENT_DATE,
-    activo BOOLEAN DEFAULT TRUE -- ✅ Se agrega columna para indicar si sigue trabajando (1 = activo, 0 = inactivo)
+CREATE TABLE variantes (
+  id SERIAL PRIMARY KEY,
+  nombre VARCHAR(100) NOT NULL,
+  categoria VARCHAR(50) NOT NULL, -- 'sabor', 'tamaño', 'ingrediente', etc.
+  descripcion TEXT,
+  precio_adicional DECIMAL(10, 2) DEFAULT 0,
+  activo BOOLEAN DEFAULT TRUE,
+  fecha_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-Ordenes
+CREATE TABLE categorias_variantes (
+  id SERIAL PRIMARY KEY,
+  categoria_id INT REFERENCES categorias(id) ON DELETE CASCADE,
+  nombre VARCHAR(100) NOT NULL,
+  tipo VARCHAR(50) NOT NULL, -- 'sabores', 'tamaños', 'ingredientes', etc.
+  descripcion TEXT,
+  activo BOOLEAN DEFAULT TRUE
+);
+
+-- TABLAS OPERATIVAS
 CREATE TABLE ordenes (
-    orden_id SERIAL PRIMARY KEY, -- ✅ Se cambia id por orden_id
-    preso_id INT REFERENCES presos(id) ON DELETE SET NULL, 
-    nombre_cliente VARCHAR(255), 
-    total NUMERIC(10, 2) NOT NULL, 
-    fecha TIMESTAMP DEFAULT CURRENT_TIMESTAMP, 
-    estado TEXT CHECK (estado IN ('abierta', 'cerrada')) DEFAULT 'abierta',
-    empleado_id INT NOT NULL REFERENCES empleados(id) ON DELETE CASCADE, -- ✅ Se agrega referencia a empleados
-    num_personas INT DEFAULT 1 -- ✅ Nueva columna para registrar número de personas
+  id SERIAL PRIMARY KEY,
+  mesa_id INT,
+  empleado_id INT NOT NULL,
+  cliente_nombre VARCHAR(100),
+  fecha_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  estado VARCHAR(20) DEFAULT 'pendiente',
+  total DECIMAL(10, 2) DEFAULT 0,
+  propina DECIMAL(10, 2) DEFAULT 0,
+  forma_pago VARCHAR(20)
 );
 
-detalles_orden
 CREATE TABLE detalles_orden (
-    id SERIAL PRIMARY KEY, 
-    orden_id INT NOT NULL REFERENCES ordenes(orden_id) ON DELETE CASCADE, 
-    producto_id INT NOT NULL REFERENCES productos(id) ON DELETE CASCADE, 
-    cantidad INT DEFAULT 1, 
-    precio_unitario NUMERIC(10,2) NOT NULL, 
-    empleado_id INT NOT NULL REFERENCES empleados(id) ON DELETE CASCADE, -- ✅ Se agrega referencia a empleados
-    sabor_id INT REFERENCES sabores(id) ON DELETE SET NULL,
-    tamano_id INT REFERENCES sabores(id) ON DELETE SET NULL, -- Referencia al tamaño (también en tabla sabores)
-    ingrediente_id INT REFERENCES sabores(id) ON DELETE SET NULL, -- ✅ Nueva columna para ingredientes extra
-    preparado BOOLEAN DEFAULT FALSE, -- Indica si el producto ya fue preparado
-    tiempo_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP, -- Momento en que se creó el detalle
-    tiempo_preparacion TIMESTAMP -- Momento en que se marcó como preparado
+  id SERIAL PRIMARY KEY,
+  orden_id INT REFERENCES ordenes(id) ON DELETE CASCADE,
+  producto_id INT REFERENCES productos(id) ON DELETE CASCADE,
+  cantidad INT NOT NULL,
+  precio_unitario DECIMAL(10, 2) NOT NULL,
+  empleado_id INT NOT NULL,
+  sabor_id INT REFERENCES variantes(id) ON DELETE SET NULL,
+  tamano_id INT REFERENCES variantes(id) ON DELETE SET NULL,
+  ingrediente_id INT REFERENCES variantes(id) ON DELETE SET NULL,
+  notas TEXT,
+  estado VARCHAR(20) DEFAULT 'pendiente',
+  tiempo_preparacion TIMESTAMP,
+  cancelado BOOLEAN DEFAULT FALSE
+);
+
+CREATE TABLE empleados (
+  id SERIAL PRIMARY KEY,
+  nombre VARCHAR(100) NOT NULL,
+  apellido VARCHAR(100) NOT NULL,
+  rol VARCHAR(50) NOT NULL,
+  pin VARCHAR(255) NOT NULL,
+  activo BOOLEAN DEFAULT TRUE,
+  fecha_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE mesas (
+  id SERIAL PRIMARY KEY,
+  numero INT NOT NULL UNIQUE,
+  capacidad INT,
+  estado VARCHAR(20) DEFAULT 'disponible',
+  activo BOOLEAN DEFAULT TRUE
+);
+
+-- TABLAS DE RELACIÓN
+CREATE TABLE producto_variante (
+  id SERIAL PRIMARY KEY,
+  producto_id INT REFERENCES productos(id) ON DELETE CASCADE,
+  variante_id INT REFERENCES variantes(id) ON DELETE CASCADE,
+  precio_adicional DECIMAL(10, 2) DEFAULT 0,
+  UNIQUE(producto_id, variante_id)
 );
 
 CREATE TABLE public.pagos (
@@ -69,37 +117,6 @@ CREATE TABLE public.pagos (
     propina numeric(10,2) DEFAULT 0,
     porcentaje_propina numeric(5,2),
     CONSTRAINT pagos_metodo_check CHECK ((metodo = ANY (ARRAY['efectivo'::text, 'tarjeta'::text, 'transferencia'::text, 'otro'::text])))
-);
-
--- Nueva estructura para gestionar variantes/sabores de productos
-CREATE TABLE categorias_variantes (
-    id SERIAL PRIMARY KEY,
-    nombre VARCHAR(255) NOT NULL,
-    tipo VARCHAR(50) NOT NULL -- 'pulque_sabor', 'tamaño', 'ingredientes', etc.
-);
-
-CREATE TABLE sabores (
-    id SERIAL PRIMARY KEY,
-    nombre VARCHAR(255) NOT NULL,
-    descripcion TEXT,
-    categoria_id INT REFERENCES categorias_variantes(id) ON DELETE CASCADE,
-    disponible BOOLEAN DEFAULT TRUE,
-    precio_adicional NUMERIC(10, 2) DEFAULT 0
-);
-
-CREATE TABLE producto_sabor (
-    id SERIAL PRIMARY KEY,
-    producto_id INT REFERENCES productos(id) ON DELETE CASCADE,
-    sabor_id INT REFERENCES sabores(id) ON DELETE CASCADE,
-    UNIQUE(producto_id, sabor_id)
-);
-
--- Tabla de mapeo entre categorías de productos y tipos de variantes
-CREATE TABLE categoria_producto_tipo_variante (
-    id SERIAL PRIMARY KEY,
-    categoria_producto VARCHAR(50) NOT NULL, -- Debe coincidir con los valores en productos.categoria
-    tipo_variante VARCHAR(50) NOT NULL, -- Debe coincidir con los valores en categorias_variantes.tipo
-    UNIQUE(categoria_producto, tipo_variante)
 );
 
 -- Ejemplos de relaciones entre categorías y tipos de variantes

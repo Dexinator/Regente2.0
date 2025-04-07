@@ -5,11 +5,11 @@ import {
   addProduct,
   editProduct,
   removeProduct,
-  fetchSaboresByProductoId,
-  fetchSaboresByCategoria,
+  fetchVariantesByProductoId,
+  fetchVariantesByCategoria,
   fetchCategoriaVariantes,
-  fetchAllSabores,
-  fetchSaborById
+  fetchAllVariantes,
+  fetchVarianteById
 } from "../controllers/products.controller.js";
 
 const router = Router();
@@ -21,11 +21,11 @@ router.post("/", addProduct);
 router.put("/:id", editProduct);
 router.delete("/:id", removeProduct);
 
-// Nuevas rutas para sabores
-router.get("/sabores/producto/:id", fetchSaboresByProductoId);
-router.get("/sabores/categoria/:categoria", fetchSaboresByCategoria);
-router.get("/sabores/categorias", fetchCategoriaVariantes);
-router.get("/sabores/todos", fetchAllSabores);
-router.get("/sabores/:id", fetchSaborById);
+// Rutas para variantes (antes sabores)
+router.get("/variantes/producto/:id", fetchVariantesByProductoId);
+router.get("/variantes/categoria/:categoria", fetchVariantesByCategoria);
+router.get("/variantes/categorias", fetchCategoriaVariantes);
+router.get("/variantes/todas", fetchAllVariantes);
+router.get("/variantes/:id", fetchVarianteById);
 
 export default router;

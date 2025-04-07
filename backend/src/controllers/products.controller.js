@@ -4,11 +4,11 @@ import {
   createProduct,
   updateProduct,
   deleteProduct,
-  getSaboresByProductoId,
-  getSaboresByCategoria,
+  getVariantesByProductoId,
+  getVariantesByCategoria,
   getAllCategoriaVariantes,
-  getAllSabores,
-  getSaborById
+  getAllVariantes,
+  getVarianteById
 } from "../models/products.model.js";
 
 export const fetchProducts = async (req, res) => {
@@ -39,25 +39,40 @@ export const removeProduct = async (req, res) => {
   res.json({ message: "Producto eliminado", deleted });
 };
 
-// Nuevos controladores para sabores
-export const fetchSaboresByProductoId = async (req, res) => {
-  const { id } = req.params;
-  const { tipo } = req.query; // Obtener el parámetro tipo
-  
+// Controladores para variantes (antes sabores)
+export const getVariantesByProductoId = async (req, res) => {
   try {
-    const sabores = await getSaboresByProductoId(id, tipo);
-    res.json(sabores);
-  } catch (err) {
-    res.status(500).json({ error: "Error obteniendo sabores", detail: err.message });
+    const { id } = req.params;
+    const { tipo } = req.query;
+    
+    console.log(`Solicitud de variantes para producto ${id}, tipo: ${tipo || 'todas'}`);
+
+    // Si es sabor, debemos asegurarnos de incluir todos los tipos de sabores (pulque_sabor o sabor_comida)
+    let resultados;
+
+    if (tipo === 'sabor') {
+      // Para sabores, buscamos tanto pulque_sabor como sabor_comida
+      resultados = await getVariantesByProductoId(id, tipo);
+      console.log(`Encontradas ${resultados.length} variantes de sabor`);
+    } else {
+      // Para otros tipos (tamaño, ingredientes), comportamiento normal
+      resultados = await getVariantesByProductoId(id, tipo);
+      console.log(`Encontradas ${resultados.length} variantes de tipo ${tipo || 'todas'}`);
+    }
+
+    return res.status(200).json(resultados);
+  } catch (error) {
+    console.error('Error en getVariantesByProductoId:', error);
+    return res.status(500).json({ error: error.message });
   }
 };
 
-export const fetchSaboresByCategoria = async (req, res) => {
+export const fetchVariantesByCategoria = async (req, res) => {
   try {
-    const sabores = await getSaboresByCategoria(req.params.categoria);
-    res.json(sabores);
+    const variantes = await getVariantesByCategoria(req.params.categoria);
+    res.json(variantes);
   } catch (err) {
-    res.status(500).json({ error: "Error obteniendo sabores por categoría", detail: err.message });
+    res.status(500).json({ error: "Error obteniendo variantes por categoría", detail: err.message });
   }
 };
 
@@ -70,21 +85,21 @@ export const fetchCategoriaVariantes = async (req, res) => {
   }
 };
 
-export const fetchAllSabores = async (req, res) => {
+export const fetchAllVariantes = async (req, res) => {
   try {
-    const sabores = await getAllSabores();
-    res.json(sabores);
+    const variantes = await getAllVariantes();
+    res.json(variantes);
   } catch (err) {
-    res.status(500).json({ error: "Error obteniendo todos los sabores", detail: err.message });
+    res.status(500).json({ error: "Error obteniendo todas las variantes", detail: err.message });
   }
 };
 
-export const fetchSaborById = async (req, res) => {
+export const fetchVarianteById = async (req, res) => {
   try {
-    const sabor = await getSaborById(req.params.id);
-    if (!sabor) return res.status(404).json({ error: "Sabor no encontrado" });
-    res.json(sabor);
+    const variante = await getVarianteById(req.params.id);
+    if (!variante) return res.status(404).json({ error: "Variante no encontrada" });
+    res.json(variante);
   } catch (err) {
-    res.status(500).json({ error: "Error obteniendo sabor", detail: err.message });
+    res.status(500).json({ error: "Error obteniendo variante", detail: err.message });
   }
 };
