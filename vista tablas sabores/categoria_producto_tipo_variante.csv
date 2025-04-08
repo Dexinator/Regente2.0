@@ -1,4 +1,6 @@
-1,Cenas,ingredientes
 2,Pulque,pulque_sabor
 3,Pulque,tamaño
-4,Cena,ingredientes
+1,Cenas,sabor_comida
+4,Cena,sabor_comida
+5,Cenas,ingrediente_extra
+6,Cena,ingrediente_extra
