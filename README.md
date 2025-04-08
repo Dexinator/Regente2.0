@@ -48,17 +48,16 @@ npm run dev
 
 ## Estructura de la Base de Datos
 
-La base de datos está compuesta por las siguientes tablas principales:
+El sistema utiliza PostgreSQL con las siguientes tablas principales:
 
-1. **categorias**: Categorías de productos (ej: Pulques, Cenas)
-2. **productos**: Productos disponibles
-3. **variantes**: Variantes de productos (sabores, tamaños, ingredientes extra)
-4. **producto_variante**: Relación entre productos y sus variantes disponibles
-5. **categorias_variantes**: Categorización de variantes (ej: "Sabores de Pulque")
-6. **ordenes**: Registro de órdenes de clientes
-7. **detalles_orden**: Productos incluidos en cada orden con sus variantes
-8. **empleados**: Registro de empleados y sus roles
-9. **mesas**: Registro de mesas disponibles
+- **presos**: Clientes del restaurante
+- **productos**: Productos disponibles para venta
+- **empleados**: Personal con acceso al sistema
+- **ordenes**: Pedidos de los clientes
+- **detalles_orden**: Productos dentro de cada pedido
+- **pagos**: Registro de pagos por cada orden
+- **sabores**: Variantes disponibles para productos
+- **categorias_variantes**: Categorías de variantes/sabores
 
 ## Documentación de Endpoints (API)
 
@@ -72,10 +71,10 @@ La base de datos está compuesta por las siguientes tablas principales:
 - **GET /orders/open**: Obtener órdenes abiertas
 - **GET /orders/:id**: Obtener detalles de una orden específica
 - **POST /orders**: Crear nueva orden
-  - Body: `{ productos: [{ producto_id, cantidad, precio_unitario, sabor_id?, tamano_id?, ingrediente_id? }] }`
+  - Body: `{ preso_id?, nombre_cliente, empleado_id, num_personas? }`
 - **PUT /orders/:id/close**: Cerrar una orden
 - **POST /orders/:id/productos**: Agregar productos a una orden
-  - Body: `{ productos: [{ producto_id, cantidad, precio_unitario, sabor_id?, tamano_id?, ingrediente_id? }] }`
+  - Body: `{ productos: [{ producto_id, cantidad, precio_unitario, sabor_id?, tamano_id? }] }`
 - **POST /orders/:id/cancelar**: Cancelar productos de una orden
 - **GET /orders/:id/resumen**: Obtener resumen de una orden
 
@@ -88,18 +87,16 @@ La base de datos está compuesta por las siguientes tablas principales:
 ### Productos
 - **GET /products**: Obtener todos los productos
 - **GET /products/:id**: Obtener un producto específico
-- **GET /products/categoria/:categoria**: Obtener productos por categoría
-- **GET /products/variantes/:producto_id**: Obtener variantes disponibles para un producto
 - **POST /products**: Crear nuevo producto
 - **PUT /products/:id**: Actualizar un producto
 - **DELETE /products/:id**: Eliminar un producto
 
-### Variantes
-- **GET /products/variantes/producto/:id**: Obtener variantes disponibles para un producto
-- **GET /products/variantes/categoria/:categoria**: Obtener variantes por categoría
-- **GET /products/variantes/categorias**: Obtener categorías de variantes
-- **GET /products/variantes/todas**: Obtener todas las variantes
-- **GET /products/variantes/:id**: Obtener una variante específica
+### Sabores/Variantes
+- **GET /products/sabores/producto/:id**: Obtener sabores disponibles para un producto
+- **GET /products/sabores/categoria/:categoria**: Obtener sabores por categoría
+- **GET /products/sabores/categorias**: Obtener categorías de variantes
+- **GET /products/sabores/todos**: Obtener todos los sabores
+- **GET /products/sabores/:id**: Obtener un sabor específico
 
 ### Clientes
 - **GET /clients**: Obtener todos los clientes
@@ -132,12 +129,12 @@ La base de datos está compuesta por las siguientes tablas principales:
 |------------------------|-------------------------------------------------------------------|
 | Login                  | POST /employees/login                                              |
 | GestionOrden           | GET /orders/:id, POST /orders/:id/productos                        |
-| CrearOrden             | POST /orders, GET /products, GET /products/variantes/producto/:id    |
+| CrearOrden             | POST /orders, GET /products, GET /products/sabores/producto/:id    |
 | PedidosCocina          | GET /orders/cocina/pendientes, PUT /orders/detalle/:id             |
 | HistorialCocina        | GET /orders/cocina/historial                                       |
 | DashboardFinanciero    | GET /reports/financiero                                            |
 | DashboardGerente       | GET /reports/gerente                                               |
-| AgregarProducto        | POST /products, GET /products/variantes/categorias                   |
+| AgregarProducto        | POST /products, GET /products/sabores/categorias                   |
 | ListaOrdenes           | GET /orders/open                                                   |
 
 ## Características Principales

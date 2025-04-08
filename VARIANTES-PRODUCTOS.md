@@ -1,172 +1,243 @@
-# Documentación: Sistema de Variantes de Productos
+# Sistema de Variantes de Productos en Regente 2.0
 
-## Introducción
+Este documento explica en detalle cómo funciona el sistema de variantes de productos en Regente 2.0, incluyendo su estructura, implementación y consideraciones para futuras modificaciones.
 
-Este documento describe la implementación del sistema de variantes de productos en la aplicación. El sistema permite gestionar diferentes tipos de variantes como sabores, tamaños e ingredientes extra para los productos.
-
-## Estructura de la Base de Datos
+## Estructura de Datos
 
 ### Tablas Principales
 
-1. **variantes**
-```sql
-CREATE TABLE variantes (
-  id SERIAL PRIMARY KEY,
-  nombre VARCHAR(100) NOT NULL,
-  categoria VARCHAR(50) NOT NULL, -- 'sabor', 'tamaño', 'ingrediente', etc.
-  descripcion TEXT,
-  precio_adicional DECIMAL(10, 2) DEFAULT 0,
-  activo BOOLEAN DEFAULT TRUE,
-  fecha_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-```
+- **productos**: Contiene los productos base (ej. Pulque, Cena, Postre)
+- **sabores**: A pesar de su nombre, contiene TODAS las variantes (sabores, tamaños, ingredientes)
+- **categorias_variantes**: Agrupa los tipos de variantes (ej. "Sabores de Pulque", "Tamaños", "Ingredientes Extra")
+- **detalles_orden**: Contiene los productos pedidos, incluyendo referencias a sus variantes
 
-2. **producto_variante**
-```sql
-CREATE TABLE producto_variante (
-  id SERIAL PRIMARY KEY,
-  producto_id INTEGER REFERENCES productos(id),
-  variante_id INTEGER REFERENCES variantes(id),
-  precio_adicional DECIMAL(10, 2) DEFAULT 0,
-  UNIQUE(producto_id, variante_id)
-);
-```
+### Campos clave en `detalles_orden`
 
-3. **detalles_orden**
 ```sql
 CREATE TABLE detalles_orden (
   id SERIAL PRIMARY KEY,
-  orden_id INTEGER REFERENCES ordenes(id),
+  orden_id INTEGER REFERENCES ordenes(orden_id),
   producto_id INTEGER REFERENCES productos(id),
   cantidad INTEGER NOT NULL,
-  precio_unitario DECIMAL(10, 2) NOT NULL,
-  empleado_id INTEGER NOT NULL,
-  sabor_id INTEGER REFERENCES variantes(id),  -- Para sabores
-  tamano_id INTEGER REFERENCES variantes(id),  -- Para tamaños
-  ingrediente_id INTEGER REFERENCES variantes(id),  -- Para ingredientes extra
+  precio_unitario DECIMAL(10,2) NOT NULL,
+  preparado BOOLEAN DEFAULT FALSE,
+  sabor_id INTEGER REFERENCES sabores(id),  -- Para sabores
+  tamano_id INTEGER REFERENCES sabores(id), -- Para tamaños
+  ingrediente_id INTEGER REFERENCES sabores(id), -- Para ingredientes extra
   notas TEXT,
-  estado VARCHAR(20) DEFAULT 'pendiente',
-  tiempo_preparacion TIMESTAMP,
-  cancelado BOOLEAN DEFAULT FALSE
+  tiempo_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  tiempo_preparacion TIMESTAMP
 );
 ```
 
-4. **categorias_variantes**
+### Relación con la tabla `sabores`
+
 ```sql
-CREATE TABLE categorias_variantes (
+CREATE TABLE sabores (
   id SERIAL PRIMARY KEY,
-  categoria_id INT REFERENCES categorias(id),
   nombre VARCHAR(100) NOT NULL,
-  tipo VARCHAR(50) NOT NULL, -- 'sabores', 'tamaños', 'ingredientes'
-  descripcion TEXT,
-  activo BOOLEAN DEFAULT TRUE
+  categoria_id INTEGER REFERENCES categorias_variantes(id),
+  precio_adicional DECIMAL(10,2) DEFAULT 0,
+  disponible BOOLEAN DEFAULT TRUE
 );
 ```
 
-## Tipos de Variantes
+## Funcionamiento del Sistema de Variantes
 
-Aunque utilizamos una tabla general de `variantes`, en el contexto del negocio manejamos diferentes tipos específicos:
+### 1. Tipos de Variantes
+
+Cada producto puede tener hasta tres tipos de variantes, todas almacenadas en la tabla `sabores`:
 
 1. **Sabor** (`sabor_id`): El sabor principal del producto
-   - Ejemplo: Sabores de pulque (Fresa, Mango, etc.)
-   - Ejemplo: Sabores base para cenas (Chicharrón, Pollo, etc.)
+   - Ejemplos: "Avena", "Coco", "Mango" para pulques
+   - Ejemplos: "Regular", "Vegetariana" para cenas
 
-2. **Tamaño** (`tamano_id`): El tamaño del producto
-   - Ejemplo: Tamaños de pulque (Vaso, Litro, etc.)
+2. **Tamaño** (`tamano_id`): Generalmente usado solo para pulques
+   - Ejemplos: "Chico", "Mediano", "Grande"
 
-3. **Ingrediente Extra** (`ingrediente_id`): Ingredientes adicionales
-   - Ejemplo: Extras para cenas (Queso extra, Chile extra, etc.)
+3. **Ingrediente Extra** (`ingrediente_id`): Generalmente usado para cenas
+   - Ejemplos: "Queso extra", "Chorizo", "Tocino"
 
-## Flujo de Operación
+### 2. Asignación según Categoría
 
-### 1. Asignación de Variantes a Productos
+Cada categoría de producto tiene un comportamiento específico:
 
-Para configurar qué variantes están disponibles para cada producto:
+| Categoría | Sabor | Tamaño | Ingrediente Extra |
+|-----------|-------|--------|------------------|
+| Pulques   | ✅    | ✅     | ❌               |
+| Cenas     | ✅    | ❌     | ✅               |
+| Otros     | Opcional | Opcional | Opcional    |
 
-```sql
--- Asignar variantes a productos
-INSERT INTO producto_variante (producto_id, variante_id, precio_adicional)
-VALUES 
-  (1, 1, 0),  -- Producto 1 puede tener variante 1
-  (1, 2, 5),  -- Producto 1 puede tener variante 2 con precio adicional
-  (2, 3, 0);  -- Producto 2 puede tener variante 3
+### 3. Cálculo de Precios
+
+El precio final de un producto se calcula:
+```
+Precio Final = Precio Base + Precio Adicional Sabor + Precio Adicional Tamaño + Precio Adicional Ingrediente
 ```
 
-### 2. Creación de Órdenes con Variantes
+Cada variante puede tener un `precio_adicional` en la tabla `sabores`.
 
-Al crear un detalle de orden con variantes específicas:
+## Implementación en el Frontend
+
+### Componentes principales
+
+1. **AgregarProducto.jsx**: Permite seleccionar productos con sus variantes
+2. **CrearOrden.jsx**: Gestiona la creación de órdenes con productos y variantes
+3. **GestionOrden.jsx**: Muestra y gestiona órdenes, incluyendo cancelaciones
+4. **PedidosCocina.jsx** e **HistorialCocina.jsx**: Muestran productos con sus variantes en cocina
+
+### Flujo de Selección de Variantes
+
+1. El usuario selecciona un producto de una categoría
+2. Según la categoría, se muestran selectores específicos:
+   - Para **Pulques**: Selector de sabor + selector de tamaño
+   - Para **Cenas**: Selector de base (sabor) + selector de ingrediente extra opcional
+
+3. Al añadir a la orden, se guardan todos los IDs de variantes seleccionadas
 
 ```javascript
-// Objeto del detalle de producto
-const detalleProducto = {
-  producto_id: 1,     // ID del producto
-  cantidad: 2,        // Cantidad
-  precio_unitario: 35.00,  // Precio base
+// Ejemplo de objeto enviado al backend
+const productoSeleccionado = {
+  producto_id: 5,
+  cantidad: 2,
   sabor_id: 12,    // ID del sabor seleccionado
-  tamano_id: 3,     // ID del tamaño seleccionado
-  ingrediente_id: 7, // ID del ingrediente extra
-  notas: "Sin hielo"  // Notas adicionales
+  tamano_id: 3,    // ID del tamaño seleccionado (si aplica)
+  ingrediente_id: 8, // ID del ingrediente extra (si aplica)
+  notas: "Sin azúcar"
 };
 ```
 
-### 3. Consulta de Productos con sus Variantes
+## Manejo de Cancelaciones
 
-Para obtener productos con sus variantes disponibles:
+Las cancelaciones se registran como entradas adicionales en `detalles_orden` con cantidad negativa.
 
-```sql
--- Obtener variantes disponibles para un producto
-SELECT p.id as producto_id, p.nombre as producto_nombre, 
-       v.id as variante_id, v.nombre as variante_nombre,
-       v.categoria, pv.precio_adicional
-FROM productos p
-JOIN producto_variante pv ON p.id = pv.producto_id
-JOIN variantes v ON pv.variante_id = v.id
-WHERE p.id = 1
-  AND v.activo = TRUE;
-```
+### Consideraciones importantes:
 
-## Lógica de Selección en Frontend
+1. **Variantes idénticas**: Al cancelar, se debe identificar exactamente el mismo producto con las mismas variantes
+2. **Cantidad disponible**: No se pueden cancelar más unidades que las disponibles (originales - canceladas)
+3. **Productos preparados**: No se pueden cancelar productos ya preparados
+
+### Cálculo de disponibilidad para cancelación
 
 ```javascript
-// Comprobar si un producto ya está en la lista con las mismas variantes
-const productoExistente = productosSeleccionados.find(p => 
-  p.producto_id === producto.producto_id && 
-  p.sabor_id === producto.sabor_id &&
-  p.tamano_id === producto.tamano_id &&
-  p.ingrediente_id === producto.ingrediente_id &&
-  p.notas === producto.notas
-);
+// Código para calcular productos disponibles para cancelar
+let cantidadCancelada = 0;
+      
+if (Array.isArray(orden.productos)) {
+  orden.productos.forEach(p => {
+    if (p.es_cancelacion && 
+        p.producto_id === producto.producto_id && 
+        p.sabor_id === producto.sabor_id && 
+        p.tamano_id === producto.tamano_id && 
+        p.ingrediente_id === producto.ingrediente_id) {
+      cantidadCancelada += Math.abs(p.cantidad);
+    }
+  });
+}
+
+const cantidadDisponible = Math.max(0, producto.cantidad - cantidadCancelada);
 ```
 
-## Consultas SQL Comunes
+## Visualización en Interfaz
 
-### Obtener Productos de una Orden con sus Variantes
+### Formato de visualización:
 
-```sql
-SELECT d.id, d.orden_id, d.producto_id, p.nombre as producto_nombre, 
-       d.cantidad, d.precio_unitario, 
-       d.sabor_id, v1.nombre as sabor_nombre,
-       d.tamano_id, v2.nombre as tamano_nombre,
-       d.ingrediente_id, v3.nombre as ingrediente_nombre,
-       d.notas, d.estado
-FROM detalles_orden d
-JOIN productos p ON d.producto_id = p.id
-LEFT JOIN variantes v1 ON d.sabor_id = v1.id
-LEFT JOIN variantes v2 ON d.tamano_id = v2.id
-LEFT JOIN variantes v3 ON d.ingrediente_id = v3.id
-WHERE d.orden_id = 123;
+- **Pulques**: `[Nombre] - [Sabor] ([Tamaño])`
+- **Cenas**: `[Nombre] - [Sabor base] + [Ingrediente extra]`
+- **Otros**: `[Nombre] - [Sabor]` (si aplica)
+
+### Ejemplo en componente PedidosCocina:
+
+```javascript
+const formatearDetallesProducto = (producto) => {
+  let detalles = producto.nombre;
+  const esPulque = producto.categoria === 'Pulque' || producto.categoria === 'Pulques';
+  const esCena = producto.categoria === 'Cena' || producto.categoria === 'Cenas';
+  
+  // Añadir sabor si existe
+  if (producto.sabor_nombre) {
+    detalles += ` - ${producto.sabor_nombre}`;
+  }
+  
+  // Añadir tamaño para pulques
+  if (esPulque && producto.tamano_nombre) {
+    detalles += ` (${producto.tamano_nombre})`;
+  }
+  
+  // Añadir ingrediente extra para cenas
+  if (esCena && producto.ingrediente_nombre) {
+    detalles += ` + ${producto.ingrediente_nombre}`;
+  }
+
+  return detalles;
+};
 ```
 
-### Calcular Precio Total con Variantes
+## Consideraciones para Futuras Modificaciones
+
+### 1. Añadir un nuevo tipo de variante
+
+Para añadir un nuevo tipo de variante (ej. "Toppings"):
+
+1. **Backend**: 
+   - Añadir un nuevo campo en `detalles_orden` (ej. `topping_id`)
+   - Asegurarse que tenga una foreign key a `sabores`
+   - Actualizar las consultas SQL en los endpoints relevantes
+
+2. **Frontend**:
+   - Modificar los componentes para mostrar la nueva variante
+   - Actualizar la lógica de selección y envío al backend
+   - Actualizar la visualización en todos los componentes relevantes
+
+### 2. Modificar categorías existentes
+
+Para cambiar qué variantes aplican a qué categorías:
+
+1. Actualizar la lógica condicional en los componentes frontend
+2. Actualizar las verificaciones en el backend (si hay reglas específicas)
+
+### 3. Cambiar el cálculo de precios
+
+Si se desea modificar cómo se calculan los precios:
+
+1. Actualizar la lógica en los modelos del backend
+2. Actualizar los cálculos en el frontend donde se muestre el precio
+
+## Ejemplos de Consultas SQL Importantes
+
+### Obtener productos con variantes
 
 ```sql
-SELECT d.id, d.producto_id, p.nombre, d.cantidad, d.precio_unitario,
-       d.sabor_id, v1.nombre, cv1.nombre, d.tamano_id, v2.nombre, v2.precio_adicional, v1.precio_adicional,
-       (d.precio_unitario + COALESCE(v1.precio_adicional, 0) + COALESCE(v2.precio_adicional, 0)) * d.cantidad as subtotal
+SELECT 
+  p.id AS producto_id,
+  p.nombre, 
+  SUM(d.cantidad) AS cantidad, 
+  d.precio_unitario,
+  d.sabor_id,
+  s.nombre AS sabor_nombre,
+  cv.nombre AS sabor_categoria,
+  d.tamano_id,
+  t.nombre AS tamano_nombre,
+  t.precio_adicional AS tamano_precio,
+  s.precio_adicional AS sabor_precio,
+  d.ingrediente_id,
+  i.nombre AS ingrediente_nombre,
+  i.precio_adicional AS ingrediente_precio,
+  cvi.nombre AS ingrediente_categoria,
+  d.notas
 FROM detalles_orden d
 JOIN productos p ON d.producto_id = p.id
-LEFT JOIN variantes v1 ON d.sabor_id = v1.id
-LEFT JOIN categorias_variantes cv1 ON v1.categoria_id = cv1.id
-LEFT JOIN variantes v2 ON d.tamano_id = v2.id
-WHERE d.orden_id = 123;
-``` 
+LEFT JOIN sabores s ON d.sabor_id = s.id
+LEFT JOIN categorias_variantes cv ON s.categoria_id = cv.id
+LEFT JOIN sabores t ON d.tamano_id = t.id
+LEFT JOIN sabores i ON d.ingrediente_id = i.id
+LEFT JOIN categorias_variantes cvi ON i.categoria_id = cvi.id
+WHERE d.orden_id = $1
+GROUP BY p.id, p.nombre, d.precio_unitario, d.producto_id, 
+         d.sabor_id, s.nombre, cv.nombre, d.tamano_id, t.nombre, t.precio_adicional, s.precio_adicional, 
+         d.ingrediente_id, i.nombre, i.precio_adicional, cvi.nombre, d.notas
+```
+
+## Conclusión
+
+El sistema de variantes en Regente 2.0 es flexible y permite manejar diferentes tipos de productos con sus características específicas. Si necesitas implementar nuevas características, revisa cuidadosamente los puntos mencionados en "Consideraciones para Futuras Modificaciones". 

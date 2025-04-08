@@ -167,30 +167,27 @@ export default function PedidosCocina() {
     }
   };
 
-  // Función para mostrar claramente los detalles del producto
+  // Función para mostrar detalles del producto incluyendo sabor, tamaño e ingrediente
   const formatearDetallesProducto = (producto) => {
-    // Verificamos tipos específicos de productos primero
+    let detalles = producto.nombre;
     const esPulque = producto.categoria === 'Pulque' || producto.categoria === 'Pulques';
     const esCena = producto.categoria === 'Cena' || producto.categoria === 'Cenas';
     
-    // Inicializamos con el nombre del producto
-    let detalles = producto.nombre;
-    
-    // Añadir sabor si existe (para cualquier producto)
+    // Añadir sabor si existe
     if (producto.sabor_nombre) {
       detalles += ` - ${producto.sabor_nombre}`;
     }
     
-    // Añadir tamaño solo para pulques
+    // Añadir tamaño para pulques
     if (esPulque && producto.tamano_nombre) {
       detalles += ` (${producto.tamano_nombre})`;
     }
     
-    // Añadir ingrediente extra solo para cenas
+    // Añadir ingrediente extra para cenas
     if (esCena && producto.ingrediente_nombre) {
       detalles += ` + ${producto.ingrediente_nombre}`;
     }
-    
+
     return detalles;
   };
 

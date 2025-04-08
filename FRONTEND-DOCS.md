@@ -197,7 +197,7 @@ const cargarHistorial = async () => {
 **Endpoints utilizados:**
 - `POST /orders`
 - `GET /products`
-- `GET /products/variantes/producto/:id`
+- `GET /products/sabores/producto/:id`
 - `POST /orders/:id/productos`
 
 **Funcionalidades:**
@@ -339,8 +339,8 @@ const cargarEstadisticas = async () => {
 
 **Endpoints utilizados:**
 - `POST /products`
-- `GET /products/variantes/categorias`
-- `POST /products/variantes`
+- `GET /products/sabores/categorias`
+- `POST /products/sabores`
 
 **Funcionalidades:**
 - Creación de nuevos productos
@@ -372,34 +372,3 @@ El frontend cuenta con varias utilidades comunes:
 - **Validación:** Validación de formularios
 - **Notificaciones:** Sistema de alertas y notificaciones
 - **Conexión API:** Funciones para comunicación con el backend 
-
-#### GET /products/variantes/producto/:id
-
-Usado para obtener las variantes disponibles para un producto específico (como sabores, tamaños, o ingredientes extras según la categoría).
-
-##### Parámetros de consulta:
-- `tipo`: Opcional, filtra por tipo de variante (sabor, tamano, ingredientes)
-
-##### Ejemplo de uso:
-```javascript
-// Cargar sabores de pulque
-const res = await fetch(`http://localhost:3000/products/variantes/producto/5?tipo=sabor`);
-const sabores = await res.json();
-```
-
-## Componente: AgregarProducto
-
-### Endpoints Utilizados
-
-#### GET /products
-- Obtiene la lista de productos disponibles
-
-#### GET /products/variantes/categorias
-- Obtiene las categorías de variantes disponibles
-
-#### POST /products/variantes
-- Crea una nueva variante para productos
-
-### Comportamiento
-
-Este componente permite agregar nuevos productos a una orden existente o crear una nueva orden con productos. 
