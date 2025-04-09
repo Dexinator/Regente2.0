@@ -14,7 +14,7 @@ export const getOpenOrdersWithPayments = async () => {
       o.fecha,
       COALESCE(p.reg_name, o.nombre_cliente) AS cliente,
       (
-        SELECT COALESCE(SUM(d.precio_unitario * d.cantidad), 0)
+        SELECT COALESCE(SUM(ABS(d.precio_unitario) * d.cantidad), 0)
         FROM detalles_orden d
         WHERE d.orden_id = o.orden_id
       ) AS total_calculado,
