@@ -1,24 +1,133 @@
-1,Carne árabe,Carne árabe casera,1,t,0.00
-2,Chorizo argentino,Chorizo argentino especial,1,t,0.00
-3,Manzana con tocino,Manzana caramelizada con tocino,1,t,0.00
-4,Champiñones,Champiñones salteados,1,t,0.00
-5,Sin sabor,Pulque natural,2,t,0.00
-6,Mango,Pulque con mango,3,t,0.00
-7,Manzana,Pulque con manzana,3,t,0.00
-8,Maíz azul,Pulque con maíz azul,4,t,0.00
-9,Guayaba con piña,Pulque con guayaba y piña,4,t,0.00
-10,Vino,Pulque con vino,5,t,0.00
-11,Arándano,Pulque con arándano,5,t,0.00
-12,Medio litro,Tamaño estándar (medio litro),6,t,0.00
-13,Litro Natural,Un litro,6,t,30.00
-14,5 Litros Natural,Cinco litros,6,t,290.00
-15,Litro Temporada,Un litro,6,t,40.00
-16,5 Litros Temporada,Cinco litros,6,t,270.00
-17,Litro A la Carta,Un litro,6,t,45.00
-18,5 Litros A la Carta,Cinco litros,6,t,385.00
-19,Litro Especial,Un litro,6,t,55.00
-20,5 Litros Especial,Cinco litros,6,t,420.00
-21,Carne árabe,Extra árabe,7,t,15.00
-22,Chorizo argentino,Extra Chorizo,7,t,15.00
-23,Manzana con tocino,Extra Manzana tocino,7,t,15.00
-24,Champiñones,Extra Champiñones,7,t,15.00
+1,Carne árabe,Carne árabe casera - molletes,1,t,30
+2,Chorizo argentino,Chorizo argentino especial - molletes,1,t,30
+3,Manzana con tocino,Manzana caramelizada con tocino - molletes,1,t,30
+4,Hongos,Champiñones salteados - molletes,1,t,30
+5,Sin sabor,Pulque natural,2,t,0
+6,Mango,Pulque con mango,3,t,0
+7,Manzana,Pulque con manzana,3,t,0
+8,Maíz azul,Pulque con maíz azul,4,t,0
+9,Guayaba con piña,Pulque con guayaba y piña,4,t,0
+10,Vino,Pulque con vino,5,t,0
+11,Arándano,Pulque con arándano,5,t,0
+12,Medio litro,Tamaño estándar (medio litro),6,t,0
+13,Litro Natural,Un litro,6,t,30
+14,5 Litros Natural,Cinco litros,6,t,290
+15,Litro Temporada,Un litro,6,t,40
+16,5 Litros Temporada,Cinco litros,6,t,270
+17,Litro A la Carta,Un litro,6,t,45
+18,5 Litros A la Carta,Cinco litros,6,t,385
+19,Litro Especial,Un litro,6,t,55
+20,5 Litros Especial,Cinco litros,6,t,420
+21,Carne árabe,Extra árabe - molletes,7,t,15
+22,Chorizo argentino,Extra Chorizo - molletes,7,t,15
+23,Manzana con tocino,Extra Manzana tocino - molletes,7,t,15
+24,Champiñones,Extra Champiñones - molletes,7,t,15
+25,Corona,Corona,8,t,0
+26,Victoria,Victoria,8,t,0
+27,Carta blanca,Carta blanca,8,t,0
+28,Modelo especial,Modelo especial,9,t,0
+29,Modelo negra,Modelo negra,9,t,0
+30,Stella artois,Stella artois,9,t,0
+31,Stout,Stout,10,t,0
+32,IPA,IPA,10,t,0
+33,Leviatan,Leviatan,11,t,0
+34,Porter,Porter,11,t,0
+35,Imperial stout,Imperial stout,11,t,0
+36,Hidromiel sirena,Hidromiel sirena,11,t,0
+37,Tradicional,Tradicional,12,t,0
+38,Especial,Especial,12,t,0
+39,Malbec,Malbec,13,t,0
+40,Merlot,Merlot,13,t,0
+41,Rosado,Rosado,13,t,0
+42,Cacahuate,Torito cacahuate,14,t,0
+43,Jobo,Torito jobo,14,t,0
+44,Mamey,Torito mamey,14,t,0
+45,Con licor,Tepache con licor,15,t,30
+46,Con mezcal,Tepache con mezcal,15,t,50
+47,Con licor,Agua con licor,16,t,15
+48,Con mezcal,Agua con mezcal,16,t,40
+49,Sencillos,Volver a lo simple,1,t,0
+50,Chicharron,Sabrosura chicharronera - molletes,1,t,30
+51,Pollo,El pollo ricolino - molletes,1,t,30
+52,Mango,Sutil pero delicioso. Ya hace falta - molletes,1,t,30
+53,Pepita Tostada,Como mis emociones- tostadas - molletes,1,t,30
+54,Platano,Este si ya es para gerrer@s - molletes,1,t,30
+55,Chicharron,Extra Chicharron - molletes,7,t,15
+56,Pollo,Extra Pollo - molletes,7,t,15
+57,Mango,Extra Mango - molletes,7,t,15
+58,Pepita Tostada,Extra Pepita Tostada - molletes,7,t,15
+59,Platano,Extra Platano - molletes,7,t,15
+60,Carne árabe,Carne árabe casera - tostadas,1,t,30
+61,Chorizo argentino,Chorizo argentino especial - tostadas,1,t,30
+62,Manzana con tocino,Manzana caramelizada con tocino - tostadas,1,t,30
+63,Hongos,Champiñones salteados - tostadas,1,t,30
+64,Chicharron,Sabrosura chicharronera - tostadas,1,t,30
+65,Pollo,El pollo ricolino - tostadas,1,t,30
+66,Mango,Sutil pero delicioso. Ya hace falta - tostadas,1,t,30
+67,Pepita Tostada,Como mis emociones- tostadas - tostadas,1,t,30
+68,Platano,Este si ya es para gerrer@s - tostadas,1,t,30
+69,Carne árabe,Extra árabe - tostadas,7,t,15
+70,Chorizo argentino,Extra Chorizo - tostadas,7,t,15
+71,Manzana con tocino,Extra Manzana tocino - tostadas,7,t,15
+72,Champiñones,Extra Champiñones - tostadas,7,t,15
+73,Chicharron,Extra Chicharron - tostadas,7,t,15
+74,Pollo,Extra Pollo - tostadas,7,t,15
+75,Mango,Extra Mango - tostadas,7,t,15
+76,Pepita Tostada,Extra Pepita Tostada - tostadas,7,t,15
+77,Platano,Extra Platano - tostadas,7,t,15
+78,Carne árabe,Carne árabe casera - chicharrin,1,t,15
+79,Chorizo argentino,Chorizo argentino especial - chicharrin,1,t,15
+80,Manzana con tocino,Manzana caramelizada con tocino - chicharrin,1,t,15
+81,Hongos,Champiñones salteados - chicharrin,1,t,15
+82,Chicharron,Sabrosura chicharronera - chicharrin,1,t,15
+83,Pollo,El pollo ricolino - chicharrin,1,t,15
+84,Mango,Sutil pero delicioso. Ya hace falta - chicharrin,1,t,15
+85,Pepita Tostada,Como mis emociones- chicharrin - chicharrin,1,t,15
+86,Platano,Este si ya es para gerrer@s - chicharrin,1,t,15
+87,Carne árabe,Extra árabe - chicharrin,7,t,10
+88,Chorizo argentino,Extra Chorizo - chicharrin,7,t,10
+89,Manzana con tocino,Extra Manzana tocino - chicharrin,7,t,10
+90,Champiñones,Extra Champiñones - chicharrin,7,t,10
+91,Chicharron,Extra Chicharron - chicharrin,7,t,10
+92,Pollo,Extra Pollo - chicharrin,7,t,10
+93,Mango,Extra Mango - chicharrin,7,t,10
+94,Pepita Tostada,Extra Pepita Tostada - chicharrin,7,t,10
+95,Platano,Extra Platano - chicharrin,7,t,10
+96,Carne árabe,Carne árabe casera - nachos,1,t,20
+97,Chorizo argentino,Chorizo argentino especial - nachos,1,t,20
+98,Manzana con tocino,Manzana caramelizada con tocino - nachos,1,t,20
+99,Hongos,Champiñones salteados - nachos,1,t,20
+100,Chicharron,Sabrosura chicharronera - nachos,1,t,20
+101,Pollo,El pollo ricolino - nachos,1,t,20
+102,Mango,Sutil pero delicioso. Ya hace falta - nachos,1,t,20
+103,Pepita Tostada,Como mis emociones- nachos - nachos,1,t,20
+104,Platano,Este si ya es para gerrer@s - nachos,1,t,20
+105,Carne árabe,Extra árabe - nachos,7,t,10
+106,Chorizo argentino,Extra Chorizo - nachos,7,t,10
+107,Manzana con tocino,Extra Manzana tocino - nachos,7,t,10
+108,Champiñones,Extra Champiñones - nachos,7,t,10
+109,Chicharron,Extra Chicharron - nachos,7,t,10
+110,Pollo,Extra Pollo - nachos,7,t,10
+111,Mango,Extra Mango - nachos,7,t,10
+112,Pepita Tostada,Extra Pepita Tostada - nachos,7,t,10
+113,Platano,Extra Platano - nachos,7,t,10
+114,Queso,Extra Queso - nachos,7,t,10
+115,Carne árabe,Carne árabe casera - itacate,17,t,30
+116,Chorizo argentino,Chorizo argentino especial - itacate,17,t,30
+117,Manzana con tocino,Manzana caramelizada con tocino - itacate,17,t,30
+118,Hongos,Champiñones salteados - itacate,17,t,30
+119,Chicharron,Sabrosura chicharronera - itacate,17,t,30
+120,Pollo,El pollo ricolino - itacate,17,t,30
+121,Mango,Sutil pero delicioso. Ya hace falta - itacate,17,t,30
+122,Pepita Tostada,Como mis emociones- itacate - itacate,17,t,30
+123,Platano,Este si ya es para gerrer@s - itacate,17,t,30
+124,Corona,Chelas de infraccion,18,t,0
+125,Victoria,Chelas de infraccion,18,t,0
+126,Carta blanca,Chelas de infraccion,18,t,0
+127,Corona,Chelas de pena catpital,19,t,0
+128,Victoria,Chelas de pena catpital,19,t,0
+129,Carta blanca,Chelas de pena catpital,19,t,0
+130,Corona,Chelas de noche en los separos,20,t,0
+131,Victoria,Chelas de noche en los separos,20,t,0
+132,Carta blanca,Chelas de noche en los separos,20,t,0
+133,Curado Vino Tinto,Con Extra de Tinto,21,t,50

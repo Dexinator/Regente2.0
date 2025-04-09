@@ -1,6 +1,11 @@
-2,Pulque,pulque_sabor
-3,Pulque,tamaño
 1,Cenas,sabor_comida
-4,Cena,sabor_comida
-5,Cenas,ingrediente_extra
-6,Cena,ingrediente_extra
+2,Cenas,ingrediente_extra
+3,Pulque,tamano
+4,Pulque,sabor_comida
+5,Cerveza,sabor_comida
+6,Cerveza Artesanal,sabor_comida
+7,Otras Bebidas,sabor_comida
+8,Otras Bebidas,ingrediente_extra
+9,Antojitos,sabor_comida
+10,Sentencias,sabor_comida
+11,Sentencias,ingrediente_extra

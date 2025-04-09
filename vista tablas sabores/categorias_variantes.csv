@@ -1,7 +1,21 @@
+1,Sabores de comida,sabor_comida
 2,Sabores de pulque Natural,pulque_sabor
 3,Sabores de pulque Temporada,pulque_sabor
 4,Sabores de pulque A la Carta,pulque_sabor
 5,Sabores de pulque Especial,pulque_sabor
-6,Tamaños de pulque,tamaño
-1,Sabores de comida,sabor_comida
+6,Tamaños de pulque,tamano
 7,Ingredientes Extra,ingrediente_extra
+8,Sabores de cerveza Popular,sabor_comida
+9,Sabores de cerveza Celebre,sabor_comida
+10,Sabores de cerveza Minerva,sabor_comida
+11,Sabores de cerveza Tiburon,sabor_comida
+12,Sabores de Brebaje,sabor_comida
+13,Sabores de Vino,sabor_comida
+14,Sabores de Torito,sabor_comida
+15,Extras Tepache,ingrediente_extra
+16,Extras Agua de sabor,ingrediente_extra
+17,Sabores Itacate,sabor_comida
+18,Sabores Infraccion,sabor_comida
+19,Sabores Pena capital,sabor_comida
+20,Sabores Noche en los separos,sabor_comida
+21,Extras Cadena perpetua,ingrediente_extra
