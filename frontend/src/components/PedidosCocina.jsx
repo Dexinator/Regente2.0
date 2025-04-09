@@ -170,21 +170,18 @@ export default function PedidosCocina() {
   // Función para mostrar detalles del producto incluyendo sabor, tamaño e ingrediente
   const formatearDetallesProducto = (producto) => {
     let detalles = producto.nombre;
-    const esPulque = producto.categoria === 'Pulque' || producto.categoria === 'Pulques';
-    const esCena = producto.categoria === 'Cena' || producto.categoria === 'Cenas';
-    
-    // Añadir sabor si existe
+ // Añadir sabor si existe
     if (producto.sabor_nombre) {
       detalles += ` - ${producto.sabor_nombre}`;
     }
     
     // Añadir tamaño para pulques
-    if (esPulque && producto.tamano_nombre) {
+    if (producto.tamano_nombre) {
       detalles += ` (${producto.tamano_nombre})`;
     }
     
     // Añadir ingrediente extra para cenas
-    if (esCena && producto.ingrediente_nombre) {
+    if (producto.ingrediente_nombre) {
       detalles += ` + ${producto.ingrediente_nombre}`;
     }
 

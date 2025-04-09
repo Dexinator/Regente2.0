@@ -202,10 +202,26 @@ const cargarHistorial = async () => {
 
 **Funcionalidades:**
 - Creación de órdenes
-- Selección de productos
-- Selección de variantes/sabores
-- Cantidades y notas especiales
-- Cálculo de total
+- Selección de cliente (preso o nombre de referencia)
+- Definición de número de personas
+- Selección de productos con flujo secuencial de variantes:
+  1. Selección de producto
+  2. Definición de cantidad
+  3. Selección de sabor (si aplica)
+  4. Selección de tamaño (si aplica)
+  5. Selección de ingrediente extra (si aplica)
+  6. Notas especiales
+- Cálculo de total con precios adicionales
+- Gestión de productos seleccionados
+
+**Flujo de Variantes:**
+El componente implementa un flujo secuencial inteligente que verifica automáticamente qué variantes están disponibles para cada producto:
+1. Verifica si el producto tiene sabores disponibles
+2. Si no tiene sabores, verifica si tiene tamaños disponibles
+3. Si no tiene tamaños, verifica si tiene ingredientes extra disponibles
+4. Si no tiene ninguna variante, procede directamente a la pantalla de notas
+
+La navegación entre pantallas es bidireccional, permitiendo volver a pantallas anteriores manteniendo el estado de las selecciones.
 
 ### GestionOrden
 
@@ -335,18 +351,28 @@ const cargarEstadisticas = async () => {
 
 **Archivo:** `src/components/AgregarProducto.jsx`
 
-**Descripción:** Formulario para agregar nuevos productos al catálogo.
+**Descripción:** Componente para agregar productos a una orden existente.
 
 **Endpoints utilizados:**
-- `POST /products`
-- `GET /products/sabores/categorias`
-- `POST /products/sabores`
+- `GET /products`
+- `GET /products/sabores/producto/:id`
+- `POST /orders/:id/productos`
 
 **Funcionalidades:**
-- Creación de nuevos productos
-- Asignación de categoría
-- Configuración de variantes/sabores disponibles
-- Precios y descripciones
+- Selección de productos con flujo secuencial de variantes:
+  1. Selección de producto
+  2. Definición de cantidad
+  3. Selección de sabor (si aplica)
+  4. Selección de tamaño (si aplica)
+  5. Selección de ingrediente extra (si aplica)
+  6. Notas especiales
+- Cálculo de total con precios adicionales
+- Gestión de productos seleccionados
+- Modificación de cantidades
+- Visualización de selecciones previas
+
+**Flujo de Variantes:**
+Implementa el mismo flujo secuencial inteligente que CrearOrden, verificando automáticamente las variantes disponibles para cada producto. El componente es independiente de la categoría del producto, permitiendo una gestión flexible de cualquier tipo de producto con sus variantes correspondientes.
 
 ## Sistema de Rutas
 

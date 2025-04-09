@@ -101,7 +101,7 @@ export default function CrearOrden() {
         try {
             // Conseguir sabores con nuevo parámetro tipo=sabor
             console.log("Cargando sabores para producto:", productoId);
-            const res = await fetch(`http://localhost:3000/products/sabores/producto/${productoId}?tipo=sabor_comida`);
+            const res = await fetch(`http://localhost:3000/products/sabores/producto/${productoId}?tipo=sabor`);
             const data = await res.json();
             
             console.log("Sabores obtenidos:", data);
@@ -168,7 +168,7 @@ export default function CrearOrden() {
         setLoadingIngredientes(true);
         try {
             console.log("Cargando ingredientes para producto:", productoId);
-            const res = await fetch(`http://localhost:3000/products/sabores/producto/${productoId}?tipo=ingrediente_extra`);
+            const res = await fetch(`http://localhost:3000/products/sabores/producto/${productoId}?tipo=ingredientes`);
             const data = await res.json();
             
             console.log("Ingredientes obtenidos:", data);
