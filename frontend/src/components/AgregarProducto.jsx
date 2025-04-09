@@ -267,58 +267,25 @@ export default function AgregarProducto({ orden_id }) {
   // Función modificada para manejar selección de sabores
   const seleccionarSabor = async (sabor) => {
     setSaborSeleccionado(sabor);
-
-    const tieneTamanos = await cargarTamanos(productoSeleccionado.id);
-    const tieneIngredientes = await cargarIngredientes(productoSeleccionado.id);
-
-    if (tieneTamanos) {
-      setSeleccionTamano(true);
-    } else if (tieneIngredientes) {
-      setSeleccionIngrediente(true);
-    } else {
-      mostrarPantallaNotas(productoSeleccionado, sabor);
-    }
-
     console.log("Sabor seleccionado:", sabor);
-    const esPulque = productoSeleccionado.categoria === "Pulque";
-    const esCena = productoSeleccionado.categoria === "Cenas" || productoSeleccionado.categoria === "Cena";
     
-    if (esPulque) {
-      // Para pulques, guardamos el sabor y vamos a seleccionar tamaño
-      setSaborSeleccionado(sabor);
-      
-      const tieneTamanos = await cargarTamanos(productoSeleccionado.id);
-      console.log("¿Tiene tamaños para este sabor?", tieneTamanos);
-      
-      if (tieneTamanos) {
-        setSeleccionSabores(false);
+    // Primero cargamos todos los datos necesarios
+    const [tieneTamanos, tieneIngredientes] = await Promise.all([
+        cargarTamanos(productoSeleccionado.id),
+        cargarIngredientes(productoSeleccionado.id)
+    ]);
+
+    // Luego decidimos qué pantalla mostrar basándonos en los resultados
+    if (tieneTamanos) {
         setSeleccionTamano(true);
-      } else {
-        // Si por alguna razón no hay tamaños disponibles
-        mostrarPantallaNotas(productoSeleccionado, sabor);
-        setSeleccionSabores(false);
-      }
-    } else if (esCena) {
-      // Para cenas, guardamos el sabor y vamos a seleccionar ingrediente extra
-      setSaborSeleccionado(sabor);
-      
-      const tieneIngredientes = await cargarIngredientes(productoSeleccionado.id);
-      console.log("¿Tiene ingredientes extra para esta cena?", tieneIngredientes);
-      
-      if (tieneIngredientes) {
-        setSeleccionSabores(false);
+        setSeleccionIngrediente(false);
+    } else if (tieneIngredientes) {
         setSeleccionIngrediente(true);
-      } else {
-        // Si no hay ingredientes disponibles
-        mostrarPantallaNotas(productoSeleccionado, sabor);
-        setSeleccionSabores(false);
-      }
+        setSeleccionTamano(false);
     } else {
-      // Para otros productos, seguimos el flujo normal
-      mostrarPantallaNotas(productoSeleccionado, sabor);
-      setSeleccionSabores(false);
+        mostrarPantallaNotas(productoSeleccionado, sabor);
     }
-  };
+};
 
   // Nueva función para seleccionar ingrediente extra
   const seleccionarIngrediente = (ingrediente) => {
@@ -769,6 +736,7 @@ export default function AgregarProducto({ orden_id }) {
   }
 
   if (seleccionIngrediente) {
+    console.log("Hola");
     return (
       <div className="bg-vino rounded-xl p-4 space-y-4">
         <div className="flex justify-between items-center">
