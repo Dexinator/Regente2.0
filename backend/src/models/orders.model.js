@@ -273,7 +273,7 @@ export const getOrderResumen = async (orden_id) => {
       p.nombre, 
       SUM(d.cantidad) AS cantidad, 
       d.precio_unitario,
-      (SUM(d.cantidad) * d.precio_unitario) AS subtotal,
+      (ABS(SUM(d.cantidad)) * d.precio_unitario) AS subtotal,
       CASE 
         WHEN d.precio_unitario < 0 THEN true 
         ELSE false 
@@ -312,6 +312,7 @@ export const getOrderResumen = async (orden_id) => {
     (acc, prod) => acc + parseFloat(prod.subtotal),
     0
   );
+  console.log("Total:", total);
 
   // 2. Obtener nombre del cliente
   const clienteQuery = await pool.query(`

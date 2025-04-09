@@ -36,16 +36,7 @@ export const deleteProduct = async (id) => {
 // Nuevas funciones para sabores
 
 export const getSaboresByProductoId = async (producto_id, tipo) => {
-  // Primero, obtenemos la categoría del producto
-  const productoCatQuery = await pool.query(`
-    SELECT categoria
-    FROM productos
-    WHERE id = $1
-  `, [producto_id]);
-  
-  const categoriaProducto = productoCatQuery.rows[0]?.categoria;
-  console.log(`Producto ID: ${producto_id}, Categoría: ${categoriaProducto}, Tipo solicitado: ${tipo}`);
-  
+
   // Construimos la consulta base
   let query = `
     SELECT s.id, s.nombre, s.descripcion, s.disponible, 
@@ -57,28 +48,13 @@ export const getSaboresByProductoId = async (producto_id, tipo) => {
     WHERE ps.producto_id = $1 AND s.disponible = true
   `;
   
-  // Aplicamos filtro según el tipo solicitado y categoría del producto
-  if (categoriaProducto === 'Cenas' || categoriaProducto === 'Cena') {
-    if (tipo === 'sabor') {
-      // Para cenas, cuando pedimos "sabor", mostramos solo los sabores base (no ingredientes extra)
-      query += " AND cv.tipo = 'sabor_comida'";
-    } else if (tipo === 'ingredientes') {
-      // Para cenas, cuando pedimos "ingredientes", mostramos solo ingredientes extra
-      query += " AND cv.tipo = 'ingrediente_extra'";
-    }
-  } else if (categoriaProducto === 'Pulque') {
-    // Para pulque, el comportamiento actual es correcto
-    if (tipo === 'sabor') {
-      query += " AND cv.tipo = 'pulque_sabor'";
-    } else if (tipo === 'tamano') {
-      query += " AND cv.tipo = 'tamaño'";
-    }
-  } else {
-    // Para otros productos, filtramos según el tipo solicitado
+ 
     if (tipo) {
       query += ` AND cv.tipo = '${tipo}'`;
     }
-  }
+    else{
+      return ["No llegó el parámetro tipo"];
+    }
   
   query += " ORDER BY cv.nombre, s.nombre";
   

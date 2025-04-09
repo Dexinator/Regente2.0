@@ -78,11 +78,12 @@ export default function AgregarProducto({ orden_id }) {
   };
 
   const cargarSabores = async (productoId) => {
+    
     setLoadingSabores(true);
     try {
       // Conseguir sabores con nuevo parámetro tipo=sabor
       console.log("Cargando sabores para producto:", productoId);
-      const res = await fetch(`http://localhost:3000/products/sabores/producto/${productoId}?tipo=sabor`);
+      const res = await fetch(`http://localhost:3000/products/sabores/producto/${productoId}?tipo=sabor_comida`);
       const data = await res.json();
       
       console.log("Sabores obtenidos:", data);
@@ -94,6 +95,12 @@ export default function AgregarProducto({ orden_id }) {
       // Confiamos en el backend para filtrar correctamente
       setSaboresDisponibles(data);
       setLoadingSabores(false);
+      
+      // Si no hay sabores disponibles, devolvemos false
+      if (data.length === 0) {
+        return false;
+      }
+      
       return data.length > 0;
     } catch (error) {
       console.error("Error cargando sabores:", error);
@@ -116,6 +123,12 @@ export default function AgregarProducto({ orden_id }) {
         throw new Error(data.error || "Error al cargar tamaños");
       }
       
+
+      // Si no hay tamaños disponibles, devolvemos false
+      if (data.length === 0) {
+        return false;
+      }
+
       // Filtrar tamaños según la categoría del producto si es pulque
       const producto = productos.find(p => p.id === parseInt(productoId));
       let tamanosAplicables = data;
@@ -148,7 +161,7 @@ export default function AgregarProducto({ orden_id }) {
     setLoadingIngredientes(true);
     try {
       console.log("Cargando ingredientes para producto:", productoId);
-      const res = await fetch(`http://localhost:3000/products/sabores/producto/${productoId}?tipo=ingredientes`);
+      const res = await fetch(`http://localhost:3000/products/sabores/producto/${productoId}?tipo=ingrediente_extra`);
       const data = await res.json();
       
       console.log("Ingredientes obtenidos:", data);
@@ -157,6 +170,12 @@ export default function AgregarProducto({ orden_id }) {
         throw new Error(data.error || "Error al cargar ingredientes");
       }
       
+
+      // Si no hay ingredientes disponibles, devolvemos false
+      if (data.length === 0) {
+        return false;
+      }
+
       setIngredientesDisponibles(data);
       setLoadingIngredientes(false);
       return data.length > 0;
@@ -207,86 +226,59 @@ export default function AgregarProducto({ orden_id }) {
   };
 
   const continuar = async () => {
+    console.log("Continuar");
     if (!productoSeleccionado) return;
-    
-    const esPulque = productoSeleccionado.categoria === "Pulque";
-    const esCena = productoSeleccionado.categoria === "Cenas" || productoSeleccionado.categoria === "Cena";
-    console.log("¿Es pulque?", esPulque);
-    console.log("¿Es cena?", esCena);
-    
-    // Para pulques, primero mostramos selección de sabores 
-    if (esPulque) {
-      const tieneSabores = await cargarSabores(productoSeleccionado.id);
-      console.log("¿Tiene sabores?", tieneSabores);
-      
-      if (tieneSabores) {
-        // Si tiene sabores, mostrar pantalla de selección de sabores
-        setSeleccionSabores(true);
-        setSeleccionTamano(false);
+
+    const tieneSabores = await cargarSabores(productoSeleccionado.id);
+    const tieneTamanos = await cargarTamanos(productoSeleccionado.id);
+    const tieneIngredientes = await cargarIngredientes(productoSeleccionado.id);
+    if (tieneSabores) {
+      console.log("Tiene sabores");
+      console.log(tieneSabores)
+      // Si tiene sabores, mostrar pantalla de selección de sabores
+      setSeleccionSabores(true);
+      setSeleccionTamano(false);
+      setSeleccionIngrediente(false);
+      setMostrarSeleccionCantidad(false);
+    } else if (tieneTamanos) {
+      // Si no tiene sabores (extraño para pulque), mostrar tamaños directamente
+      const tieneTamanos = await cargarTamanos(productoSeleccionado.id);
+      console.log("¿Tiene tamaños?", tieneTamanos);
+
+        setSeleccionTamano(true);
+        setSeleccionSabores(false);
         setSeleccionIngrediente(false);
         setMostrarSeleccionCantidad(false);
-      } else {
-        // Si no tiene sabores (extraño para pulque), mostrar tamaños directamente
-        const tieneTamanos = await cargarTamanos(productoSeleccionado.id);
-        console.log("¿Tiene tamaños?", tieneTamanos);
-        
-        if (tieneTamanos) {
-          setSeleccionTamano(true);
-          setSeleccionSabores(false);
-          setSeleccionIngrediente(false);
-          setMostrarSeleccionCantidad(false);
-        } else {
-          // Si no tiene sabores ni tamaños, mostrar notas
-          mostrarPantallaNotas(productoSeleccionado, null);
-          setMostrarSeleccionCantidad(false);
-        }
-      }
-    } else if (esCena) {
-      // Para productos de categoría Cena/Cenas
-      const tieneSabores = await cargarSabores(productoSeleccionado.id);
-      console.log("¿Tiene sabores? (cenas)", tieneSabores);
-      
-      if (tieneSabores) {
-        // Si tiene sabores, mostrar pantalla de selección de sabores
-        setSeleccionSabores(true);
-        setSeleccionTamano(false);
-        setSeleccionIngrediente(false);
-        setMostrarSeleccionCantidad(false);
-      } else {
-        // Si no tiene sabores, comprobar si tiene ingredientes extra
-        const tieneIngredientes = await cargarIngredientes(productoSeleccionado.id);
-        console.log("¿Tiene ingredientes extra?", tieneIngredientes);
-        
-        if (tieneIngredientes) {
-          setSeleccionIngrediente(true);
-          setSeleccionSabores(false);
-          setSeleccionTamano(false);
-          setMostrarSeleccionCantidad(false);
-        } else {
-          // Si no tiene sabores ni ingredientes, mostrar notas
-          mostrarPantallaNotas(productoSeleccionado, null);
-          setMostrarSeleccionCantidad(false);
-        }
-      }
-    } else {
-      // Para otros productos no-pulque y no-cena
-      const tieneSabores = await cargarSabores(productoSeleccionado.id);
-      console.log("¿Tiene sabores? (otro producto)", tieneSabores);
-      
-      if (tieneSabores) {
-        // Si tiene sabores, ir a pantalla de selección
-        setSeleccionSabores(true);
-        setMostrarSeleccionCantidad(false);
-      } else {
-        // Si no tiene sabores, ir a notas
-        mostrarPantallaNotas(productoSeleccionado, null);
-        setMostrarSeleccionCantidad(false);
-      }
-    }
+    }else if (tieneIngredientes) {
+      setSeleccionIngrediente(true);
+      setSeleccionSabores(false);
+      setSeleccionTamano(false);
+      setMostrarSeleccionCantidad(false);
+    }else{
+      mostrarPantallaNotas(productoSeleccionado, null);
+      setMostrarSeleccionCantidad(false);
+    }	
+
+
+
+
   };
 
   // Función modificada para manejar selección de sabores
   const seleccionarSabor = async (sabor) => {
+    setSaborSeleccionado(sabor);
+
+    const tieneTamanos = await cargarTamanos(productoSeleccionado.id);
+    const tieneIngredientes = await cargarIngredientes(productoSeleccionado.id);
+
+    if (tieneTamanos) {
+      setSeleccionTamano(true);
+    } else if (tieneIngredientes) {
+      setSeleccionIngrediente(true);
+    } else {
+      mostrarPantallaNotas(productoSeleccionado, sabor);
+    }
+
     console.log("Sabor seleccionado:", sabor);
     const esPulque = productoSeleccionado.categoria === "Pulque";
     const esCena = productoSeleccionado.categoria === "Cenas" || productoSeleccionado.categoria === "Cena";
