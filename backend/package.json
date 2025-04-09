@@ -13,7 +13,8 @@
 		"pg": "^8.14.1"
 	},
 	"scripts": {
-		"start": "node src/index.js"
+		"start": "node src/index.js",
+		"dev": "node --watch src/index.js"
 	},
 	"pnpm": {
 		"onlyBuiltDependencies": [

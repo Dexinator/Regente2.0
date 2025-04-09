@@ -190,3 +190,54 @@ export const getTopClients = async (limite = 10) => {
   `, [limite]);
   return result.rows;
 };
+
+// Total de órdenes únicas del día
+export const getDailyTotalOrders = async () => {
+  const result = await pool.query(`
+    SELECT COUNT(DISTINCT orden_id) as total_ordenes
+    FROM ordenes
+    WHERE DATE(fecha) = CURRENT_DATE
+      AND estado = 'cerrada'
+  `);
+  return parseInt(result.rows[0].total_ordenes);
+};
+
+// Ventas del día con métodos de pago y propinas
+export const getDailySalesWithPaymentMethods = async () => {
+  const result = await pool.query(`
+    WITH ordenes_del_dia AS (
+      SELECT DISTINCT o.orden_id
+      FROM ordenes o
+      WHERE DATE(o.fecha) = CURRENT_DATE
+        AND o.estado = 'cerrada'
+    )
+    SELECT 
+      p.metodo,
+      COUNT(DISTINCT p.orden_id) as total_ordenes,
+      SUM(p.monto) as total_ventas,
+      SUM(p.propina) as total_propinas
+    FROM pagos p
+    JOIN ordenes_del_dia od ON p.orden_id = od.orden_id
+    GROUP BY p.metodo
+    ORDER BY total_ventas DESC
+  `);
+  return result.rows;
+};
+
+// Ventas por categoría del día
+export const getDailySalesByCategory = async () => {
+  const result = await pool.query(`
+    SELECT 
+      pr.categoria,
+      SUM(d.cantidad) as cantidad,
+      SUM(d.cantidad * d.precio_unitario) as total_ventas
+    FROM detalles_orden d
+    JOIN productos pr ON d.producto_id = pr.id
+    JOIN ordenes o ON d.orden_id = o.orden_id
+    WHERE DATE(o.fecha) = CURRENT_DATE
+      AND o.estado = 'cerrada'
+    GROUP BY pr.categoria
+    ORDER BY total_ventas DESC
+  `);
+  return result.rows;
+};

@@ -15,7 +15,17 @@ const app = express();
 
 // Configuraciones de seguridad y CORS
 app.use(helmet());
-app.use(cors());
+
+// Configuración de CORS
+const corsOptions = {
+  origin: process.env.NODE_ENV === 'production' 
+    ? ['https://regente-app.vercel.app', 'https://www.regente-app.com'] // Dominios de producción
+    : 'http://localhost:4321', // Dominio de desarrollo (puerto por defecto de Astro)
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+};
+app.use(cors(corsOptions));
+
 app.use(express.json());
 
 // Rutas

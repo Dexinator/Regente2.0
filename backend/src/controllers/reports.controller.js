@@ -26,42 +26,41 @@ import {
 
 
   import {
-    getSalesByCategoryAndRange,
-    getTotalByRange
+    getDailySalesWithPaymentMethods,
+    getDailySalesByCategory,
+    getDailyTotalOrders
   } from "../models/reports.model.js";
   
   export const getManagerReport = async (req, res) => {
     try {
-      const [dia, semana, mes] = await Promise.all([
-        Promise.all([
-          getTotalByRange("day"),
-          getSalesByCategoryAndRange("day")
-        ]),
-        Promise.all([
-          getTotalByRange("week"),
-          getSalesByCategoryAndRange("week")
-        ]),
-        Promise.all([
-          getTotalByRange("month"),
-          getSalesByCategoryAndRange("month")
-        ])
+      const [ventasPorMetodo, ventasPorCategoria, totalOrdenes] = await Promise.all([
+        getDailySalesWithPaymentMethods(),
+        getDailySalesByCategory(),
+        getDailyTotalOrders()
       ]);
   
-      res.json({
-        dia: {
-          total: dia[0],
-          por_categoria: dia[1]
-        },
-        semana: {
-          total: semana[0],
-          por_categoria: semana[1]
-        },
-        mes: {
-          total: mes[0],
-          por_categoria: mes[1]
-        }
-      });
+      // Calcular totales
+      const totalVentas = ventasPorMetodo.reduce((sum, item) => sum + parseFloat(item.total_ventas), 0);
+      const totalPropinas = ventasPorMetodo.reduce((sum, item) => sum + parseFloat(item.total_propinas), 0);
+      
+      // Para depuración
+      console.log("totalOrdenes:", totalOrdenes);
+      console.log("ventasPorMetodo:", ventasPorMetodo);
+      
+      const responseData = {
+        ventas_totales: totalVentas,
+        propinas_total: totalPropinas,
+        total_ordenes: totalOrdenes,
+        ticket_promedio: totalOrdenes > 0 ? totalVentas / totalOrdenes : 0,
+        ventas_por_metodo: ventasPorMetodo,
+        ventas_por_categoria: ventasPorCategoria
+      };
+      
+      console.log("Enviando respuesta:", responseData);
+      
+      res.json(responseData);
     } catch (err) {
+      console.error("Error en getManagerReport:", err);
       res.status(500).json({ error: "Error generando reporte de gerente", detail: err.message });
     }
   };

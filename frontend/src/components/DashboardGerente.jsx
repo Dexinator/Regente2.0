@@ -4,18 +4,17 @@ export default function DashboardGerente() {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [periodo, setPeriodo] = useState("hoy"); // hoy, semana, mes
 
   useEffect(() => {
     cargarEstadisticas();
-  }, [periodo]);
+  }, []);
 
   const cargarEstadisticas = async () => {
     setLoading(true);
     setError("");
     
     try {
-      const res = await fetch(`http://localhost:3000/reports/manager?periodo=${periodo}`);
+      const res = await fetch(`http://localhost:3000/reports/gerente`);
       const data = await res.json();
       
       if (!res.ok) {
@@ -37,12 +36,6 @@ export default function DashboardGerente() {
       currency: 'MXN',
       minimumFractionDigits: 2
     }).format(valor);
-  };
-
-  const periodoLabel = {
-    "hoy": "Hoy",
-    "semana": "Esta semana",
-    "mes": "Este mes"
   };
 
   if (loading) {
@@ -73,36 +66,8 @@ export default function DashboardGerente() {
 
   return (
     <div className="space-y-8">
-      {/* Selector de período */}
-      <div className="flex gap-2 mb-6">
-        <button
-          onClick={() => setPeriodo("hoy")}
-          className={`flex-1 py-2 px-4 rounded-full font-bold ${
-            periodo === "hoy" ? "bg-amarillo text-negro" : "bg-vino text-white"
-          }`}
-        >
-          Hoy
-        </button>
-        <button
-          onClick={() => setPeriodo("semana")}
-          className={`flex-1 py-2 px-4 rounded-full font-bold ${
-            periodo === "semana" ? "bg-amarillo text-negro" : "bg-vino text-white"
-          }`}
-        >
-          Semana
-        </button>
-        <button
-          onClick={() => setPeriodo("mes")}
-          className={`flex-1 py-2 px-4 rounded-full font-bold ${
-            periodo === "mes" ? "bg-amarillo text-negro" : "bg-vino text-white"
-          }`}
-        >
-          Mes
-        </button>
-      </div>
-
       <h2 className="text-xl text-amarillo font-bold">
-        Estadísticas: {periodoLabel[periodo]}
+        Estadísticas del día
       </h2>
 
       {/* Tarjetas principales */}
@@ -128,57 +93,43 @@ export default function DashboardGerente() {
         </div>
       </div>
 
-      {/* Productos más vendidos */}
+      {/* Ventas por método de pago */}
       <div className="bg-vino rounded-xl p-4">
-        <h3 className="text-lg text-amarillo font-bold mb-4">Productos más vendidos</h3>
+        <h3 className="text-lg text-amarillo font-bold mb-4">Ventas por método de pago</h3>
         
         <div className="space-y-2">
-          {stats.productos_top.map((producto, index) => (
+          {stats.ventas_por_metodo.map((metodo, index) => (
             <div key={index} className="flex justify-between items-center bg-negro/30 p-3 rounded">
               <div className="flex-1">
-                <p className="font-bold">{producto.nombre}</p>
-                <p className="text-sm text-gray-300">{producto.categoria}</p>
+                <p className="font-bold capitalize">{metodo.metodo}</p>
+                <p className="text-sm text-gray-300">{metodo.total_ordenes} órdenes</p>
               </div>
               <div className="text-right">
-                <p className="font-bold">{producto.cantidad} unid.</p>
-                <p className="text-sm text-amarillo">{formatearDinero(producto.total)}</p>
+                <p className="font-bold">{formatearDinero(metodo.total_ventas)}</p>
+                <p className="text-sm text-amarillo">Propinas: {formatearDinero(metodo.total_propinas)}</p>
               </div>
             </div>
           ))}
         </div>
       </div>
 
-      {/* Rendimiento por mesero */}
+      {/* Ventas por categoría */}
       <div className="bg-vino rounded-xl p-4">
-        <h3 className="text-lg text-amarillo font-bold mb-4">Rendimiento de meseros</h3>
+        <h3 className="text-lg text-amarillo font-bold mb-4">Ventas por categoría</h3>
         
         <div className="space-y-2">
-          {stats.meseros.map((mesero, index) => (
+          {stats.ventas_por_categoria.map((categoria, index) => (
             <div key={index} className="flex justify-between items-center bg-negro/30 p-3 rounded">
-              <p className="font-bold">{mesero.nombre}</p>
+              <div className="flex-1">
+                <p className="font-bold">{categoria.categoria}</p>
+                <p className="text-sm text-gray-300">{categoria.cantidad} unidades</p>
+              </div>
               <div className="text-right">
-                <p className="font-bold">{mesero.ordenes} órdenes</p>
-                <p className="text-sm text-amarillo">{formatearDinero(mesero.ventas)}</p>
+                <p className="font-bold">{formatearDinero(categoria.total_ventas)}</p>
               </div>
             </div>
           ))}
         </div>
-      </div>
-
-      {/* Botones de acceso rápido */}
-      <div className="flex flex-col gap-3 mt-6">
-        <a 
-          href="/reportes/gerente/ventas" 
-          className="bg-amarillo text-negro text-center py-3 px-6 rounded-full font-bold"
-        >
-          Ver reporte detallado
-        </a>
-        <a 
-          href="/reportes/gerente/empleados" 
-          className="bg-vino text-white text-center py-3 px-6 rounded-full font-bold"
-        >
-          Gestionar empleados
-        </a>
       </div>
     </div>
   );
