@@ -6,11 +6,9 @@
     "dev": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
-    "astro": "astro",
-    "start": "node ./dist/entry.mjs"
+    "astro": "astro"
   },
   "dependencies": {
-    "@astrojs/node": "^9.1.3",
     "@astrojs/react": "^4.2.1",
     "@astrojs/vercel": "^8.0.0",
     "@tailwindcss/vite": "^4.0.14",
