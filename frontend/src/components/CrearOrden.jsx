@@ -169,7 +169,7 @@ export default function CrearOrden() {
         setLoadingIngredientes(true);
         try {
             console.log("Cargando ingredientes para producto:", productoId);
-            const res = await fetch(`${API_URL}/products/sabores/producto/${productoId}?tipo=ingredientes`);
+            const res = await fetch(`${API_URL}/products/sabores/producto/${productoId}?tipo=ingrediente_extra`);
             const data = await res.json();
             
             console.log("Ingredientes obtenidos:", data);
