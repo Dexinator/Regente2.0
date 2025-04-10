@@ -46,7 +46,11 @@ export const setupInitialAdmin = async (req, res) => {
     // 1. Verificar que se proporcione el código secreto
     if (!setupCode || setupCode !== process.env.SETUP_CODE) {
       return res.status(401).json({ 
-        error: "Código de configuración inválido o no proporcionado" 
+        error: "Código de configuración inválido o no proporcionado",
+        debug: {
+          receivedCode: setupCode,
+          expectedCode: process.env.SETUP_CODE ? "[configurado]" : "[no configurado]"
+        }
       });
     }
     
@@ -54,7 +58,8 @@ export const setupInitialAdmin = async (req, res) => {
     const adminCount = await getAdminCount();
     if (adminCount > 0) {
       return res.status(400).json({ 
-        error: "Ya existe al menos un administrador en el sistema" 
+        error: "Ya existe al menos un administrador en el sistema",
+        count: adminCount 
       });
     }
     
@@ -98,7 +103,8 @@ export const setupInitialAdmin = async (req, res) => {
     console.error("Error en setup inicial:", error);
     res.status(500).json({ 
       error: "Error al crear administrador inicial",
-      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+      details: error.message,
+      stack: error.stack
     });
   }
 };

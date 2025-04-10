@@ -32,8 +32,19 @@ export const getEmployeeById = async (id) => {
 
 // Obtener el número de administradores activos
 export const getAdminCount = async () => {
-  const result = await pool.query(
-    `SELECT COUNT(*) FROM empleados WHERE rol = 'admin' AND activo = true`
-  );
-  return parseInt(result.rows[0].count, 10);
+  try {
+    console.log("Executing getAdminCount query...");
+    const query = `SELECT COUNT(*) FROM empleados WHERE rol = 'admin' AND activo = true`;
+    console.log("Query:", query);
+    
+    const result = await pool.query(query);
+    console.log("Query result:", result.rows[0]);
+    
+    // Algunas bases de datos devuelven BigInt o String, así que aseguramos conversión
+    return parseInt(result.rows[0].count, 10) || 0;
+  } catch (error) {
+    console.error("Error in getAdminCount:", error);
+    // Relanzamos el error para manejarlo en el controlador
+    throw new Error(`Database error in getAdminCount: ${error.message}`);
+  }
 };

@@ -19,10 +19,11 @@ app.use(helmet());
 // Configuración de CORS
 const corsOptions = {
   origin: process.env.NODE_ENV === 'production' 
-    ? ['https://regente-app.vercel.app', 'https://www.regente-app.com'] // Dominios de producción
+    ? ['https://regente2-0.vercel.app'] // Dominios de producción
     : 'http://localhost:4321', // Dominio de desarrollo (puerto por defecto de Astro)
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true                      // Permitir cookies/credenciales
 };
 app.use(cors(corsOptions));
 
