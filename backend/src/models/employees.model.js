@@ -29,3 +29,11 @@ export const getEmployeeById = async (id) => {
   );
   return result.rows[0];
 };
+
+// Obtener el número de administradores activos
+export const getAdminCount = async () => {
+  const result = await pool.query(
+    `SELECT COUNT(*) FROM empleados WHERE rol = 'admin' AND activo = true`
+  );
+  return parseInt(result.rows[0].count, 10);
+};
