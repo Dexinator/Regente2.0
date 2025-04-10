@@ -14,4 +14,10 @@ export default defineConfig({
   adapter: node({
     mode: "standalone",
   }),
+
+  output: "server",
+  
+  build: {
+    format: "directory"
+  }
 });

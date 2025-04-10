@@ -7,7 +7,8 @@
     "build": "astro build",
     "preview": "astro preview",
     "astro": "astro",
-    "start": "node ./dist/server/entry.mjs"
+    "start": "node ./dist/server/entry.mjs",
+    "vercel-build": "astro build"
   },
   "dependencies": {
     "@astrojs/node": "^9.1.3",
