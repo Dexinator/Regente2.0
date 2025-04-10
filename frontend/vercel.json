@@ -1,8 +1,5 @@
 {
-  "buildCommand": "pnpm run build",
-  "installCommand": "pnpm install",
-  "framework": "astro",
-  "pnpm": {
-    "version": "8.6.0"
-  }
+  "buildCommand": "npm run build",
+  "installCommand": "npm install",
+  "framework": "astro"
 }
