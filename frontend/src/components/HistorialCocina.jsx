@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { API_URL } from "../utils/api.js";
 
 export default function HistorialCocina() {
   const [historial, setHistorial] = useState([]);
@@ -24,7 +25,7 @@ export default function HistorialCocina() {
     
     try {
       // Usamos el nuevo endpoint para historial de cocina
-      const res = await fetch(`http://localhost:3000/orders/cocina/historial?fecha=${fecha}`);
+      const res = await fetch(`${API_URL}/orders/cocina/historial?fecha=${fecha}`);
       const data = await res.json();
       
       if (!res.ok) {
@@ -111,7 +112,7 @@ export default function HistorialCocina() {
       const confirmar = window.confirm("¿Seguro que deseas marcar este producto como no preparado?");
       if (!confirmar) return;
       
-      const res = await fetch(`http://localhost:3000/orders/detalle/${detalle_id}/despreparar`, {
+      const res = await fetch(`${API_URL}/orders/detalle/${detalle_id}/despreparar`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json"

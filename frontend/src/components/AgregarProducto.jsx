@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { getEmpleadoId } from "../utils/auth";
+import { API_URL } from "../utils/api.js";
 
 export default function AgregarProducto({ orden_id }) {
   const [productos, setProductos] = useState([]);
@@ -51,7 +52,7 @@ export default function AgregarProducto({ orden_id }) {
     setError("");
     
     try {
-      const res = await fetch("http://localhost:3000/products");
+      const res = await fetch(`${API_URL}/products`);
       const data = await res.json();
       
       if (!res.ok) {
@@ -83,7 +84,7 @@ export default function AgregarProducto({ orden_id }) {
     try {
       // Conseguir sabores con nuevo parámetro tipo=sabor
       console.log("Cargando sabores para producto:", productoId);
-      const res = await fetch(`http://localhost:3000/products/sabores/producto/${productoId}?tipo=sabor_comida`);
+      const res = await fetch(`${API_URL}/products/sabores/producto/${productoId}?tipo=sabor_comida`);
       const data = await res.json();
       
       console.log("Sabores obtenidos:", data);
@@ -114,7 +115,7 @@ export default function AgregarProducto({ orden_id }) {
     try {
       // Conseguir tamaños con nuevo parámetro tipo=tamano
       console.log("Cargando tamaños para producto:", productoId);
-      const res = await fetch(`http://localhost:3000/products/sabores/producto/${productoId}?tipo=tamano`);
+      const res = await fetch(`${API_URL}/products/sabores/producto/${productoId}?tipo=tamano`);
       const data = await res.json();
       
       console.log("Tamaños obtenidos:", data);
@@ -161,7 +162,7 @@ export default function AgregarProducto({ orden_id }) {
     setLoadingIngredientes(true);
     try {
       console.log("Cargando ingredientes para producto:", productoId);
-      const res = await fetch(`http://localhost:3000/products/sabores/producto/${productoId}?tipo=ingrediente_extra`);
+      const res = await fetch(`${API_URL}/products/sabores/producto/${productoId}?tipo=ingrediente_extra`);
       const data = await res.json();
       
       console.log("Ingredientes obtenidos:", data);
@@ -534,7 +535,7 @@ export default function AgregarProducto({ orden_id }) {
     setEnviando(true);
     
     try {
-      const res = await fetch(`http://localhost:3000/orders/${orden_id}/productos`, {
+      const res = await fetch(`${API_URL}/orders/${orden_id}/productos`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

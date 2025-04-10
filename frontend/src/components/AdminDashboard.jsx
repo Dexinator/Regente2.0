@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { API_URL } from "../utils/api.js";
 
 export default function AdminDashboard() {
   const [stats, setStats] = useState(null);
@@ -14,7 +15,7 @@ export default function AdminDashboard() {
     setError("");
     
     try {
-      const res = await fetch("http://localhost:3000/reports/gerente?vista=admin");
+      const res = await fetch(`${API_URL}/reports/gerente?vista=admin`);
       const data = await res.json();
       
       if (!res.ok) {

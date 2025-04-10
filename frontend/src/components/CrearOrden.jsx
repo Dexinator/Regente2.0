@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { getEmpleadoId } from "../utils/auth";
+import { API_URL } from "../utils/api.js";
 
 export default function CrearOrden() {
     const [presos, setPresos] = useState([]);
@@ -44,7 +45,7 @@ export default function CrearOrden() {
 
     useEffect(() => {
         // Cargar presos
-        fetch("http://localhost:3000/clients")
+        fetch(`${API_URL}/clients`)
         .then((res) => res.json())
         .then((data) => setPresos(data))
         .catch((err) => console.error("Error cargando presos:", err));
@@ -69,7 +70,7 @@ export default function CrearOrden() {
         setError("");
         
         try {
-            const res = await fetch("http://localhost:3000/products");
+            const res = await fetch(`${API_URL}/products`);
             const data = await res.json();
             
             if (!res.ok) {
@@ -101,7 +102,7 @@ export default function CrearOrden() {
         try {
             // Conseguir sabores con nuevo parámetro tipo=sabor
             console.log("Cargando sabores para producto:", productoId);
-            const res = await fetch(`http://localhost:3000/products/sabores/producto/${productoId}?tipo=sabor`);
+            const res = await fetch(`${API_URL}/products/sabores/producto/${productoId}?tipo=sabor`);
             const data = await res.json();
             
             console.log("Sabores obtenidos:", data);
@@ -127,7 +128,7 @@ export default function CrearOrden() {
         try {
             // Conseguir tamaños con nuevo parámetro tipo=tamano
             console.log("Cargando tamaños para producto:", productoId);
-            const res = await fetch(`http://localhost:3000/products/sabores/producto/${productoId}?tipo=tamano`);
+            const res = await fetch(`${API_URL}/products/sabores/producto/${productoId}?tipo=tamano`);
             const data = await res.json();
             
             console.log("Tamaños obtenidos:", data);
@@ -168,7 +169,7 @@ export default function CrearOrden() {
         setLoadingIngredientes(true);
         try {
             console.log("Cargando ingredientes para producto:", productoId);
-            const res = await fetch(`http://localhost:3000/products/sabores/producto/${productoId}?tipo=ingredientes`);
+            const res = await fetch(`${API_URL}/products/sabores/producto/${productoId}?tipo=ingredientes`);
             const data = await res.json();
             
             console.log("Ingredientes obtenidos:", data);
@@ -553,7 +554,7 @@ export default function CrearOrden() {
         }
         
         try {
-            const response = await fetch('http://localhost:3000/orders', {
+            const response = await fetch(`${API_URL}/orders`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

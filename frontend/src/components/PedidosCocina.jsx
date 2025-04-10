@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { API_URL } from "../utils/api.js";
 
 export default function PedidosCocina() {
   const [pedidos, setPedidos] = useState([]);
@@ -25,7 +26,7 @@ export default function PedidosCocina() {
     setError("");
     
     try {
-      const res = await fetch("http://localhost:3000/orders/cocina");
+      const res = await fetch(`${API_URL}/orders/cocina`);
       const data = await res.json();
       
       if (!res.ok) {
@@ -143,7 +144,7 @@ export default function PedidosCocina() {
 
   const marcarComoPreparado = async (detalle_id) => {
     try {
-      const res = await fetch(`http://localhost:3000/orders/detalle/${detalle_id}/preparar`, {
+      const res = await fetch(`${API_URL}/orders/detalle/${detalle_id}/preparar`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json"

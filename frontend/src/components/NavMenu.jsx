@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { getUserRole, getUserName, decodeToken } from "../utils/auth";
+import { API_URL } from "../utils/api.js";
 
 export default function NavMenu() {
   const [userRole, setUserRole] = useState(null);

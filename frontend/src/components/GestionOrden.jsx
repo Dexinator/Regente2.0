@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { API_URL } from "../utils/api.js";
 
 export default function GestionOrden({ id }) {
   const [orden, setOrden] = useState(null);
@@ -17,8 +18,8 @@ export default function GestionOrden({ id }) {
   
   const cargarDatos = async () => {
     try {
-      const resOrden = await fetch(`http://localhost:3000/orders/${id}/resumen`);
-      const resPagos = await fetch(`http://localhost:3000/pagos/orden/${id}`);
+      const resOrden = await fetch(`${API_URL}/orders/${id}/resumen`);
+      const resPagos = await fetch(`${API_URL}/pagos/orden/${id}`);
       const datosOrden = await resOrden.json();
       console.log("ORDEN:", datosOrden); 
       const datosPagos = await resPagos.json();
@@ -71,7 +72,7 @@ export default function GestionOrden({ id }) {
         metodo: metodoPago
       };
       
-      const res = await fetch("http://localhost:3000/pagos", {
+      const res = await fetch(`${API_URL}/pagos`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
@@ -96,7 +97,7 @@ export default function GestionOrden({ id }) {
     const confirmar = confirm("¿Deseas cerrar esta orden?");
     if (!confirmar) return;
     
-    const res = await fetch(`http://localhost:3000/orders/${id}/close`, {
+    const res = await fetch(`${API_URL}/orders/${id}/close`, {
       method: "PUT",
     });
     
@@ -198,7 +199,7 @@ export default function GestionOrden({ id }) {
 
       console.log("Enviando cancelación:", datosProducto);
 
-      const response = await fetch(`http://localhost:3000/orders/${id}/cancelar`, {
+      const response = await fetch(`${API_URL}/orders/${id}/cancelar`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

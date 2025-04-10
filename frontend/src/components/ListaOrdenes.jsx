@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { API_URL } from "../utils/api.js";
 
 export default function ListaOrdenes() {
     const [ordenes, setOrdenes] = useState([]);
@@ -13,7 +14,7 @@ export default function ListaOrdenes() {
         if (!confirmar) return;
         
         try {
-            const res = await fetch(`http://localhost:3000/orders/${orden_id}/close`, {
+            const res = await fetch(`${API_URL}/orders/${orden_id}/close`, {
                 method: "PUT",
             });
             
@@ -31,7 +32,7 @@ export default function ListaOrdenes() {
     
     
     useEffect(() => {
-        fetch("http://localhost:3000/orders/open")
+        fetch(`${API_URL}/orders/open`)
         .then((res) => res.json())
         .then((data) => setOrdenes(data))
         .catch((err) => console.error("Error cargando órdenes:", err));

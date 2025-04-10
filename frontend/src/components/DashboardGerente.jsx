@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { API_URL } from "../utils/api.js";
 
 export default function DashboardGerente() {
   const [stats, setStats] = useState(null);
@@ -14,7 +15,7 @@ export default function DashboardGerente() {
     setError("");
     
     try {
-      const res = await fetch(`http://localhost:3000/reports/gerente`);
+      const res = await fetch(`${API_URL}/reports/gerente`);
       const data = await res.json();
       
       if (!res.ok) {

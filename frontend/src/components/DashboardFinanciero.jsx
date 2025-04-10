@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { API_URL } from "../utils/api.js";
 
 export default function DashboardFinanciero() {
   const [stats, setStats] = useState(null);
@@ -69,7 +70,7 @@ export default function DashboardFinanciero() {
     setError("");
     
     try {
-      const res = await fetch(`http://localhost:3000/reports/financiero?fechaInicio=${fechaInicio}&fechaFin=${fechaFin}`);
+      const res = await fetch(`${API_URL}/reports/financiero?fechaInicio=${fechaInicio}&fechaFin=${fechaFin}`);
       const data = await res.json();
       
       if (!res.ok) {
