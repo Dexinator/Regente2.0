@@ -2,7 +2,7 @@
 import { defineConfig } from "astro/config";
 import tailwindcss from "@tailwindcss/vite";
 import react from "@astrojs/react";
-import node from "@astrojs/node";
+import vercel from "@astrojs/vercel/serverless";
 // https://astro.build/config
 export default defineConfig({
   vite: {
@@ -11,12 +11,10 @@ export default defineConfig({
 
   integrations: [react()],
 
-  adapter: node({
-    mode: "standalone",
-  }),
-
   output: "server",
   
+  adapter: vercel(),
+
   build: {
     format: "directory"
   }

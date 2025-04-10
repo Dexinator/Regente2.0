@@ -1,5 +1,10 @@
 {
   "rewrites": [
-    { "source": "/(.*)", "destination": "/index.html" }
-  ]
+    { "source": "/(.*)", "destination": "/api/entry" }
+  ],
+  "functions": {
+    "api/entry.js": {
+      "includeFiles": "dist/**"
+    }
+  }
 } 
