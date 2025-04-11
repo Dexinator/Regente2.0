@@ -3,19 +3,18 @@ import pool from "../config/db.js";
 // Ventas del mes actual por producto
 export const getMonthlySalesByProduct = async () => {
   const result = await pool.query(`
-    SELECT
+    SELECT 
+      p.id, 
       p.nombre,
-      SUM(d.cantidad) AS cantidad,
-      SUM(d.cantidad * d.precio_unitario) AS total_vendido,
-      p.costo,
-      SUM((d.precio_unitario - p.costo) * d.cantidad) AS margen
+      SUM(d.cantidad) as cantidad_vendida,
+      SUM(d.cantidad * d.precio_unitario) as total_ventas
     FROM detalles_orden d
     JOIN productos p ON d.producto_id = p.id
     JOIN ordenes o ON d.orden_id = o.orden_id
-    WHERE DATE_TRUNC('month', o.fecha) = DATE_TRUNC('month', CURRENT_DATE)
+    WHERE DATE_TRUNC('month', o.fecha) = DATE_TRUNC('month', (NOW() AT TIME ZONE 'America/Mexico_City')::date)
       AND o.estado = 'cerrada'
-    GROUP BY p.nombre, p.costo
-    ORDER BY total_vendido DESC;
+    GROUP BY p.id, p.nombre
+    ORDER BY total_ventas DESC
   `);
   return result.rows;
 };
@@ -23,17 +22,17 @@ export const getMonthlySalesByProduct = async () => {
 // Ventas del mes actual por categoría
 export const getMonthlySalesByCategory = async () => {
   const result = await pool.query(`
-    SELECT
+    SELECT 
       p.categoria,
-      SUM(d.cantidad) AS cantidad,
-      SUM(d.cantidad * d.precio_unitario) AS total_vendido
+      SUM(d.cantidad) as cantidad_vendida,
+      SUM(d.cantidad * d.precio_unitario) as total_ventas
     FROM detalles_orden d
     JOIN productos p ON d.producto_id = p.id
     JOIN ordenes o ON d.orden_id = o.orden_id
-    WHERE DATE_TRUNC('month', o.fecha) = DATE_TRUNC('month', CURRENT_DATE)
+    WHERE DATE_TRUNC('month', o.fecha) = DATE_TRUNC('month', (NOW() AT TIME ZONE 'America/Mexico_City')::date)
       AND o.estado = 'cerrada'
     GROUP BY p.categoria
-    ORDER BY total_vendido DESC;
+    ORDER BY total_ventas DESC
   `);
   return result.rows;
 };
@@ -41,33 +40,34 @@ export const getMonthlySalesByCategory = async () => {
 // Total vendido en el mes
 export const getMonthlyTotals = async () => {
   const result = await pool.query(`
-    SELECT
-      COALESCE(SUM(total_bruto), 0) AS total_bruto,
-      COALESCE(SUM(total), 0) AS total_neto,
-      COALESCE(SUM(total_bruto - total), 0) AS descuento_total
+    SELECT 
+      SUM(total) as ventas_totales,
+      COUNT(*) as total_ordenes,
+      CASE WHEN COUNT(*) > 0
+        THEN SUM(total) / COUNT(*)
+        ELSE 0
+      END as ticket_promedio
     FROM ordenes
-    WHERE DATE_TRUNC('month', fecha) = DATE_TRUNC('month', CURRENT_DATE)
+    WHERE DATE_TRUNC('month', fecha) = DATE_TRUNC('month', (NOW() AT TIME ZONE 'America/Mexico_City')::date)
       AND estado = 'cerrada'
   `);
   return result.rows[0];
 };
 
-
-
 // Ventas por categoría para un rango de tiempo
 export const getSalesByCategoryAndRange = async (range) => {
   const result = await pool.query(`
-    SELECT
+    SELECT 
       p.categoria,
-      SUM(d.cantidad) AS cantidad,
-      SUM(d.cantidad * d.precio_unitario) AS total_vendido
+      SUM(d.cantidad) as cantidad_vendida,
+      SUM(d.cantidad * d.precio_unitario) as total_ventas
     FROM detalles_orden d
     JOIN productos p ON d.producto_id = p.id
     JOIN ordenes o ON d.orden_id = o.orden_id
-    WHERE DATE_TRUNC($1, o.fecha) = DATE_TRUNC($1, CURRENT_DATE)
+    WHERE DATE_TRUNC($1, o.fecha) = DATE_TRUNC($1, (NOW() AT TIME ZONE 'America/Mexico_City')::date)
       AND o.estado = 'cerrada'
     GROUP BY p.categoria
-    ORDER BY total_vendido DESC
+    ORDER BY total_ventas DESC
   `, [range]);
   return result.rows;
 };
@@ -75,14 +75,15 @@ export const getSalesByCategoryAndRange = async (range) => {
 // Total en dinero vendido en un rango
 export const getTotalByRange = async (range) => {
   const result = await pool.query(`
-    SELECT COALESCE(SUM(total), 0) AS total
+    SELECT 
+      COUNT(*) as total_ordenes,
+      SUM(total) as ventas_totales
     FROM ordenes
-    WHERE DATE_TRUNC($1, fecha) = DATE_TRUNC($1, CURRENT_DATE)
+    WHERE DATE_TRUNC($1, fecha) = DATE_TRUNC($1, (NOW() AT TIME ZONE 'America/Mexico_City')::date)
       AND estado = 'cerrada'
   `, [range]);
-  return parseFloat(result.rows[0].total);
+  return result.rows[0];
 };
-
 
 export const getSalesByProductInRange = async (desde, hasta) => {
   const result = await pool.query(`
@@ -133,8 +134,6 @@ export const getTotalsInRange = async (desde, hasta) => {
   return result.rows[0];
 };
 
-
-
 export const getTopSellingProducts = async (limite = 10) => {
   const result = await pool.query(`
     SELECT
@@ -153,7 +152,6 @@ export const getTopSellingProducts = async (limite = 10) => {
   return result.rows;
 };
 
-
 // Reporte detallado por día específico
 export const getDailySalesDetails = async (fecha) => {
   const result = await pool.query(`
@@ -171,7 +169,6 @@ export const getDailySalesDetails = async (fecha) => {
   `, [fecha]);
   return result.rows;
 };
-
 
 // Top clientes con más órdenes realizadas
 export const getTopClients = async (limite = 10) => {
@@ -196,10 +193,10 @@ export const getDailyTotalOrders = async () => {
   const result = await pool.query(`
     SELECT COUNT(DISTINCT orden_id) as total_ordenes
     FROM ordenes
-    WHERE DATE(fecha) = CURRENT_DATE
+    WHERE fecha::date = (NOW() AT TIME ZONE 'America/Mexico_City')::date
       AND estado = 'cerrada'
   `);
-  return parseInt(result.rows[0].total_ordenes);
+  return parseInt(result.rows[0].total_ordenes || 0);
 };
 
 // Ventas del día con métodos de pago y propinas
@@ -208,7 +205,7 @@ export const getDailySalesWithPaymentMethods = async () => {
     WITH ordenes_del_dia AS (
       SELECT DISTINCT o.orden_id
       FROM ordenes o
-      WHERE DATE(o.fecha) = CURRENT_DATE
+      WHERE o.fecha::date = (NOW() AT TIME ZONE 'America/Mexico_City')::date
         AND o.estado = 'cerrada'
     )
     SELECT 
@@ -234,7 +231,7 @@ export const getDailySalesByCategory = async () => {
     FROM detalles_orden d
     JOIN productos pr ON d.producto_id = pr.id
     JOIN ordenes o ON d.orden_id = o.orden_id
-    WHERE DATE(o.fecha) = CURRENT_DATE
+    WHERE o.fecha::date = (NOW() AT TIME ZONE 'America/Mexico_City')::date
       AND o.estado = 'cerrada'
     GROUP BY pr.categoria
     ORDER BY total_ventas DESC

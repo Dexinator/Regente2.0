@@ -25,7 +25,7 @@ export default function HistorialCocina() {
     
     try {
       // Usamos el nuevo endpoint para historial de cocina
-      const res = await fetch(`${API_URL}/orders/cocina/historial?fecha=${fecha}`);
+      const res = await fetch(`${API_URL}/orders/cocina/historial`);
       const data = await res.json();
       
       if (!res.ok) {

@@ -23,7 +23,7 @@ const corsOptions = {
     : 'http://localhost:4321', // Dominio de desarrollo (puerto por defecto de Astro)
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
-  credentials: true                      // Permitir cookies/credenciales
+  credentials: true
 };
 app.use(cors(corsOptions));
 
