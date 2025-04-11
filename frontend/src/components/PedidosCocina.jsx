@@ -6,6 +6,20 @@ export default function PedidosCocina() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [intervalId, setIntervalId] = useState(null);
+  const [filtroTipo, setFiltroTipo] = useState("todos");
+
+  // Mapeo de categorías a tipo (Alimentos/Bebidas)
+  const categoriasTipo = {
+    "Antojitos": "Alimentos",
+    "Cenas": "Alimentos",
+    "Pulque": "Bebidas",
+    "Otras Bebidas": "Bebidas",
+    "Sin Alcohol": "Bebidas",
+    "Mezcal": "Bebidas",
+    "Sentencias": "Alimentos, Bebidas",
+    "Cerveza Artesanal": "Bebidas",
+    "Cerveza": "Bebidas"
+  };
 
   useEffect(() => {
     // Al montar el componente, cargamos los pedidos iniciales
@@ -189,6 +203,13 @@ export default function PedidosCocina() {
     return detalles;
   };
 
+  // Función para filtrar los pedidos según el tipo seleccionado
+  const pedidosFiltrados = pedidos.filter(producto => {
+    if (filtroTipo === "todos") return true;
+    const tipoProducto = categoriasTipo[producto.categoria];
+    return tipoProducto && tipoProducto.includes(filtroTipo);
+  });
+
   if (loading && pedidos.length === 0) {
     return <p className="text-center text-gray-400">Cargando pedidos...</p>;
   }
@@ -211,21 +232,32 @@ export default function PedidosCocina() {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h2 className="text-xl font-subtitulo">Pedidos por preparar</h2>
-        <button
-          onClick={cargarPedidos}
-          className="bg-vino text-white px-3 py-1 rounded text-sm hover:bg-amarillo hover:text-negro transition-colors"
-        >
-          Actualizar
-        </button>
+        <div className="flex items-center gap-4">
+          <select
+            value={filtroTipo}
+            onChange={(e) => setFiltroTipo(e.target.value)}
+            className="bg-vino text-white px-3 py-1 rounded text-sm hover:bg-amarillo hover:text-negro transition-colors"
+          >
+            <option value="todos">Todos los pedidos</option>
+            <option value="Alimentos">Solo Alimentos</option>
+            <option value="Bebidas">Solo Bebidas</option>
+          </select>
+          <button
+            onClick={cargarPedidos}
+            className="bg-vino text-white px-3 py-1 rounded text-sm hover:bg-amarillo hover:text-negro transition-colors"
+          >
+            Actualizar
+          </button>
+        </div>
       </div>
       
-      {pedidos.length === 0 ? (
+      {pedidosFiltrados.length === 0 ? (
         <p className="text-center text-gray-400 py-8">
           ¡No hay pedidos pendientes! 🎉
         </p>
       ) : (
         <div className="space-y-3">
-          {pedidos.map((producto) => (
+          {pedidosFiltrados.map((producto) => (
             <div
               key={producto.detalle_id}
               className={`flex flex-col bg-vino/80 rounded-xl p-4 shadow-md 
