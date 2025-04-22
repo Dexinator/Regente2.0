@@ -193,7 +193,7 @@ export const getDailyTotalOrders = async () => {
   const result = await pool.query(`
     SELECT COUNT(DISTINCT orden_id) as total_ordenes
     FROM ordenes
-    WHERE fecha::date = (NOW() AT TIME ZONE 'America/Mexico_City')::date
+    WHERE fecha::date = (NOW())::date
       AND estado = 'cerrada'
   `);
   return parseInt(result.rows[0].total_ordenes || 0);
@@ -205,7 +205,7 @@ export const getDailySalesWithPaymentMethods = async () => {
     WITH ordenes_del_dia AS (
       SELECT DISTINCT o.orden_id
       FROM ordenes o
-      WHERE o.fecha::date = (NOW() AT TIME ZONE 'America/Mexico_City')::date
+      WHERE o.fecha::date = (NOW())::date
         AND o.estado = 'cerrada'
     )
     SELECT 
@@ -231,7 +231,7 @@ export const getDailySalesByCategory = async () => {
     FROM detalles_orden d
     JOIN productos pr ON d.producto_id = pr.id
     JOIN ordenes o ON d.orden_id = o.orden_id
-    WHERE o.fecha::date = (NOW() AT TIME ZONE 'America/Mexico_City')::date
+    WHERE o.fecha::date = (NOW())::date
       AND o.estado = 'cerrada'
     GROUP BY pr.categoria
     ORDER BY total_ventas DESC
