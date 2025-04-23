@@ -1,659 +1,0 @@
-PGDMP              
-        }             regente    17.4 (Debian 17.4-1.pgdg120+2)    17.4 l    ¹
-           0    0    ENCODING    ENCODING        SET client_encoding = 'UTF8';
-                           false            º
-           0    0 
-   STDSTRINGS 
-   STDSTRINGS     (   SET standard_conforming_strings = 'on';
-                           false            »
-           0    0 
-   SEARCHPATH 
-   SEARCHPATH     8   SELECT pg_catalog.set_config('search_path', '', false);
-                           false            ¼
-           1262    34015     regente    DATABASE     r   CREATE DATABASE regente WITH TEMPLATE = template0 ENCODING = 'UTF8' LOCALE_PROVIDER = libc LOCALE = 'en_US.utf8';
-    DROP DATABASE regente;
-                     root    false            Ù            1259    34016     categoria_producto_tipo_variante    TABLE     »   CREATE TABLE public.categoria_producto_tipo_variante (
-    id integer NOT NULL,
-    categoria_producto character varying(50) NOT NULL,
-    tipo_variante character varying(50) NOT NULL
-);
- 4   DROP TABLE public.categoria_producto_tipo_variante;
-       public         heap r       root    false            Ú            1259    34019 '   categoria_producto_tipo_variante_id_seq    SEQUENCE     Ÿ   CREATE SEQUENCE public.categoria_producto_tipo_variante_id_seq
-    AS integer
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
- >   DROP SEQUENCE public.categoria_producto_tipo_variante_id_seq;
-       public               root    false    217            ½
-           0    0 '   categoria_producto_tipo_variante_id_seq    SEQUENCE OWNED BY     s   ALTER SEQUENCE public.categoria_producto_tipo_variante_id_seq OWNED BY public.categoria_producto_tipo_variante.id;
-          public               root    false    218            Û            1259    34020    categorias_variantes    TABLE     ›   CREATE TABLE public.categorias_variantes (
-    id integer NOT NULL,
-    nombre character varying(255) NOT NULL,
-    tipo character varying(50) NOT NULL
-);
- (   DROP TABLE public.categorias_variantes;
-       public         heap r       root    false            Ü            1259    34023    categorias_variantes_id_seq    SEQUENCE     “   CREATE SEQUENCE public.categorias_variantes_id_seq
-    AS integer
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
- 2   DROP SEQUENCE public.categorias_variantes_id_seq;
-       public               root    false    219            ¾
-           0    0    categorias_variantes_id_seq    SEQUENCE OWNED BY     [   ALTER SEQUENCE public.categorias_variantes_id_seq OWNED BY public.categorias_variantes.id;
-          public               root    false    220            Ý            1259    34024    detalles_orden    TABLE     ì  CREATE TABLE public.detalles_orden (
-    id integer NOT NULL,
-    orden_id integer NOT NULL,
-    producto_id integer NOT NULL,
-    cantidad integer DEFAULT 1,
-    precio_unitario numeric(10,2) NOT NULL,
-    empleado_id integer NOT NULL,
-    sabor_id integer,
-    notas text,
-    tamano_id integer,
-    preparado boolean DEFAULT false,
-    tiempo_creacion timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
-    tiempo_preparacion timestamp without time zone,
-    ingrediente_id integer
-);
- "   DROP TABLE public.detalles_orden;
-       public         heap r       root    false            Þ            1259    34032    detalles_orden_id_seq    SEQUENCE        CREATE SEQUENCE public.detalles_orden_id_seq
-    AS integer
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
- ,   DROP SEQUENCE public.detalles_orden_id_seq;
-       public               root    false    221            ¿
-           0    0    detalles_orden_id_seq    SEQUENCE OWNED BY     O   ALTER SEQUENCE public.detalles_orden_id_seq OWNED BY public.detalles_orden.id;
-          public               root    false    222            ß            1259    34033 	   empleados    TABLE       CREATE TABLE public.empleados (
-    id integer NOT NULL,
-    nombre character varying(255) NOT NULL,
-    usuario character varying(50) NOT NULL,
-    password text NOT NULL,
-    rol text NOT NULL,
-    fecha_ingreso date DEFAULT CURRENT_DATE,
-    activo boolean DEFAULT true
-);
-    DROP TABLE public.empleados;
-       public         heap r       root    false            à            1259    34041    empleados_id_seq    SEQUENCE     ˆ   CREATE SEQUENCE public.empleados_id_seq
-    AS integer
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
- '   DROP SEQUENCE public.empleados_id_seq;
-       public               root    false    223            À
-           0    0    empleados_id_seq    SEQUENCE OWNED BY     E   ALTER SEQUENCE public.empleados_id_seq OWNED BY public.empleados.id;
-          public               root    false    224            á            1259    34042    grados    TABLE     w   CREATE TABLE public.grados (
-    id integer NOT NULL,
-    nombre text NOT NULL,
-    descuento numeric(5,2) NOT NULL
-);
-    DROP TABLE public.grados;
-       public         heap r       root    false            â            1259    34047 
-   grados_id_seq    SEQUENCE     …   CREATE SEQUENCE public.grados_id_seq
-    AS integer
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
- $   DROP SEQUENCE public.grados_id_seq;
-       public               root    false    225            Á
-           0    0 
-   grados_id_seq    SEQUENCE OWNED BY     ?   ALTER SEQUENCE public.grados_id_seq OWNED BY public.grados.id;
-          public               root    false    226            ã            1259    34048     ordenes    TABLE     ×  CREATE TABLE public.ordenes (
-    orden_id integer NOT NULL,
-    preso_id integer,
-    nombre_cliente character varying(255),
-    total numeric(10,2) NOT NULL,
-    fecha timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
-    estado text DEFAULT 'abierta'::text,
-    empleado_id integer NOT NULL,
-    total_bruto numeric(10,2),
-    num_personas integer DEFAULT 1,
-    CONSTRAINT ordenes_estado_check CHECK ((estado = ANY (ARRAY['abierta'::text, 'cerrada'::text])))
-);
-    DROP TABLE public.ordenes;
-       public         heap r       root    false            ä            1259    34057    ordenes_orden_id_seq    SEQUENCE     Œ   CREATE SEQUENCE public.ordenes_orden_id_seq
-    AS integer
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
- +   DROP SEQUENCE public.ordenes_orden_id_seq;
-       public               root    false    227            Â
-           0    0    ordenes_orden_id_seq    SEQUENCE OWNED BY     M   ALTER SEQUENCE public.ordenes_orden_id_seq OWNED BY public.ordenes.orden_id;
-          public               root    false    228            å            1259    34058    pagos    TABLE     ·  CREATE TABLE public.pagos (
-    id integer NOT NULL,
-    orden_id integer,
-    metodo text NOT NULL,
-    monto numeric(10,2) NOT NULL,
-    fecha timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
-    empleado_id integer,
-    propina numeric(10,2) DEFAULT 0,
-    porcentaje_propina numeric(5,2),
-    CONSTRAINT pagos_metodo_check CHECK ((metodo = ANY (ARRAY['efectivo'::text, 'tarjeta'::text, 'transferencia'::text, 'otro'::text])))
-);
-    DROP TABLE public.pagos;
-       public         heap r       root    false            æ            1259    34066    pagos_id_seq    SEQUENCE     „   CREATE SEQUENCE public.pagos_id_seq
-    AS integer
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
- #   DROP SEQUENCE public.pagos_id_seq;
-       public               root    false    229            Ã
-           0    0    pagos_id_seq    SEQUENCE OWNED BY     =   ALTER SEQUENCE public.pagos_id_seq OWNED BY public.pagos.id;
-          public               root    false    230            ç            1259    34067 
-   preso_grado    TABLE     —   CREATE TABLE public.preso_grado (
-    id integer NOT NULL,
-    preso_id integer,
-    grado_id integer,
-    fecha_otorgado date DEFAULT CURRENT_DATE
-);
-    DROP TABLE public.preso_grado;
-       public         heap r       root    false            è            1259    34071    preso_grado_id_seq    SEQUENCE     Š   CREATE SEQUENCE public.preso_grado_id_seq
-    AS integer
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
- )   DROP SEQUENCE public.preso_grado_id_seq;
-       public               root    false    231            Ä
-           0    0    preso_grado_id_seq    SEQUENCE OWNED BY     I   ALTER SEQUENCE public.preso_grado_id_seq OWNED BY public.preso_grado.id;
-          public               root    false    232            é            1259    34072    presos    TABLE        CREATE TABLE public.presos (
-    id integer NOT NULL,
-    reg_name text NOT NULL,
-    res_tel text NOT NULL,
-    igname text,
-    bday text NOT NULL,
-    mkt boolean NOT NULL,
-    cellmate integer NOT NULL,
-    referidos integer DEFAULT 0,
-    fecha_registro date DEFAULT CURRENT_DATE
-);
-    DROP TABLE public.presos;
-       public         heap r       root    false            ê            1259    34079 
-   presos_id_seq    SEQUENCE     …   CREATE SEQUENCE public.presos_id_seq
-    AS integer
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
- $   DROP SEQUENCE public.presos_id_seq;
-       public               root    false    233            Å
-           0    0 
-   presos_id_seq    SEQUENCE OWNED BY     ?   ALTER SEQUENCE public.presos_id_seq OWNED BY public.presos.id;
-          public               root    false    234            ë            1259    34080    producto_sabor    TABLE     o   CREATE TABLE public.producto_sabor (
-    id integer NOT NULL,
-    producto_id integer,
-    sabor_id integer
-);
- "   DROP TABLE public.producto_sabor;
-       public         heap r       root    false            ì            1259    34083    producto_sabor_id_seq    SEQUENCE        CREATE SEQUENCE public.producto_sabor_id_seq
-    AS integer
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
- ,   DROP SEQUENCE public.producto_sabor_id_seq;
-       public               root    false    235            Æ
-           0    0    producto_sabor_id_seq    SEQUENCE OWNED BY     O   ALTER SEQUENCE public.producto_sabor_id_seq OWNED BY public.producto_sabor.id;
-          public               root    false    236            í            1259    34084 	   productos    TABLE     È   CREATE TABLE public.productos (
-    id integer NOT NULL,
-    nombre character varying(255) NOT NULL,
-    precio numeric(10,2) NOT NULL,
-    categoria character varying(50),
-    costo numeric(10,2)
-);
-    DROP TABLE public.productos;
-       public         heap r       root    false            î            1259    34087    productos_id_seq    SEQUENCE     ˆ   CREATE SEQUENCE public.productos_id_seq
-    AS integer
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
- '   DROP SEQUENCE public.productos_id_seq;
-       public               root    false    237            Ç
-           0    0    productos_id_seq    SEQUENCE OWNED BY     E   ALTER SEQUENCE public.productos_id_seq OWNED BY public.productos.id;
-          public               root    false    238            ï            1259    34088     sabores    TABLE     è   CREATE TABLE public.sabores (
-    id integer NOT NULL,
-    nombre character varying(255) NOT NULL,
-    descripcion text,
-    categoria_id integer,
-    disponible boolean DEFAULT true,
-    precio_adicional numeric(10,2) DEFAULT 0
-);
-    DROP TABLE public.sabores;
-       public         heap r       root    false            ð            1259    34095    sabores_id_seq    SEQUENCE     †   CREATE SEQUENCE public.sabores_id_seq
-    AS integer
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
- %   DROP SEQUENCE public.sabores_id_seq;
-       public               root    false    239            È
-           0    0    sabores_id_seq    SEQUENCE OWNED BY     A   ALTER SEQUENCE public.sabores_id_seq OWNED BY public.sabores.id;
-          public               root    false    240            Á           2604    34096 #   categoria_producto_tipo_variante id     DEFAULT     š   ALTER TABLE ONLY public.categoria_producto_tipo_variante ALTER COLUMN id SET DEFAULT nextval('public.categoria_producto_tipo_variante_id_seq'::regclass);
- R   ALTER TABLE public.categoria_producto_tipo_variante ALTER COLUMN id DROP DEFAULT;
-       public               root    false    218    217            Â           2604    34097    categorias_variantes id     DEFAULT     ‚   ALTER TABLE ONLY public.categorias_variantes ALTER COLUMN id SET DEFAULT nextval('public.categorias_variantes_id_seq'::regclass);
- F   ALTER TABLE public.categorias_variantes ALTER COLUMN id DROP DEFAULT;
-       public               root    false    220    219            Ã           2604    34098    detalles_orden id     DEFAULT     v   ALTER TABLE ONLY public.detalles_orden ALTER COLUMN id SET DEFAULT nextval('public.detalles_orden_id_seq'::regclass);
- @   ALTER TABLE public.detalles_orden ALTER COLUMN id DROP DEFAULT;
-       public               root    false    222    221            Ç           2604    34099    empleados id     DEFAULT     l   ALTER TABLE ONLY public.empleados ALTER COLUMN id SET DEFAULT nextval('public.empleados_id_seq'::regclass);
- ;   ALTER TABLE public.empleados ALTER COLUMN id DROP DEFAULT;
-       public               root    false    224    223            Ê           2604    34100 	   grados id     DEFAULT     f   ALTER TABLE ONLY public.grados ALTER COLUMN id SET DEFAULT nextval('public.grados_id_seq'::regclass);
- 8   ALTER TABLE public.grados ALTER COLUMN id DROP DEFAULT;
-       public               root    false    226    225            Ë           2604    34101    ordenes orden_id     DEFAULT     t   ALTER TABLE ONLY public.ordenes ALTER COLUMN orden_id SET DEFAULT nextval('public.ordenes_orden_id_seq'::regclass);
- ?   ALTER TABLE public.ordenes ALTER COLUMN orden_id DROP DEFAULT;
-       public               root    false    228    227            Ï           2604    34102    pagos id     DEFAULT     d   ALTER TABLE ONLY public.pagos ALTER COLUMN id SET DEFAULT nextval('public.pagos_id_seq'::regclass);
- 7   ALTER TABLE public.pagos ALTER COLUMN id DROP DEFAULT;
-       public               root    false    230    229            Ò           2604    34103    preso_grado id     DEFAULT     p   ALTER TABLE ONLY public.preso_grado ALTER COLUMN id SET DEFAULT nextval('public.preso_grado_id_seq'::regclass);
- =   ALTER TABLE public.preso_grado ALTER COLUMN id DROP DEFAULT;
-       public               root    false    232    231            Ô           2604    34104 	   presos id     DEFAULT     f   ALTER TABLE ONLY public.presos ALTER COLUMN id SET DEFAULT nextval('public.presos_id_seq'::regclass);
- 8   ALTER TABLE public.presos ALTER COLUMN id DROP DEFAULT;
-       public               root    false    234    233            ×           2604    34105    producto_sabor id     DEFAULT     v   ALTER TABLE ONLY public.producto_sabor ALTER COLUMN id SET DEFAULT nextval('public.producto_sabor_id_seq'::regclass);
- @   ALTER TABLE public.producto_sabor ALTER COLUMN id DROP DEFAULT;
-       public               root    false    236    235            Ø           2604    34106    productos id     DEFAULT     l   ALTER TABLE ONLY public.productos ALTER COLUMN id SET DEFAULT nextval('public.productos_id_seq'::regclass);
- ;   ALTER TABLE public.productos ALTER COLUMN id DROP DEFAULT;
-       public               root    false    238    237            Ù           2604    34107 
-   sabores id     DEFAULT     h   ALTER TABLE ONLY public.sabores ALTER COLUMN id SET DEFAULT nextval('public.sabores_id_seq'::regclass);
- 9   ALTER TABLE public.sabores ALTER COLUMN id DROP DEFAULT;
-       public               root    false    240    239            Ÿ
-          0    34016     categoria_producto_tipo_variante 
-   TABLE DATA           a   COPY public.categoria_producto_tipo_variante (id, categoria_producto, tipo_variante) FROM stdin;
-    public               root    false    217   ø‡       ¡
-          0    34020    categorias_variantes 
-   TABLE DATA           @   COPY public.categorias_variantes (id, nombre, tipo) FROM stdin;
-    public               root    false    219   —ˆ       £
-          0    34024    detalles_orden 
-   TABLE DATA           Ç   COPY public.detalles_orden (id, orden_id, producto_id, cantidad, precio_unitario, empleado_id, sabor_id, notas, tamano_id, preparado, tiempo_creacion, tiempo_preparacion, ingrediente_id) FROM stdin;
-    public               root    false    221   Õ‰       ¥
-          0    34033 	   empleados 
-   TABLE DATA           ^   COPY public.empleados (id, nombre, usuario, password, rol, fecha_ingreso, activo) FROM stdin;
-    public               root    false    223   ÑŠ       §
-          0    34042    grados 
-   TABLE DATA           7   COPY public.grados (id, nombre, descuento) FROM stdin;
-    public               root    false    225   ¡Œ       ©
-          0    34048     ordenes 
-   TABLE DATA           ƒ   COPY public.ordenes (orden_id, preso_id, nombre_cliente, total, fecha, estado, empleado_id, total_bruto, num_personas) FROM stdin;
-    public               root    false    227   ×Œ       «
-          0    34058    pagos 
-   TABLE DATA           m   COPY public.pagos (id, orden_id, metodo, monto, fecha, empleado_id, propina, porcentaje_propina) FROM stdin;
-    public               root    false    229   T       ­
-          0    34067 
-   preso_grado 
-   TABLE DATA           M   COPY public.preso_grado (id, preso_id, grado_id, fecha_otorgado) FROM stdin;
-    public               root    false    231   þ       ¯
-          0    34072    presos 
-   TABLE DATA           o   COPY public.presos (id, reg_name, res_tel, igname, bday, mkt, cellmate, referidos, fecha_registro) FROM stdin;
-    public               root    false    233   ,Ž       ±
-          0    34080    producto_sabor 
-   TABLE DATA           C   COPY public.producto_sabor (id, producto_id, sabor_id) FROM stdin;
-    public               root    false    235   Ô¹       ³
-          0    34084 	   productos 
-   TABLE DATA           I   COPY public.productos (id, nombre, precio, categoria, costo) FROM stdin;
-    public               root    false    237   ¼       µ
-          0    34088     sabores 
-   TABLE DATA           f   COPY public.sabores (id, nombre, descripcion, categoria_id, disponible, precio_adicional) FROM stdin;
-    public               root    false    239   ¿       É
-           0    0 '   categoria_producto_tipo_variante_id_seq    SEQUENCE SET     U   SELECT pg_catalog.setval('public.categoria_producto_tipo_variante_id_seq', 6, true);
-          public               root    false    218            Ê
-           0    0    categorias_variantes_id_seq    SEQUENCE SET     I   SELECT pg_catalog.setval('public.categorias_variantes_id_seq', 7, true);
-          public               root    false    220            Ë
-           0    0    detalles_orden_id_seq    SEQUENCE SET     E   SELECT pg_catalog.setval('public.detalles_orden_id_seq', 119, true);
-          public               root    false    222            Ì
-           0    0    empleados_id_seq    SEQUENCE SET     ?   SELECT pg_catalog.setval('public.empleados_id_seq', 15, true);
-          public               root    false    224            Í
-           0    0 
-   grados_id_seq    SEQUENCE SET     ;   SELECT pg_catalog.setval('public.grados_id_seq', 1, true);
-          public               root    false    226            Î
-           0    0    ordenes_orden_id_seq    SEQUENCE SET     C   SELECT pg_catalog.setval('public.ordenes_orden_id_seq', 22, true);
-          public               root    false    228            Ï
-           0    0    pagos_id_seq    SEQUENCE SET     :   SELECT pg_catalog.setval('public.pagos_id_seq', 9, true);
-          public               root    false    230            Ð
-           0    0    preso_grado_id_seq    SEQUENCE SET     @   SELECT pg_catalog.setval('public.preso_grado_id_seq', 1, true);
-          public               root    false    232            Ñ
-           0    0 
-   presos_id_seq    SEQUENCE SET     <   SELECT pg_catalog.setval('public.presos_id_seq', 1, false);
-          public               root    false    234            Ò
-           0    0    producto_sabor_id_seq    SEQUENCE SET     D   SELECT pg_catalog.setval('public.producto_sabor_id_seq', 52, true);
-          public               root    false    236            Ó
-           0    0    productos_id_seq    SEQUENCE SET     ?   SELECT pg_catalog.setval('public.productos_id_seq', 1, false);
-          public               root    false    238            Ô
-           0    0    sabores_id_seq    SEQUENCE SET     =   SELECT pg_catalog.setval('public.sabores_id_seq', 24, true);
-          public               root    false    240            à           2606    34109 `   categoria_producto_tipo_variante categoria_producto_tipo_varia_categoria_producto_tipo_varia_key 
-   CONSTRAINT     ¸   ALTER TABLE ONLY public.categoria_producto_tipo_variante
-    ADD CONSTRAINT categoria_producto_tipo_varia_categoria_producto_tipo_varia_key UNIQUE (categoria_producto, tipo_variante);
- Š   ALTER TABLE ONLY public.categoria_producto_tipo_variante DROP CONSTRAINT categoria_producto_tipo_varia_categoria_producto_tipo_varia_key;
-       public                 root    false    217    217            â           2606    34111 F   categoria_producto_tipo_variante categoria_producto_tipo_variante_pkey 
-   CONSTRAINT     „   ALTER TABLE ONLY public.categoria_producto_tipo_variante
-    ADD CONSTRAINT categoria_producto_tipo_variante_pkey PRIMARY KEY (id);
- p   ALTER TABLE ONLY public.categoria_producto_tipo_variante DROP CONSTRAINT categoria_producto_tipo_variante_pkey;
-       public                 root    false    217            ä           2606    34113 .   categorias_variantes categorias_variantes_pkey 
-   CONSTRAINT     l   ALTER TABLE ONLY public.categorias_variantes
-    ADD CONSTRAINT categorias_variantes_pkey PRIMARY KEY (id);
- X   ALTER TABLE ONLY public.categorias_variantes DROP CONSTRAINT categorias_variantes_pkey;
-       public                 root    false    219            æ           2606    34115 "   detalles_orden detalles_orden_pkey 
-   CONSTRAINT     `   ALTER TABLE ONLY public.detalles_orden
-    ADD CONSTRAINT detalles_orden_pkey PRIMARY KEY (id);
- L   ALTER TABLE ONLY public.detalles_orden DROP CONSTRAINT detalles_orden_pkey;
-       public                 root    false    221            è           2606    34117    empleados empleados_pkey 
-   CONSTRAINT     V   ALTER TABLE ONLY public.empleados
-    ADD CONSTRAINT empleados_pkey PRIMARY KEY (id);
- B   ALTER TABLE ONLY public.empleados DROP CONSTRAINT empleados_pkey;
-       public                 root    false    223            Ü           2606    34267    empleados empleados_rol_check    CHECK CONSTRAINT     Á   ALTER TABLE public.empleados
-    ADD CONSTRAINT empleados_rol_check CHECK ((rol = ANY (ARRAY['admin'::text, 'mesero'::text, 'cocinero'::text, 'financiero'::text, 'gerente'::text]))) NOT VALID;
- B   ALTER TABLE public.empleados DROP CONSTRAINT empleados_rol_check;
-       public               root    false    223    223            ê           2606    34119    empleados empleados_usuario_key 
-   CONSTRAINT     ]   ALTER TABLE ONLY public.empleados
-    ADD CONSTRAINT empleados_usuario_key UNIQUE (usuario);
- I   ALTER TABLE ONLY public.empleados DROP CONSTRAINT empleados_usuario_key;
-       public                 root    false    223            ì           2606    34121    grados grados_nombre_key 
-   CONSTRAINT     U   ALTER TABLE ONLY public.grados
-    ADD CONSTRAINT grados_nombre_key UNIQUE (nombre);
- B   ALTER TABLE ONLY public.grados DROP CONSTRAINT grados_nombre_key;
-       public                 root    false    225            î           2606    34123    grados grados_pkey 
-   CONSTRAINT     P   ALTER TABLE ONLY public.grados
-    ADD CONSTRAINT grados_pkey PRIMARY KEY (id);
- <   ALTER TABLE ONLY public.grados DROP CONSTRAINT grados_pkey;
-       public                 root    false    225            ð           2606    34125    ordenes ordenes_pkey 
-   CONSTRAINT     X   ALTER TABLE ONLY public.ordenes
-    ADD CONSTRAINT ordenes_pkey PRIMARY KEY (orden_id);
- >   ALTER TABLE ONLY public.ordenes DROP CONSTRAINT ordenes_pkey;
-       public                 root    false    227            ò           2606    34127    pagos pagos_pkey 
-   CONSTRAINT     N   ALTER TABLE ONLY public.pagos
-    ADD CONSTRAINT pagos_pkey PRIMARY KEY (id);
- :   ALTER TABLE ONLY public.pagos DROP CONSTRAINT pagos_pkey;
-       public                 root    false    229            ô           2606    34129    preso_grado preso_grado_pkey 
-   CONSTRAINT     Z   ALTER TABLE ONLY public.preso_grado
-    ADD CONSTRAINT preso_grado_pkey PRIMARY KEY (id);
- F   ALTER TABLE ONLY public.preso_grado DROP CONSTRAINT preso_grado_pkey;
-       public                 root    false    231            ö           2606    34131    presos presos_pkey 
-   CONSTRAINT     P   ALTER TABLE ONLY public.presos
-    ADD CONSTRAINT presos_pkey PRIMARY KEY (id);
- <   ALTER TABLE ONLY public.presos DROP CONSTRAINT presos_pkey;
-       public                 root    false    233            ø           2606    34133 "   producto_sabor producto_sabor_pkey 
-   CONSTRAINT     `   ALTER TABLE ONLY public.producto_sabor
-    ADD CONSTRAINT producto_sabor_pkey PRIMARY KEY (id);
- L   ALTER TABLE ONLY public.producto_sabor DROP CONSTRAINT producto_sabor_pkey;
-       public                 root    false    235            ú           2606    34135 6   producto_sabor producto_sabor_producto_id_sabor_id_key 
-   CONSTRAINT     ‚   ALTER TABLE ONLY public.producto_sabor
-    ADD CONSTRAINT producto_sabor_producto_id_sabor_id_key UNIQUE (producto_id, sabor_id);
- `   ALTER TABLE ONLY public.producto_sabor DROP CONSTRAINT producto_sabor_producto_id_sabor_id_key;
-       public                 root    false    235    235            ü           2606    34137    productos productos_pkey 
-   CONSTRAINT     V   ALTER TABLE ONLY public.productos
-    ADD CONSTRAINT productos_pkey PRIMARY KEY (id);
- B   ALTER TABLE ONLY public.productos DROP CONSTRAINT productos_pkey;
-       public                 root    false    237            þ           2606    34139    sabores sabores_pkey 
-   CONSTRAINT     R   ALTER TABLE ONLY public.sabores
-    ADD CONSTRAINT sabores_pkey PRIMARY KEY (id);
- >   ALTER TABLE ONLY public.sabores DROP CONSTRAINT sabores_pkey;
-       public                 root    false    239            ÿ           2606    34140 .   detalles_orden detalles_orden_empleado_id_fkey 
-   FK CONSTRAINT     §   ALTER TABLE ONLY public.detalles_orden
-    ADD CONSTRAINT detalles_orden_empleado_id_fkey FOREIGN KEY (empleado_id) REFERENCES public.empleados(id) ON DELETE CASCADE;
- X   ALTER TABLE ONLY public.detalles_orden DROP CONSTRAINT detalles_orden_empleado_id_fkey;
-       public               root    false    223    221    3304             
-           2606    34145 1   detalles_orden detalles_orden_ingrediente_id_fkey 
-   FK CONSTRAINT     ¬   ALTER TABLE ONLY public.detalles_orden
-    ADD CONSTRAINT detalles_orden_ingrediente_id_fkey FOREIGN KEY (ingrediente_id) REFERENCES public.sabores(id) ON DELETE SET NULL;
- [   ALTER TABLE ONLY public.detalles_orden DROP CONSTRAINT detalles_orden_ingrediente_id_fkey;
-       public               root    false    239    221    3326            
-           2606    34150 +   detalles_orden detalles_orden_orden_id_fkey 
-   FK CONSTRAINT     ¥   ALTER TABLE ONLY public.detalles_orden
-    ADD CONSTRAINT detalles_orden_orden_id_fkey FOREIGN KEY (orden_id) REFERENCES public.ordenes(orden_id) ON DELETE CASCADE;
- U   ALTER TABLE ONLY public.detalles_orden DROP CONSTRAINT detalles_orden_orden_id_fkey;
-       public               root    false    227    221    3312            
-           2606    34155 .   detalles_orden detalles_orden_producto_id_fkey 
-   FK CONSTRAINT     §   ALTER TABLE ONLY public.detalles_orden
-    ADD CONSTRAINT detalles_orden_producto_id_fkey FOREIGN KEY (producto_id) REFERENCES public.productos(id) ON DELETE CASCADE;
- X   ALTER TABLE ONLY public.detalles_orden DROP CONSTRAINT detalles_orden_producto_id_fkey;
-       public               root    false    3324    221    237            
-           2606    34160 +   detalles_orden detalles_orden_sabor_id_fkey 
-   FK CONSTRAINT         ALTER TABLE ONLY public.detalles_orden
-    ADD CONSTRAINT detalles_orden_sabor_id_fkey FOREIGN KEY (sabor_id) REFERENCES public.sabores(id) ON DELETE SET NULL;
- U   ALTER TABLE ONLY public.detalles_orden DROP CONSTRAINT detalles_orden_sabor_id_fkey;
-       public               root    false    3326    239    221            
-           2606    34165 ,   detalles_orden detalles_orden_tamano_id_fkey 
-   FK CONSTRAINT     ¢   ALTER TABLE ONLY public.detalles_orden
-    ADD CONSTRAINT detalles_orden_tamano_id_fkey FOREIGN KEY (tamano_id) REFERENCES public.sabores(id) ON DELETE SET NULL;
- V   ALTER TABLE ONLY public.detalles_orden DROP CONSTRAINT detalles_orden_tamano_id_fkey;
-       public               root    false    221    239    3326            
-           2606    34170     ordenes ordenes_empleado_id_fkey 
-   FK CONSTRAINT     ™   ALTER TABLE ONLY public.ordenes
-    ADD CONSTRAINT ordenes_empleado_id_fkey FOREIGN KEY (empleado_id) REFERENCES public.empleados(id) ON DELETE CASCADE;
- J   ALTER TABLE ONLY public.ordenes DROP CONSTRAINT ordenes_empleado_id_fkey;
-       public               root    false    227    223    3304            
-           2606    34175    ordenes ordenes_preso_id_fkey 
-   FK CONSTRAINT     ‘   ALTER TABLE ONLY public.ordenes
-    ADD CONSTRAINT ordenes_preso_id_fkey FOREIGN KEY (preso_id) REFERENCES public.presos(id) ON DELETE SET NULL;
- G   ALTER TABLE ONLY public.ordenes DROP CONSTRAINT ordenes_preso_id_fkey;
-       public               root    false    3318    233    227             
-           2606    34180    pagos pagos_empleado_id_fkey 
-   FK CONSTRAINT     ƒ   ALTER TABLE ONLY public.pagos
-    ADD CONSTRAINT pagos_empleado_id_fkey FOREIGN KEY (empleado_id) REFERENCES public.empleados(id);
- F   ALTER TABLE ONLY public.pagos DROP CONSTRAINT pagos_empleado_id_fkey;
-       public               root    false    229    3304    223            
-           2606    34185    pagos pagos_orden_id_fkey 
-   FK CONSTRAINT     “   ALTER TABLE ONLY public.pagos
-    ADD CONSTRAINT pagos_orden_id_fkey FOREIGN KEY (orden_id) REFERENCES public.ordenes(orden_id) ON DELETE CASCADE;
- C   ALTER TABLE ONLY public.pagos DROP CONSTRAINT pagos_orden_id_fkey;
-       public               root    false    227    229    3312            	
-           2606    34190 %   preso_grado preso_grado_grado_id_fkey 
-   FK CONSTRAINT     ˜   ALTER TABLE ONLY public.preso_grado
-    ADD CONSTRAINT preso_grado_grado_id_fkey FOREIGN KEY (grado_id) REFERENCES public.grados(id) ON DELETE CASCADE;
- O   ALTER TABLE ONLY public.preso_grado DROP CONSTRAINT preso_grado_grado_id_fkey;
-       public               root    false    225    231    3310            
-
-           2606    34195 %   preso_grado preso_grado_preso_id_fkey 
-   FK CONSTRAINT     ˜   ALTER TABLE ONLY public.preso_grado
-    ADD CONSTRAINT preso_grado_preso_id_fkey FOREIGN KEY (preso_id) REFERENCES public.presos(id) ON DELETE CASCADE;
- O   ALTER TABLE ONLY public.preso_grado DROP CONSTRAINT preso_grado_preso_id_fkey;
-       public               root    false    231    3318    233            
-
-           2606    34200 .   producto_sabor producto_sabor_producto_id_fkey 
-   FK CONSTRAINT     §   ALTER TABLE ONLY public.producto_sabor
-    ADD CONSTRAINT producto_sabor_producto_id_fkey FOREIGN KEY (producto_id) REFERENCES public.productos(id) ON DELETE CASCADE;
- X   ALTER TABLE ONLY public.producto_sabor DROP CONSTRAINT producto_sabor_producto_id_fkey;
-       public               root    false    235    3324    237            
-           2606    34205 +   producto_sabor producto_sabor_sabor_id_fkey 
-   FK CONSTRAINT     Ÿ   ALTER TABLE ONLY public.producto_sabor
-    ADD CONSTRAINT producto_sabor_sabor_id_fkey FOREIGN KEY (sabor_id) REFERENCES public.sabores(id) ON DELETE CASCADE;
- U   ALTER TABLE ONLY public.producto_sabor DROP CONSTRAINT producto_sabor_sabor_id_fkey;
-       public               root    false    235    3326    239            
-
-           2606    34210 !   sabores sabores_categoria_id_fkey 
-   FK CONSTRAINT     ¦   ALTER TABLE ONLY public.sabores
-    ADD CONSTRAINT sabores_categoria_id_fkey FOREIGN KEY (categoria_id) REFERENCES public.categorias_variantes(id) ON DELETE CASCADE;
- K   ALTER TABLE ONLY public.sabores DROP CONSTRAINT sabores_categoria_id_fkey;
-       public               root    false    239    219    3300            Ÿ
-      xœeNK
-Â0]Ïœ¢'ãßeõ 
-n…2m ‰´L¦"žÞLº|ÿgàÈBÕÎWëmK¸ø‘Vnž[Ë¢\ñK=áÎC÷”z‡«'ùuÌû'¿)¥7#]”^9P—¶pŠ#¡8pavj—‰Ós{(EÝÝªË¢f—¯O›·ó/M;¯3Dü ‘ßf       ¡
-   .  xœm’MNÃ0…×Î)|„û
-ËRu‘U%"VHÕÄŠQb›‰·â\'UIâz—Œ?½yóô{‚Ò¶¼B.M£*`m79ž²+ ßÓÖ×™
-#m²5Ëõ‰°R¨]PØ}9¦†Ñ»Iv7Ùô‰ßÀ&hM—Ý§È-ÖXNIq›B•_ÑB¤ÐB•žŒŽÐÙ} ,á=^<#ÏJ›è}1~/)KÖ'Õò-È7LD&VfsòÐ)õ)rý¿/w ÁÅ~‡ôsýJ ¥ººzˆý€¸«ÔSh6¾7Á4GÍëPŠ6Ü@¦`q±¿…ª“´HOµcù¹_|ÎSì`ž 
-l¬!ˆK»H ^‡.¹ˆ]&Ø]kQªØÀËM–e}:õ      £
-   ì   xœ•’Ë‘Ã DÏ(
-'`j~Ì‡ Ï›Ë [«ÃÚ’ª¸ÁënfÁ
-aA.X*@¡ÂXž<?…€Úäq#ìb¤º0‹¯OO^ ŽÐV^ý$o6øHžÓ_ÚK òý”?BòDƒoïüý½7­¦Ìd“OÿxÙ
-\áiò¶ÀJŸ68„æ .ò3€Ì ²À5^7=â›u ê ³#2ˆv>ÿà«pÓwV{ÛõéJ±ý-€Hç! A1_‰ÏúÈlà÷p í¬5ºo?ÀHž là_g]–åD—§      ¥
-   À  xœeK“¢@„Ïí¯ðàUy+`| â 2±-´ÐHÓòhýêŒnèì©2£"ò«JL"‚ónÈ‘–0ðfÿÔ¨ª Jò· "/*}^ê‹2¨;"X 
-•°›3t‚€|ôÄ]Oà{j±°
-<v4%˜ŠöVY-ªtÈa²‡Ïë¡¾,ÿW²HFQS©™CÂÑŒúß!ô•#žpÔÓë&BøªòiÄÅÇÆ…uÂÀ¹Éjë£ú8/‰7U]äwþþ’™A*Æ~{±‰nµ ¤!ÎÿÃÈ bÇë _>É;Ê9@ünÙ¬:LõŠ1'¨›¡XÚh®ÎoÂ<m¨dNH›'°²¬µ›íÏÚÔ+gö8‡yˆo<É;‡-³ºÑ)ÚÇcØKŸDÄ ƒ™µò¤aY”sw–Yß‘¥mˆ)8æÚçœ˜p/L²â=(ù6@F–¾IÀ]RÍžH%X;u®—._´
-c0Úm™!²„ç0”ÑÏâä>?¾1`¢å5ñ}>(Ê”)çÈK¹öä¨é©IéPfE~Ö–œ¯SsíöT»DõFFv©fÖD«fÿB^ ¿ Nç/úÈÒ‘      §
-   &   xœ3ätN,JNÍI-ÊWHIÍQÈM-æ4Õ30àŠÑãââ Ž¦      ©
-   m   xœ]ÌA
-ƒ0FáõÌ)¼@ÂÌŸIL²íÞ¸‰©`A,xÿE)B‘î¿÷ dižHQ¢!¢sRhµ±Â|¶,S_Ï³=á‡•oüØ^½
-ËÞŽþ&-ò?
-UR
-É—¨9§ûè²Ê³gæa3      «
-   š   xœmÎÁ	Ã0…á³<Eˆ‘dËŽ4D'È% ÒC
-©éüµC¡ÐöþÒKÀe-KÝžw`AŒ,ÆõÂd¢FêQSnMO¨‡.w]çãVêÄ*ßš-DCôs©iÒèY€zéF`†zÌûc-GÙ—­ù]“	yM!Q_pÓÕéÉßßã?—-HsŒAš‹Ÿá“wÎ½ O}3Ì      ­
-      xœ3ä4æ4ä4202Õ50Ö52æŠÑãââ &ÈN      ¯
-      xœµ}É–ÜF’íõø
-bv¤’ƒH‘‹dñUÕyçàxF #ÄÂÊÌ¿©¥ZÔÑ®¶ùc}¯¹@èµ(=©[§Û=Üáƒ¹Ù½fæž®õ¦i·¹åy^”8¾y–å?ñ¢'nšÆÖ•åZ¡å9^øWÇÇÿüÅ³Þ«uc_ì†õ®A#×Ç?IHñš¥åzO\‡í=«G{ÿ°½ÿûÛ;‡íë¹º-6öÛ¦eó$ñ×M\ËrÝ'l—¦îi£Ðú˜·ë†nêÄi†Ö³Ÿò®©òNÊÑ4ÖóíÑ08lYoòº.®òÖJ=×uÒ8±Bh!+ä£…Ç÷-bëC^ç¦åø±º‘õtÝ6›BÕVðÄG£$E£c<h”ü/M+µ^å­j7\/öCÏsbëu¹U˜×®T­:¦sÜØu¬ªò«Ä6Á
-,+5;ïcçç
-\ëY‰ñ„¡—aà&¾õt»j2ÅÂT™¦ò£™¹žõ¡Ù´Å¶±ÂÈO°øN€ÙmË¼n¯‡-]ˆ›ãxÒ4>jê[Ô•ÊK{«Úu¡¬ ðƒÄ	Ø±žf-ª¶È*öíõdÍ
-~wûãCLÊ²èº¦¶â4v7ÃÔzªLaV©²Ï;+|â{ñ9î"‚¼ÖE^*.³„¾yºÑem±nº¹šÞYXøG´{üÙþ\l‹’{í'¾¥‘u±Ë+•Ý²8ÂD¤ƒdaëãNÕ½bc×‹ƒÛg½U«jèÔ
-C¨Šµ²Ñïp%œ…i¤ØÄã5‘F~„É>íÔ.oÛ¦»çèùíè´¥çXª-›Î~ÖöCÛØßÿÉlvBÎü$²”ÔÔW<Ã²¡,Â±Þq­—ê²€æP•‚ê°·¾C	Ä‰ç^ä8©þÅj½µÝÇãÍ äY¯oU­ì
-ä¢-ÐÍý0vãÄzZ°(¿,-È…»_Ò£CîùÖ³zÓæÊ^«Nu˜Mê{P/8€OU½¹¿¿‡Z‰ô¡H0|õxõ¢*Ê‚íkURˆ¢ KŸø±/ºl:N'-!”e«nh‹J~’P,ÍÆÒ'n8ªÂÙqô"ëE•cþ½ºÁç«¦•ÏcB?õ¢ ¸+ê<Ë¤kìOçqO±õÏ¼øëEq£Ö}YØv÷ÔWöÅPôåã¿wƒZÛ¯ïÖ¿ª¾´±®XðÖþ®m®zûvüñ—:°"¨ï0rRµÉê%rü±ÄzWô…ì–¼/Ê’2ðPAù`ñ=ž.š.Ú qÀµ‹gk—ZßC_* Ì{»£õc7¤„
-BYTMÍŸB”Â±»™$qÍËüÛ
-±^ïÔ-æƒóåF1§
-9èúfh¯sêL¬â(³1ù®õblÎ±h?ælø‰yPú¬«q<oó2Ã)„¶L÷'íh‰|jBý8`aí(å«æŽ¹I;˜’Ôu6Va@î¸ÚþÌ^ú¾YíÛ¼ÝÒŽxP[Ø'b+¦²‰“ïí×çx@Ñ[/6­”]67X"zs‹QÍ-÷Îˆ—ZØ¥Ç_Ô¾YàøA”ÖÛ¦É¢ :,¢ ›¯£¿ãIDã¶ªÜäPÀ¾8!ì¿åonqÔi(®c ­;”EÞã¤äe){ëa	`fSÖä]¿*Ú&ÊCàYógÚO¬·CÑÙª¨¡-/ˆ\@–Òþ”eN·jEÍì×à¸}Š)ôØÿÆ¾*›6§žñX^Ÿ{zyWVwí¬ä¥cá.QF›ºkìJµÜeD4I"±d¬ËÆºvoË¢…¾  ¤Ñ¾lÚk%By~Rå±\Ša°¢ æðhSÃ)êÃ%…ÊR—cQe*h£‹šŽkÌ oòÔ´}¾Õr¢ V½Ä”²Û¦l q ãû…™$a‰­Ê[Õê³
-3à$131‚rþláˆ»ìg7ªÞ
-üòChØ2ÖP!Ùÿ. z™·5~ÚØy·&†ê5OQ18ÔNå°ß1QÒ¤»ŠGˆ!úLÕz<qŒƒ/è£^u9l
- Hª77Yê'Únó{-f¡ãXCPrÔÍM¾†¡€tè­]ÀyA
-ß`UMf'ö%#ë½.äŽhýåšÔÐ|	dct › ¨Dºx%Z ‚Úb7Žfr4ÐÅ@.aú¼nhàC‚Õ0LÜTWôuË½qÝÑ8‡³µ ÀÿBÙ€7UÓÑÔèÃ„ø•õM¦’¸¢á¸ Xãn|ëUnÅÓ
-è´Ñl ß3X¦¼ï'{¤q< :`ûøsIŒÖ…¶1®ëÑÆ<[e¾­ÕC1´bú&mÎ„” DÇÔ¾èNÒ„Ã±>yœgku…˜&D4‘8î"Â‘ÁF™•èD1têXuwC‡ùÈt´Q8ÂqÐo@àpJ€	ºy'o€f¯(ì®ž öf¦RÃ&¼ÀÞl
-˜\ìmAÀK1Èvü:çpÒ<5¸«nìËœ
->‡½È
-¦šÕe±áÂ=>2ÊñÌM 
-¹°lXhTe^âŸÓ‘;5757­ÝÅæG"œóbSÔö¶©”V£	È‰`q^Ô€Y8ðu—O00Yo]´°Lêa=¨­¬cå uâI›PåÙ&[ã'±èÄ¢£N¨C/óâPRx:‘ò•)çasÎp¬($
-Åf¨ÒCÍãFà	„å½ª‡/íü¤I£™dGÑd:èQnà»a-óæ`õÐ­|ª®p?†ãõŒ¡b.ó¶ ¢l‰¢Ø¥Ôõiê›Û¼Î€  Mp<&-Í$+"B¥îÇ)ÅÀ;Ó áKEÕ4]&KžÑ QjŽG¢W#ô ß°J¨jVS…«»I¸µøòQ?`·#jÈËâA°—Ä
-aßœ"/!Ízüw_T`% °%
-ûhúRõ÷+mu•p,c£ãÙ¦Æ4óØq:#L‡Žñ³Tj¯¥r¬3¨}AB@ˆ^ÔmUAÕ¥õ…À²àþíf…ó§wF¯kxzXaÏßåã©…Áõî&°,‰ÃŠ!›Ê©w–OlÖØò^
-%)d•º# rROéC
-0a³JÙ³ÏùòFÂQI?¡ŠÇ.\7†y‚¬^©j(Åå3YƒxÂâXCÊqI0–
-ôzÇŽ€Ž²—Í}¿+ \ù‹½ÈEKÝ%D èÒup)¥+”6
-ÅÅ?cjqH_ß>þ›|ãRÛÈ(†IÞ±?X‘N¯nv{$´ <°	y§Zÿ[9—ýnA^‰Ita†u&ÖöF©gÖ)5¼9¼P7›üÛ“ÛPHtR é ÕÁ^´ë¡Ÿ±0îÂx<ë¹lÐíèm©h)În	Ë8’tôT¸3F—øÖ'HBQo±v~lcâøfzÆÁJó;„Ö‹’þC^o­m+J='ÅÙ"˜ðÆ“9g›@¨ïŠí€up%•nÊüNÔL’‚–o XJÒ«	†ÏGÿÞ!'¿·Aú;¤âij„^¼ƒæRÿÁF À aHDÍJj´Ý†»çœa(	MZ×jsqõâ’¸¹4KSFeáŽ: _OŽú
-¤Ö·×EWCä:­Gý )¼0e+ÅŸ°£xêgFw€b^;*ûÕã¯p1¾L.©°å°´ãF^Â_d[˜ì‡’ÉtÔaáÊ¹Ô–rà¡Úa¥<í@ÏPyí[‰B 1Y‹miâ€i˜ºuPàñA7éŒ“C =ƒh‘ÿ)¶ZƒŒ¦PÒŸÁý |ð¿H°È.$¶¾oòêñ°ÐâV³ŒÔ0 úžèÉ‚I
-ÿ0\>þ\ï=P¶¸õA¹üÔ‘_dY; »@ÖpŠ‚3J
-eï€Þ ál²&ht[\Y^š„<bº®ÓUâ×Ô–Å]pÎb«žU‚.Z˜Ä¦ïµd‡@×­§*a×çºr'Rû
-ºŽÎâR×§§5¨…¯Û^YéL8\0›·@
-öß†<§—ß÷/JH¶¼óÍ|úiîío
-ú‚EçÒÖDÜýX—âH8ŽX»çêžS• Ž
-;îçïi8;àBÍz'Üö
-Ö§‘3Eá0Àcâ&B"šFZ>ªaotK˜a¡#ÿ7>[¯Ôe
-ð!ª×äÕ†¬úô¡ZRè8žƒè£¸€8]'±þ™wÝ=8Ý½z¨DŽé`sÒØÔ`-0:Ø´WžÇ‰Ÿ†˜±¶¿/¾”â…öâ8ò=hgºÖöDûøã®Ã-[C»íOs¹‘ ƒ/¾S_šzX«
-Æ¥à)ˆFó?g¸.cBÚŽ¨Ž
-7ß(YX¢,ºëÔæ>{G[tÆËÕJ×Ð{§—¶3M8 mÉ–b3®O¢þUÜ­ÕkKí$ž£+jqVœì`›ÅÙp£ Ö„Èm#º$.IXjÉ‰¨ÏÎöBRÝ=þ·³Û¦jÀÐÈ—s]+Õ@ÐXac®çÉÕàl.{àù‹Ç-˜Û ­Ù‚ŒðTÚe*‡(	Â˜HµÐ!©8‘Æœvý˜Ã.ä­¦?¡Æ>
-}7ÓÅ’\2TÐ¡ÖçbÝ7íÒ »3N#/k°Ð8P
-Þ„³ç ÅõŒpš}AÑôŠ5Ô5jÌXŒŒæcñ«,îòŽ‚É#Ú	BFÆ¬XµZWý‘Rtv>ÞÈÐPÓ `ÐÑÙ®Âñ
-žìímtìÑn±~è°%6H:¶F»^Ã 2f½mW
-«¨#§íÜ[o]”jØ@G~¦ÃÚþáJsCg6Ù1AQD_ÖÜíB%Ðä66²Óÿwñ†‹(HüÃÀñÀ4pÃRG‘õfà‘&ß÷!!®”JaU\ÓJ/R¼7Q³hpl=ÏëzPkÕkÒAÇÐjëºuž=Ð¯îN¾[~{6˜ÄzÆ Å
-Ø¨¸6©úRP ÐrVŒåJ÷ø™ 8ðò[5´P#ëm›o!¼:øãì™ª
-NOñ ]”žqB:­7:¦¶†AÓcVt}¬ZY]_¯×{$A y#ê‰û‹	æ‰Ì$IìL¬Þuón²ŒKúÔÇ¡oÕäßþØôä˜}?Jaô òÜá˜¼åDâ}ŒÕ^ÂÕVõûR§J{w±}`´Ø«AmT9Üä¦#ŽÀ‡u9džñ>,uZ
-j³‹¼b#æ ÍN­ÚÓßOO÷\ÖAjt
-Xmß@yä…Q¥€¹Žcª†¶˜ÅÑf]Äcàè âÆ8£“Ð‰ð÷oÞ­6<L"öÀøŸT}•€ÆÓ%‚u¶ý}·-tàGôúRÞ€úÓTÿÆ^ŒÑNñ†”ñuE—c$#Ê™w8Öû¶èÖô–>þ²¢‹À—¤SÙ
-@sè>>°Hx~É1èÿP÷þI0Kû¡ÙŠ†zrøÂ kÁ@{GÈË     –u§ìo'•ê…8lqÈOvÛ‡I&º«Ù”|¤[ûãzWæ±0L^!XH©
-—&„j?ä—MYæ’6“‰—Pá‘–´cEÆ­‰&8 AWÁAŒÖ8©p&ö
-›AÇÚ¬l £¡V·*“ªœùEÆ‘Ò4ÜÒ9®E.ñC©‚A55E/A‡d?¸p>¸ø`®ÄT’œF©kö•u“Ë7Ç ]î)ÁÖS‰`dëE'Š@¨c'ÁYÓ­w‚–' 9ë€þµ+ŽÄOâ¿Dx‘®\µ[Zb/Öñ¶S9f`HŸÇvZkfŽ„i¥U‡=™ÔÊI®õbØæT¬ô·k¨y@cyÕ´äÎ±âÓ
-\ç&€:Âfí`(^yÝaXi	cû\ív«ë†þ8ÏÄ…ƒ¥ñøÖë;¬hiV&äŸRËÂX\ˆ+ñ²Èë¼oI…Ýh?/wÖQ nÉW%P6¸m£Ý¬°_A¸²¾[©ºoHµõI’¥ù…;#º˜Rf ¹W
-—”ƒB9†_gƒáoQ„™gU›áÄCf3Ûcv˜ãžuIwŒqíû¡ç;öa#èÎÉ®QÏs)sˆ–{aphI¥¿Du7@^ïG—1Pš9æ «­Të]‚=‹—¦Øªj|UÙïÛe€ÀÈÐ3Y”M{=Ü}Þ†¤[ ÉSÇÚ _ýP¬|}h.Kãw	aPïPóeÛ”œW UœðõSÝíš" )ŽîÎ}9.†ðÃ&ïûÜ~©®¥oáìX(€ ®Z]é*¡_ ðe6<Â…>¯ŠNíÝÄwQÅ •ÙýPCæÅ!ìNÚþ{G¾Aß?þW§zá€0¹4 ]zsVšîõÎe›EÁ>Ân‚óÄ0 )NâH•.½ÑÙ{S¾âl^¡õZP¢×y	(º“Be¼Ø©+}ÝNy®Ñ\š%
-k”¼„CR(Ë	wkíy2‰˜tåZIŠó”Î!	<èw+µjW×ø¯(
-
-˜M$ÑTWST¨Oà(°-–­XæºOÒqøÙÙ8ÒÑåûjŒÃ$žïÇà!¨(¾ä«¼Æà*ê\c–6šé (tŒÆÂ%O‰R1iðR ¼ø¢«¸op:Aì‰²¿èZaC=
-Á”–äÎƒØ.é,vZX[L=î¤à!¦ø§"ß\åå¦—¤šÉww¬ë„Šrc‡aâx±ïB5êšmu Ù8 1³aZ2¸©ö«f›«nÝäPèFÊB1ÓO¶
-Ì¤d4Vûä4Ë²Ø$ ­Ÿ©¥ ÿ»©Å3jpëÂòˆÊ·–ø¬ !˜0uŽ®X©r%‰qHz‹»ÓyQ©‘#2xè¸)ÄF—oµFq§£s:ÄpçÉÏìãìYÊ¯n×|Ÿ…*fû”Z¯;u)‹Ì(_ÑJmºŽUò[^¯²Õ¶Ùl ¦Wwôù9#+gœeÁ:Ðç%=ö% ½œÜIÂ æÝTM5OÂýîÏúq%3LÙX$ÚÜ8G]±êÖ×dJÉ¨ßøéãâRîQuÎ$`ú(`7é7ÚÕh“g†²Ð‘ÿgu€•EnWƒæL!‘DH,Íªê–Û;G’žêMÈ™o í-€‚x¬Èºì(__œ
-!’¼ús/ˆ­$”°G6èSÑ7Ù:¯µGôÜ0&î¦ÓˆÞ+Ãx?I™©kÕ"d®1ú’¹¿þLUór’á0…¢À'>¯
-(ízUsBSaæ¬‡t$Ô’/(ô 
-þ›r¨›;îÑU4…OºÀÑï†
-ªÓnsí¼ÄM±›–f,MgçÙ.³„´[JéXMaéèHÛ5õý”Áè-6g…-AˆÂ¤Ìñ`ú¸Ò¥]§¡¥Ù×Ó.|ík†OnŠFç/9!Ýo‹ÕUŸéÆœ®3ÓØC‚2Ï sÂ¬ßkÊ¼©WëÛNCç¼žLåB³è÷H)`kŠ¬œ(hô$÷dì
-öam’ì˜†å§®+°7V.˜çoÃäIJæ$oÛÜ÷Ð¯iè£'tDóÓH•©Iöœf¡£d4†ÛQOú¸ˆ©xZëÝ@ÔìŸó<£ïªêîl¨®NË93ÑÃ”·'ªËS“|9oZÐ“G§{LÃ Š`NýÃâÕÖÕÞË˜Ïs©kLzÛØ}Óšèd‡©CÃè=_ü¾÷;š§•C¿iÿß…É£ –è\g¤ˆû×—d¹îÞ‰èÍ  J²Ll(GU¿ÐŠ¿oêu>Ò‡¨Ôü¶­nÏ‹FÏ‰Ì:³=¦Löå ‰NÙ>@Ì´Jçý€¯¥¤hqQ$‘ºkr#œdÊ3Ìq`¾(_çÊ$	cT’¹½Ì6N´“·Óñšm?u"Ÿ§øBuªÇ’
-¶“ÉeÎ>Ã?î%5¡ï·Êt3´bâ¥*hcý‘ˆð£Ç£pCDôì0íœõ ”èýBíêfç:‚Íö÷ENúqMDâÛ¼­aeé¼ #¥ KûÁÂ˜at×Ò‘
-¡§‹y“gF¦Ü„^ ®’±NWá“¹À¬tdŽï ¸ûÌ¨²©.!ÁE]èKnI ¢
-á8¨I4M àXfƒ
-FT¬óíJ¼ÜåY	ÛK=âŒz¡‡PRˆw¿0¹éž~}zz|ÂRTtS2¦Ð¹Kó‰äh4vC¬í¥ãQÏër]|;ZÌdI¸±ÙôM‘‹¿iòu1A3‚ÀâLÉ/Vúÿ²¼½Úçfý%Ìl•œfJP
-;¥^(K5uŠ÷KsÒ
-9˜dì¬™–¢#È¨/+V1Â6æ9.8Ó<o_?µù-Cc¶Üh8"àfeF¤9Þë»ã%f`¬¢sÒ~ÅLÇ"W0)VZGÅ	ê_ÝoÍVd|8¬á™8
-Nª½1
-„¡
-]³¹Ï&¶N­wz1Ë·Þì˜·_ßƒö÷ª*ÆdvXÙ(Æ9Eu¦ö5&kZÒÁºƒ@?SBUéC‚iµ²ËrÈ3è ¼Ë>Yf{ê@ìÏ4Ûÿ'å;fÎ ð\ÖÝêr¹ìãž±¶0JcÚ¿äY<¨^¨BžŽº6ûÑ”“ %ûõ>¶[ž©¼ó‡µï9¿CEuEXŒGÍ›GÐ æ&í†Ú£“ð±ÉZÁô\WW¯6e·>ÈÃXºP—ê÷J»G"r!9²÷7ê!£Ÿ@Ïd!`ã¾}à†š´¿8õ¡ëþó¾­^õªŸÂ´
-dôÀzý…î$^6p|rTþÿðË<åVì–òiÏúv¨4áõKg_8Å÷i7¾DX¯¨$ %ƒ$ô§8F°Ñž;Õ™*›pòÃ¦óm™.M}Èkü÷]^oš RŒ/ñS¨Å"Ú„¹éõCë"q_™«öÐ2®‰¥aÉ‡Í¸Ø«/
-#	jkZR*ýygÑ”ëòfïÈ$8×V©Éò2c–'5—s&>Ê±— oöóÇ_ÔƒýC»Q&¤æÒYéHeæ€•DO‚s,ÂóµoÆþôôë	
-`
-)­‡ö–½û~Ö˜"ZKÊNK)<Â«>ƒü3`Xq=Ëµš^ŽZm¿å=)n?Ã«K8­Ú@}<¶ÞèyZèÏ\bi
-éñ¬+dª­›Ò¸U’sŠ(3^žxU¾,xU¼Å>üñþç'}¿sïóåÇ×>½%;c.à^š ò
-Um]£fµ“_éèÁr¤ÚãUªâ’ËúªÙ4÷”Ò€NAˆÑv+%:Èº(VA4æËltÖ
-³+h/«cAŒ9ôy½–|yß˜~<‡Ç˜¼Üýhì4ë¦nº¾Ôyïn"Z/ÚŠy¥’Úí>9ÃBÀÞ¾ÍkèÁ?AÈ~jš\îe@Ÿ…Ñ®Ýöøº	‚,®Ej.…LÁB9¶!€Áäñì>»;{GS_ãú gÿ­ñ:Œw¹Î_åšõâÚa²Eyçº¥Ìh¸
-­Öš· ÷–;ÅJzòö‘ÒWôÚ×Ýaßjº*ßfŒpiQCÞëéU·SöwMMOmœÂàÐ”ÔªGñ”êô²sW]<ŒõuInfŽÍ 'Ê€¶e]÷¼W	†ÕÄ	•I>‘ÇCó"|®ëÖ[#uv‡ž¸`[¶C­±cæÌ—ø@Œ	“Î½' ªaý½½¼Ÿ¶æqaKkHÚn
-¨ÏòÍ0ÁÅ±ÀüÌ€3 Ïm¬óJÃ8ÁÞåí¶ékœ"yJâ ¼>ël
-1üKÝ`»¨_z"x•ÒuMŒmIÒ"gŽGA¨ú} 4’¬/€ÏƒÌ+ßYcR^Äˆ–µÓE+“ša†·81Þ´j‹/  ù†·µ
-/e—Uê"õ¥ æ6×Oâ…kâž¶Q†ö}šüAêø@ÖõUóS;*–Åiožì¯ÍëTƒ(…ÎØ j½kVÕ–Ð;w+áÓIÄ—èÄ1m£ÜO—ÇS›	)ƒ~®$
-çñ«LFBá¶zhõ[g>_®mò.¿×ŽeÇl9ëSÆ&}D
-||ÜGbÁäÌR‰!¸ôY`n2í½óÈ—·¿PõƒÕ¯4¤I0Õ›÷õ×»á¦XwÖõZÚñÁûjûø+ôÆÔy*:êêrØêëôÚÃ|bñ 9°¹µˆQÑIŒœ5©8¸t¸Ðg}È·„™ïÛÆ<æÁ+ƒPd7,ÈZ©¶dÉÍ¯ox[Û¾ØßN3Á`&ØZ&w¹Áø'<²p	’§û¸C!ûÔà 
--GE[ÍÛÏÆšI4¥ìïóm›Ë]³b*„¥¤¦+ŒûQH4·ß1êªÆ9ýHz«×ê0ŠÀôtUÃž}!Ñ
-'Û‰ÄÄôôÚ\½S[puE(Ï{ôÅ+:çŒ&(ø§?ÉmÀ† Ñ	ðO¸²K›™Zûüf'—þ6€ ‰‡¬PQY©[ýH5~Ö)8ú£áôÏÁKHK6qof¾´›Â~9åŠû’aøH8¥—æ«)åtá~‘'&ø9°ÞNU@8%UÌjÄ!®Ë3µõ,1å&áúÄ³˜@Áæ]Š¼êôøƒ³ã
-o $Ìå¦+:	BæþŒJ—P}î±I"ãColœ­KºxÁVÿk™Ë‰wL¿+7‰•]
-uq›kréÄ”/ò‡¬"_ÙóÀSµÃHUõøsËhû¾
-õe½ËÛÂ”Ž{‹O%9Y/ð´b
-	{i®gh÷'~[O·¬¹’Š)ÍhÉ ¥“lÚ:/`,t¢µ%˜Ô¨Oúq]p¿¥ÿvÛÀªñèð\˜2ÇU×¯vº~Uê<¼åI â ±¾Ñ«Ì»å•Ô5_Ö»¢)K6>õu=ow’·Ø Ž
-  bå€p`‘[r«ânø¢3|„Šœîxªß/“ÛE¿è— 
-ÁQ­óFQQp,q—:/XIä"ôC ¨õ)ŽDÑ5ôN$û»ÌÈ<,öo$*u¿•¨4E<9”ßÏ¯Úþ¸xÕöÄe€!~'@ùþ1zøkz…Évä>Ï‰âœgmÓƒÌÅú.wB…'qÿ@Gá(›[Þã}5O‚É3g4HÏ6MyÕØo†Â¶ ´xá7ð¡"š+'û’Óe¡Ó(ÃÅö®ñEÓ­ZS~¯¥ž¯x%–q6ˆGË
-çm=sV½Îåf
-fÁk-–ByÖïòÝ@{yxñÏ?tB
-U1É²c¦Îçlh:±!CBf:ó
-	ÐM"2ß8ãÍ°)úÝAœ+Š°/¡ÏG¦÷'P /èl2ç¤¤Ëä(çbŠÐR#“}Ÿ?þgÈµ<bá<ÆDnª•~þì(×ç¤x
-©]0)cL‰
-ü4 jR-_ú
-ö1“.uÞæ½°‚Cñ0!­v¢æ–W_ú^ÞÖ0o-ß‘7.¦0É Cafð;Î$<RåÇí ÷—8“6ÿc¥1°
->
-DˆS–·Rh®5/~ÕÕ÷+l}Ççðñ4@w‡¯u]£z¥êjLÓ\¢|tî]¤g¿Û &-à­T]ÙÒ›k6-šjéI"×§	kìO4d±a® Ûˆe,Q±’6>1°@E|70ÉÎÏÊÇ_4VL
-æ¥
-f·[|Â ä,“nâ3Ô‘)@J7V ƒý3@qfåã`¤ºÂ”ó¤â(ÞŠâÌ¤ïÆ&Vx)W'<yš_öÌ;ußmšBÒÜœqËzÑ/žüÁ"é£0FBìŸ7Yhz¨C§AV:žö•®:U?DtyxO¦hüiG€o“Wûy^nÕ¦ìä¤>ÓhEHº¢pëÃðéE•#·§›–bi}Çú'xOa{Î ñuš^_ØÏ_?û—æÞn@Rþ¼PYÎ§¦¼éÙˆ9ÞäÕ¹÷ª’7Z <µKfÙO’P×T‚e’é>ÊÂ÷ƒ?Þñ'T¯\sJƒ0b^‘¨kž02î9ñÿ_û§˜\ðÝz…,{E›žåóN´½§Ó`6A°2hÞ×ÂrJE—Ýì +.›¦ßM§]G7N;KÆk}ïÌãKú²,Ì2°»õ¼©j³5TÙ y@ÓeÑ“… ³Rö~DøÖ† _§—çô…¿|Yf²½”åÙzÈå!·ýj'ìùû[Ñ¿¶Ôþæ‚dÅ|H­mÖ_¤~}G»v6ýÔ÷åŠôeÞï$e4åýhy,ðáª„î¬·XÕlTÎr>}øE•››]qâøÆI–üF«`
-Ä¼ž£+UÝâd½m¯lk{ÆŒ‘nõï¶úÙ½|ªbŽs/ÚQÕØß¨¾fÄžø
-u¹–ªÕ¥®ZIV¬ˆX€þ9ôÚý/¦ûÀÆgŒ¥JkÂÀK‡Ý§î¼Ó\)À)q­}ªù’Mãëzt7Ò?K4ç§éÿÓ& 4?õ ¯£´·`9¥žeÞÆr%ï E…ÇmýñÅåÇ_™QÙŽžž‘~?×È^aˆ¿õ³èË*›«Â¬2ŽqÌ—?G7I# ;kÊxRáéåO©±ÎûÊl¬D·1‰c0.õB—ÑŸße,‘
-:ÃÞ¶ ZÀ¸ÄSòíBãÄzýøõ¥°/óv¨äý…8NxÌµ^×¨ÈLE6>Ê²@Ô	Y^ß6uÍgô;X_c˜Šó|ÝÉ;ÁË¾^°N÷y3<þÛ DœÜÄB¹ò¬6ùÕ°ÞñÚ„NsZRóáø$ÀEQÓ7¤€&1 "ïË°Ê­ïûñŽû¡ß‰!Du˜wíîñ5ª„bh]B©õç‰³@–Üi$4œëàëãC¬Þr“àÀQ/äMžŒ¦µâ£ÙZr-ÖÚ“õuç§8'k5]¦a'	ø4`ê±Únh)ÇüûÓ.¢?c±`§|lÈ8I|koò—Ô0‘ŸÈÓ|Ãòy5  ñinê²z XÝ*MãŒMðæw²|ySÈ¼œÎ™ò(9âYQ7,ËÚâv|(Dº8	Ïú‘óÇ»À1ê¨T­”÷0ÝS"ì"+‹ªÐOž¥,€œã
-.ÞèQ”«°RûpúßŠ“_dËùà8ÆÄp.0BGù]ƒb]«é¹·…ë‘~t(µòðÕÖ¤%&Aâ$XËJò–tyçÛ[p†ñj±y—šiAÊþ¬]¦nê ¹@ÅåUv»ZÛ’1yc8>ºÑôè¹ý¡¹nÌ•z×á	ÜÐËÅ§ÏQ¡ß~7&•Ÿž%¶^t}~¥$îJÿ‡Ésûê˜	V+¬÷Þð8Ë]éTi+gçµ¶h¼0¤Ê lbdnÃ,=òIX¾¾ÿ¦¹gÌ‹1&öi—s*÷—Í=ˆ‡¯MÃâ’ÆæúªýN¿Mõ¦¨®
-ÿŽ`õÃ\¿²êš #:óhcfuUƒ„€ 1‡íypu%EÓ›W–?Ï7÷¦¾fþ±?zY/m;àÇÎõåUÞŽù¥ñ¢‰‹÷O1Y/€úux3 ,Ý~èìýKg%µ2ÓqÓ8 ò7tŠ‹ÐLÓ—·gå'&Ž¾~úñ×7åmsÙ8ICúÑv/þ:ýêM\Ë‹æ½dïÃ@òvugÊÔ-å3< £ùpS.?©ËR.ÞÆ¼V 1L
-%¼×å<òÉÙ>Ä¿ñEŸN‰®@T‹Ëáºé®ò¦[õú7=†‰ÿõ“¾¾i8Fû˜®O`b±ïº©ÏÇÓÕÅ
-T—ÏÜÎ¼²˜W=ë&šÞ7xß6—íOàh3©mò¹Žõd¢_NS;ØèBRÓÞ<`–¼Îy4Îi~5ÉO’£L0û0ìé,Ì›^sço&úLýßö³¿©wÚ–ë+gÂëI_¹})b×åå½Žü@hA'ä¾ºwÖê¦þ×4úzKÃño|T%oC4ö‡B²Ûù~V…†¿€6ÛÇ,y²Ò¯×_i|òW[,O?¶ ¡Ò§‰1Þò'K|7H">óµ1e+(á`ï7<‰›¤:àh¼Ý…„,3
-k4ïµ¿£·w	Ðë>Læa¾”š¢uSQÇ… 3ŸvàþÑ¼?8ŸOøûÈqc};zÊO;Ñ Ü­Š<˜ª0˜©w_CýÜ
-.þ–ÇBK¨°¢Ô‘¡Ø‰ä	h]0¦*Ëí¢‰¥lø6”¾Q‡æÅÑ4ÊMÎ
-uíÈöÌí˜“žbÓÊgð¸à‰›D ×yw“_7è¢˜ÒüY…>(s7»Z ÊAïÓ%9ŸixPÓÃñþr 8C|µú;†îö8‚§òŽ£¾3Réã-ÌoA… òÇÌ
-2óÐ¦ä°…ük9 
-ïåè7 úeÓÖÝdÎâÅÉKºjõ#3À‹ØW&,-ÿÖ3áuù©“8PIò³ƒ‡wZù:0¤Ã
-F§$x¦gïßÃ‘4ó…æØclÿ¼Å«Ô€bR ø—>äÑÇé~÷âÇÃÿgk/ùæÑÜoþI¤?2ùä«V<•÷$,}Í‚oÖÓj„czÂüïTxÎ?žûgSÏûZãù8[½ýª“éPÞÁß‰‹MàRpÑa³Í@ÿF2TõÃžqLâàóJ *»«Rã€<q(Åèhº~ƒ
-3^LÂ„¯üéwFÞãÏ›:R$j‘@$¼hŠ¡ÉUßÃFÉ_H-0ßýBâåXmßu°fØã§%HÿPô’ ïE{Æç÷@à¯­­v-²“ˆïþr°ü±ep¬`Ûtÿ‡A^Œ DSEó—AÎÿ-4÷?cÕÙÑÁûfÈë«¢dj¾Æ ¦Æ¯”™
-ú<w	9¹º9ÌÿfŒ™ÐÐA† §•²­&#Î}/èâÿ®þò—¿ü–Fr–      ±
-      xœ%”A–c1×_‡™g¸Kßÿ#‘MT¯Û)Ûb_~†ËÏ
-ç§#øHýÅð¥p´"0Z1°ÃÌ3¥ÁdÉ
-“'&SL®L˜dù`²eÁ¤Ë†É—ƒ{¾'ï5æ;¸WÉÃ¹òâ†ÒqS¸O™¸¥|¸­,ÜQ6\¾7pùêÀå+ƒËW¼®|åpù*àòUÂå« —¯
->_é\q˜ó¦,ÄU6Â•ü0íD.â-\D-°¸½ˆYHäYxH[(ä]h¤/rÍvk6C®Ù.rÍæÈþZ§ÌaVãåà³ÞUòE]yñBéx©¼§L¼R><ùºðäëFÉ×ƒ’oJ¾1”|Ã‘o%ßJ¾Ikó]f+j”…>¼Úwm
-ƒ¾?hç>g¿ÅB s!Ñoá¡ykÿÜÐ½pÑÔÞÏ
-sclÚÏ sq0¾`˜àY¾¸˜\pÌ[`w÷EbzáahfmÙ±ç,±gOÁ¾'\_‚Ï»ÄÆ?±ÄÖ?œ(¶á	¤(Á®ï%9f‰ËT ” |2NAëuMœ,‘–ÑÏ"ißÇó%Ò7zI–]®ã”Å¶³qÎB½Ã°^‹<ê#ä6¸EîÃ™[Ô×Þâºê‡šýþ!wåü-²ÁPqX	d‘»ñ®‹ÜÍõ>DîÆó-r7Nä"wãP†^˜»q.¹›÷õcÃÝØJ®ßîv÷¨5þþøsJ·—      ³
-   î  xœ…•MnÛ0…×ãSèD‘’¼tŒÉ"©
-t3’é˜Cª´ ¹Q×=B.Ö!õ[±•-ÍÇGÎÌ*õQi‰ÕD|Ç°2}Q=A"èyÁ`[lä	¸˜ éˆ)©´Îù7Ñ^F¯¨ÞgÄ8lPÛWÕàœ–€ «µô›eAb-
-ÁIá—g°³§÷x-˜Ã#VG*ÎBŒûPáÓ¬ŽHg4ý¾ýÊ°ç’žÜ›|ÇS´þø«eéÆTû@&ã‹hcëV£q‰eKFl§ÊÖ}ü3°øŒVŽ2DƒÒÌŸ0acèNÒUá—KÒ1ô ýÃ1óé‚®
-	CœÅÀÄ‡V%îÔÞQ³¤Ž~¶ÎHý•~ò½BíM 1ZãÉïË°ª
-ËšèJcåê“œSi¨b Öh–ª²CQ®«Ärà6²:¶Ï¾çþ`Ãs´³%j‚Ä…Ô2@	lÑ<;…QML¥$©åûÞ82È­,•÷KÎàÖÉ_È0â
-ÕuÊÖýPÆÂR\+¼m‡§ö„½ÐV*NeV2bHàÛ©Æ=Åù’Œy‘i@?'a{{NLÊrØÉš&Fv
-Ÿ‰¨€M««¶Ä«PšhIS]©ƒoÏdjÂ¹ÓxØ‰Šž];Ð2Ü"	
-pÓ:J£« íü»•ƒ#‘×Ú:šþ~ø‡xènšÂª3k†Žõ@×ª”•MVŠê×'3ÄCª© &™7û'ê^;Ûw ‚qÓîÍÁaU)kzŠ ¶•¦‘†ô©x"(æ°ªÑìÉ´ÝyÎÑ©€GKu‰¤‰4]ž[*“£ß1³©°è„©àt}Q®5Ý¤d6åÒÜsœ:{OÖÒÕ²i©#ù'É=OÎóêZ5“'7ãáãog¶KŸ²pÉsØQ8ýÆ<ÉÝ°Þ-s
-lè¢w²÷ÓçYà9Ü7ô]jæ>[|¦´]js•¥ÛjõÜb´ÅÒº~ó‰WÃ‡à×Íb±ø5­¨      µ
-   š  xœYÍrÛ6<ÃOc{H†à?oõx<M:MÇ­ÕÌt¦ˆB$t@B)Oí·Éôgð‹å#H‚”øQ¢|HH»Küv	ÂŒÜqS
-úúÕðµ8º 9¯„áô-´R¢a¤&÷Þón|r·ÓF¾hÊÍV”µ,õ´…Šj/rÉ®O¼|á%§¹.i­óFÄ5qÃ
-¡ä
-ßŒûq¥|ÐåVW0^ìåë7]ŠŠV\Õ‚ot…“"ò(K ­µ! õïAÐ’× Ãñd1q3ž­îû›q¶!èI?âŒmr¨P¯ÿ¿PþrPÇ@×öØŒü|àÏ|Ýþìæ×io»Îç®Ëñ˜G>738Â>5×‘0rk^¿–~Œâ®q€úä“ØHM•¬&+ýÖ<ÏÚB
-ý¡º$±ãä×¦‰þÖÍäŸe'»yg!‰¨EUv'Ë¼S«,ÔÏZlÔé­D±×jáX1lQñ 8 §šI‹N:Í[ª8…Š¯OE#
-K Ñr¢¤-<ëTï»š?ÖŒ,È÷M‡›(†~k1vìÍûÿjpcçÍQE'@a­<æÊ–Ö·ã<Ô‰-±ï˜ÚoÄŒçn9ò"Î‹È6ŒÒÒ¾Žüj9¯aÌ|8zb]+^æüøb@éôF¨!†&×™Ãf}_)¶†_8Tà‘ÇZ(¨¸¡–ÕÉÕ€cÐ£u÷?³ïðÉÇ‡[ûoÔžO’×¼NsÝ!yÐ¦¦?Œº"ò±Ø
-Ó$leour9‚ÆäƒÜ]HÒ˜íIÃž˜Hæ‹::g.˜4®Ö"ïÌå]èA~¥ëþ0êbä]A,÷‡QÔ/ÏùîÀkAVðÌk
-ï¾¹¤
-ò‹^ëòOs>ê
-a<…xî»
-{1êoª®ñfÁ¿{žïÚl[X4¼Vb‹,ÄKÞLÂÚ5YlÔb“‘ê-„ôX2v%¦cI‡ëõ†L
-3ò(Ê\*©ðY«'a(§P“•,öJ÷¨"Ì'ó7`!òÈ×#©4w³/ñˆAMÁ
-È½¢ûæ„¯š}ÍF~÷:|<Ô(â|ÒTF¥ßÓ¿8Ýñ\Ð/ðÞ»c@Ä^B÷JWµMi]À#’…n*LTï klßÜ{¡“À¸«ZÀ„Ðgž¦{X2Ð­0F˜Ÿæ¸Ñx²úœêð”Šâ~–,ÜžÏ “n~\tnçéé<tâG3Üløý-©½ÂÑ±·d…×Ïøhªbvíñß¶ÆÃ¤‚‹‹<Œ.s FÎ¸ÃÇW¹SH®t ¦‘.t ÆÍÎ®8c¨®Ä[°âÀxìŠ Æ÷¬80^pÁÿ'Dý!#Ôÿ2^èŒ›ÌúC§KüßÛA–¶:jvm 2©÷¶ÀÅØÅÀyþ²ÀÉÁ™$ÀáUY€kDKÒ` ÎêÄ
-g'g3aÄ±5×~í¦
-RgfWäªy
-’g²
-Ù€³|4pl€æŽ
-&ÎŽf3ÇÇKR¢„õ¯n_í'j–\›S‰ômé0Ê.&Ã„Ã¼…‹g„yníŒÀ¯[:#‹VÎ-XºlF¨ÑÙèC51/^ -¹Âý=]`}„–]ðý”ï˜é C ý…vG¨Á¬×pH~?ˆª‡Ús-I[n¿Í“a{aÿl( *h-\ÎT+½
-(-[×÷ÎÄJ`W*1©!,":æœF°0%PrèöóvBÁÊFPY~1<onN˜Ûšc~4lë]ÄÆ'»}—ðÉt{a‹¦nfG–
-àÈ<<›Ë,%ð¦Ã)u³‘$Jª ø*s
-µé{‡a£ºÈòçw‘	ŸEPÙM›¿ Ð•,km÷©Ú” …¶Égn¿+H‰ÛÁv'vo°]7þýþæææ;·(q     
