@@ -16,6 +16,10 @@ export default function GestionOrden({ id }) {
   const [cantidadACancelar, setCantidadACancelar] = useState(1);
   const [razonCancelacion, setRazonCancelacion] = useState("");
   
+  // Estado para códigos promocionales
+  const [codigoPromocional, setCodigoPromocional] = useState("");
+  const [aplicandoCodigo, setAplicandoCodigo] = useState(false);
+  
   const cargarDatos = async () => {
     try {
       const resOrden = await fetch(`${API_URL}/orders/${id}/resumen`);
@@ -229,25 +233,156 @@ export default function GestionOrden({ id }) {
     }
   };
   
+  // Función para aplicar un código promocional
+  const aplicarCodigoPromocional = async () => {
+    if (!codigoPromocional.trim()) {
+      alert("Ingresa un código promocional válido");
+      return;
+    }
+    
+    try {
+      setAplicandoCodigo(true);
+      
+      const response = await fetch(`${API_URL}/promociones/orden/${id}/aplicar`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ codigo: codigoPromocional }),
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "No se pudo aplicar el código");
+      }
+      
+      const result = await response.json();
+      alert(`Código aplicado correctamente. Descuento: ${result.porcentaje_descuento}%`);
+      setCodigoPromocional("");
+      await cargarDatos(); // Recargar los datos para mostrar el descuento
+    } catch (error) {
+      alert(error.message);
+    } finally {
+      setAplicandoCodigo(false);
+    }
+  };
+  
+  // Función para remover un código promocional
+  const removerCodigoPromocional = async () => {
+    const confirmar = confirm("¿Estás seguro de que deseas eliminar el código promocional?");
+    if (!confirmar) return;
+    
+    try {
+      setAplicandoCodigo(true);
+      
+      const response = await fetch(`${API_URL}/promociones/orden/${id}/remover`, {
+        method: "DELETE",
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "No se pudo remover el código");
+      }
+      
+      alert("Código promocional removido correctamente");
+      await cargarDatos(); // Recargar los datos para mostrar que se eliminó el descuento
+    } catch (error) {
+      alert(error.message);
+    } finally {
+      setAplicandoCodigo(false);
+    }
+  };
+  
   if (!orden) return <p className="text-center">Cargando orden...</p>;
   
   return (
     <section className="space-y-6">
     <div className="bg-vino p-4 rounded shadow">
     <h2 className="font-subtitulo text-xl mb-2">{orden.cliente}</h2>
-    <p>Total: ${orden.total.toFixed(2)}</p>
-    <p>Pagado: ${orden.total_pagado.toFixed(2)}</p>
+    
+    {/* Mostrar total bruto y total con descuento */}
+    {(orden.codigo_promocional || (orden.descuento_grado && parseFloat(orden.descuento_grado) > 0)) ? (
+      <>
+        <p className="text-gray-300"><span className="font-bold">Total sin descuento:</span> ${parseFloat(orden.total_bruto || 0).toFixed(2)}</p>
+        <p className="text-amarillo font-bold">Total a cobrar: ${parseFloat(orden.total || 0).toFixed(2)}</p>
+      </>
+    ) : (
+      <p className="font-bold">Total: ${parseFloat(orden.total || 0).toFixed(2)}</p>
+    )}
+    
+    <p>Pagado: ${parseFloat(orden.total_pagado || 0).toFixed(2)}</p>
     {orden.num_personas > 1 && (
       <p>Personas: {orden.num_personas}</p>
     )}
     {orden.total_propina > 0 && (
-      <p className="text-green-400">Propina: ${orden.total_propina.toFixed(2)}</p>
+      <p className="text-green-400">Propina: ${parseFloat(orden.total_propina).toFixed(2)}</p>
     )}
     {orden.diferencia < 0 && (
-      <p className="text-red-400">Faltan: ${Math.abs(orden.diferencia).toFixed(2)}</p>
+      <p className="text-red-400">Faltan: ${Math.abs(parseFloat(orden.diferencia)).toFixed(2)}</p>
     )}
     <p className="text-sm mt-2">Estado de pago: <strong>{orden.estado_pago}</strong></p>
+    
+    {/* Mostrar información del descuento si existe */}
+    {(orden.codigo_promocional || (orden.descuento_grado && parseFloat(orden.descuento_grado) > 0)) && (
+      <div className="mt-2 p-2 bg-amarillo/20 rounded">
+        <p className="text-amarillo text-sm font-bold">
+          Descuentos aplicados:
+        </p>
+        <div className="space-y-1 mt-1">
+          {orden.codigo_promocional && (
+            <div className="flex justify-between items-center">
+              <p className="text-white text-sm">
+                <span className="text-amarillo">Código:</span> {orden.codigo_promocional} ({parseFloat(orden.porcentaje_descuento || 0).toFixed(2)}%)
+              </p>
+              <button 
+                onClick={removerCodigoPromocional} 
+                className="text-xs bg-red-800 text-white px-2 py-1 rounded"
+                disabled={aplicandoCodigo}
+              >
+                Quitar
+              </button>
+            </div>
+          )}
+          {orden.descuento_grado && parseFloat(orden.descuento_grado) > 0 && (
+            <p className="text-white text-sm">
+              <span className="text-amarillo">Grado:</span> {orden.nombre_grado} ({parseFloat(orden.descuento_grado).toFixed(2)}%)
+            </p>
+          )}
+          {orden.codigo_promocional && orden.descuento_grado && parseFloat(orden.descuento_grado) > 0 && (
+            <p className="text-white text-sm font-bold">
+              <span className="text-amarillo">Descuento total:</span> {(parseFloat(orden.porcentaje_descuento || 0) + parseFloat(orden.descuento_grado || 0)).toFixed(2)}%
+            </p>
+          )}
+          <p className="text-white text-sm font-bold">
+            <span className="text-amarillo">Ahorro:</span> ${(parseFloat(orden.total_bruto || 0) - parseFloat(orden.total || 0)).toFixed(2)}
+          </p>
+        </div>
+      </div>
+    )}
     </div>
+    
+    {/* Sección para aplicar código promocional */}
+    {!orden.codigo_promocional && (
+      <div className="bg-negro p-4 rounded shadow">
+        <h3 className="text-amarillo font-bold mb-2">Aplicar código promocional</h3>
+        <div className="flex gap-2">
+          <input
+            type="text"
+            value={codigoPromocional}
+            onChange={(e) => setCodigoPromocional(e.target.value.toUpperCase())}
+            placeholder="Código promocional"
+            className="flex-1 bg-negro border border-vino rounded p-2 text-white uppercase"
+          />
+          <button
+            onClick={aplicarCodigoPromocional}
+            className="bg-amarillo text-negro px-4 py-2 rounded font-bold"
+            disabled={aplicandoCodigo}
+          >
+            Aplicar
+          </button>
+        </div>
+      </div>
+    )}
     
     <div>
     <h3 className="text-amarillo font-bold mb-2">Productos</h3>

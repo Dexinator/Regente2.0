@@ -33,7 +33,7 @@ export const fetchOrderById = async (req, res) => {
 };
 
 export const addOrder = async (req, res) => {
-  const { preso_id, nombre_cliente, empleado_id, productos, num_personas } = req.body;
+  const { preso_id, nombre_cliente, empleado_id, productos, num_personas, codigo_promocional } = req.body;
 
   if (!empleado_id || !Array.isArray(productos) || productos.length === 0) {
     return res.status(400).json({ error: "Faltan datos obligatorios: productos o empleado_id" });
@@ -52,7 +52,14 @@ export const addOrder = async (req, res) => {
   }
 
   try {
-    const newOrder = await createOrder({ preso_id, nombre_cliente, empleado_id, productos, num_personas });
+    const newOrder = await createOrder({ 
+      preso_id, 
+      nombre_cliente, 
+      empleado_id, 
+      productos, 
+      num_personas, 
+      codigo_promocional 
+    });
     res.status(201).json(newOrder);
   } catch (err) {
     res.status(500).json({ error: "Error creando la orden", detail: err.message });

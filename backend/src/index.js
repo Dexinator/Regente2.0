@@ -7,7 +7,8 @@ import productsRoutes from "./routes/products.route.js";
 import clientsRoutes from "./routes/clients.route.js";
 import employeesRoutes from "./routes/employees.route.js";
 import reportsRoutes from "./routes/reports.route.js";
-import pagosRoutes from "./routes/pagos.route.js"
+import pagosRoutes from "./routes/pagos.route.js";
+import promocionesRoutes from "./routes/promociones.route.js";
 
 
 dotenv.config();
@@ -36,7 +37,8 @@ app.use("/products", productsRoutes);
 app.use("/clients", clientsRoutes);
 app.use("/employees", employeesRoutes);
 app.use("/reports", reportsRoutes);
-app.use("/pagos", pagosRoutes)
+app.use("/pagos", pagosRoutes);
+app.use("/promociones", promocionesRoutes);
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {

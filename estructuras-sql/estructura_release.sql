@@ -112,6 +112,30 @@ CREATE SEQUENCE public.grados_id_seq
 
 ALTER SEQUENCE public.grados_id_seq OWNED BY public.grados.id;
 
+-- Tabla codigos_promocionales
+CREATE TABLE public.codigos_promocionales (
+    id integer NOT NULL,
+    codigo character varying(50) NOT NULL,
+    porcentaje_descuento numeric(5,2) NOT NULL,
+    fecha_inicio date NOT NULL,
+    fecha_fin date NOT NULL,
+    activo boolean DEFAULT true,
+    usos_maximos integer DEFAULT -1,
+    usos_actuales integer DEFAULT 0,
+    fecha_creacion timestamp without time zone DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Secuencia para codigos_promocionales
+CREATE SEQUENCE public.codigos_promocionales_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.codigos_promocionales_id_seq OWNED BY public.codigos_promocionales.id;
+
 -- Tabla ordenes
 CREATE TABLE public.ordenes (
     orden_id integer NOT NULL,
@@ -123,6 +147,7 @@ CREATE TABLE public.ordenes (
     empleado_id integer NOT NULL,
     total_bruto numeric(10,2),
     num_personas integer DEFAULT 1,
+    codigo_descuento_id integer,
     CONSTRAINT ordenes_estado_check CHECK ((estado = ANY (ARRAY['abierta'::text, 'cerrada'::text])))
 );
 
@@ -266,6 +291,7 @@ ALTER SEQUENCE public.sabores_id_seq OWNED BY public.sabores.id;
 -- Configuración de los valores por defecto para las columnas ID
 ALTER TABLE ONLY public.categoria_producto_tipo_variante ALTER COLUMN id SET DEFAULT nextval('public.categoria_producto_tipo_variante_id_seq'::regclass);
 ALTER TABLE ONLY public.categorias_variantes ALTER COLUMN id SET DEFAULT nextval('public.categorias_variantes_id_seq'::regclass);
+ALTER TABLE ONLY public.codigos_promocionales ALTER COLUMN id SET DEFAULT nextval('public.codigos_promocionales_id_seq'::regclass);
 ALTER TABLE ONLY public.detalles_orden ALTER COLUMN id SET DEFAULT nextval('public.detalles_orden_id_seq'::regclass);
 ALTER TABLE ONLY public.empleados ALTER COLUMN id SET DEFAULT nextval('public.empleados_id_seq'::regclass);
 ALTER TABLE ONLY public.grados ALTER COLUMN id SET DEFAULT nextval('public.grados_id_seq'::regclass);
@@ -280,6 +306,7 @@ ALTER TABLE ONLY public.sabores ALTER COLUMN id SET DEFAULT nextval('public.sabo
 -- Claves primarias
 ALTER TABLE ONLY public.categoria_producto_tipo_variante ADD CONSTRAINT categoria_producto_tipo_variante_pkey PRIMARY KEY (id);
 ALTER TABLE ONLY public.categorias_variantes ADD CONSTRAINT categorias_variantes_pkey PRIMARY KEY (id);
+ALTER TABLE ONLY public.codigos_promocionales ADD CONSTRAINT codigos_promocionales_pkey PRIMARY KEY (id);
 ALTER TABLE ONLY public.detalles_orden ADD CONSTRAINT detalles_orden_pkey PRIMARY KEY (id);
 ALTER TABLE ONLY public.empleados ADD CONSTRAINT empleados_pkey PRIMARY KEY (id);
 ALTER TABLE ONLY public.grados ADD CONSTRAINT grados_pkey PRIMARY KEY (id);
@@ -293,6 +320,7 @@ ALTER TABLE ONLY public.sabores ADD CONSTRAINT sabores_pkey PRIMARY KEY (id);
 
 -- Restricciones únicas
 ALTER TABLE ONLY public.categoria_producto_tipo_variante ADD CONSTRAINT categoria_producto_tipo_varia_categoria_producto_tipo_varia_key UNIQUE (categoria_producto, tipo_variante);
+ALTER TABLE ONLY public.codigos_promocionales ADD CONSTRAINT codigos_promocionales_codigo_key UNIQUE (codigo);
 ALTER TABLE ONLY public.empleados ADD CONSTRAINT empleados_usuario_key UNIQUE (usuario);
 ALTER TABLE ONLY public.grados ADD CONSTRAINT grados_nombre_key UNIQUE (nombre);
 ALTER TABLE ONLY public.producto_sabor ADD CONSTRAINT producto_sabor_producto_id_sabor_id_key UNIQUE (producto_id, sabor_id);
@@ -304,6 +332,7 @@ ALTER TABLE ONLY public.detalles_orden ADD CONSTRAINT detalles_orden_orden_id_fk
 ALTER TABLE ONLY public.detalles_orden ADD CONSTRAINT detalles_orden_producto_id_fkey FOREIGN KEY (producto_id) REFERENCES public.productos(id) ON DELETE CASCADE;
 ALTER TABLE ONLY public.detalles_orden ADD CONSTRAINT detalles_orden_sabor_id_fkey FOREIGN KEY (sabor_id) REFERENCES public.sabores(id) ON DELETE SET NULL;
 ALTER TABLE ONLY public.detalles_orden ADD CONSTRAINT detalles_orden_tamano_id_fkey FOREIGN KEY (tamano_id) REFERENCES public.sabores(id) ON DELETE SET NULL;
+ALTER TABLE ONLY public.ordenes ADD CONSTRAINT ordenes_codigo_descuento_id_fkey FOREIGN KEY (codigo_descuento_id) REFERENCES public.codigos_promocionales(id) ON DELETE SET NULL;
 ALTER TABLE ONLY public.ordenes ADD CONSTRAINT ordenes_empleado_id_fkey FOREIGN KEY (empleado_id) REFERENCES public.empleados(id) ON DELETE CASCADE;
 ALTER TABLE ONLY public.ordenes ADD CONSTRAINT ordenes_preso_id_fkey FOREIGN KEY (preso_id) REFERENCES public.presos(id) ON DELETE SET NULL;
 ALTER TABLE ONLY public.pagos ADD CONSTRAINT pagos_empleado_id_fkey FOREIGN KEY (empleado_id) REFERENCES public.empleados(id);

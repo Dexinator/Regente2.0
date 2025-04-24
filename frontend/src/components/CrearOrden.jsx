@@ -41,6 +41,11 @@ export default function CrearOrden() {
     const [loadingIngredientes, setLoadingIngredientes] = useState(false);
     const [seleccionIngrediente, setSeleccionIngrediente] = useState(false);
 
+    // Estado para código promocional
+    const [codigoPromocional, setCodigoPromocional] = useState("");
+    const [codigoValido, setCodigoValido] = useState(null);
+    const [verificandoCodigo, setVerificandoCodigo] = useState(false);
+
     const [filtroPreso, setFiltroPreso] = useState("");
 
     useEffect(() => {
@@ -547,6 +552,47 @@ export default function CrearOrden() {
         );
     };
 
+    // Función para validar código promocional
+    const validarCodigoPromocional = async () => {
+        if (!codigoPromocional.trim()) {
+            setCodigoValido(null);
+            return;
+        }
+        
+        try {
+            setVerificandoCodigo(true);
+            
+            const response = await fetch(`${API_URL}/promociones/validar`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ codigo: codigoPromocional.trim() }),
+            });
+            
+            if (!response.ok) {
+                const error = await response.json();
+                setCodigoValido({ valid: false, message: error.error });
+                return;
+            }
+            
+            const result = await response.json();
+            if (result.valid) {
+                setCodigoValido({ 
+                    valid: true, 
+                    message: `Código válido: ${result.codigo.porcentaje_descuento}% de descuento`,
+                    data: result.codigo
+                });
+            } else {
+                setCodigoValido({ valid: false, message: "Código inválido o expirado" });
+            }
+        } catch (error) {
+            setCodigoValido({ valid: false, message: error.message });
+        } finally {
+            setVerificandoCodigo(false);
+        }
+    };
+
     const crearOrden = async () => {
         if (productosSeleccionados.length === 0) {
             alert("Agrega al menos un producto");
@@ -566,6 +612,7 @@ export default function CrearOrden() {
                     total: productosSeleccionados.reduce((sum, prod) => sum + (prod.precio * prod.cantidad), 0),
                     empleado_id: getEmpleadoId(),
                     num_personas: numPersonas,
+                    codigo_promocional: codigoValido?.valid ? codigoPromocional.trim() : null,
                     productos: productosSeleccionados.map(p => ({
                         producto_id: p.id,
                         cantidad: p.cantidad,
@@ -918,48 +965,70 @@ export default function CrearOrden() {
 
     // Pantalla principal para selección de cliente y productos
     return (
-        <div className="space-y-6">
-            {/* Sección de selección de cliente */}
-            {!nombreLibre && (
-                <div>
-                    <label className="block mb-2 text-amarillo font-bold">Cliente registrado</label>
-
+        <div className="space-y-8">
+            <h2 className="text-lg font-bold text-amarillo">Datos del Cliente</h2>
+            
+            {/* Búsqueda de presos */}
+            <div>
+                <label className="block mb-2 text-amarillo font-bold">Buscar preso</label>
+                <div className="relative">
                     <input
                         type="text"
-                        placeholder="Buscar preso por nombre o número..."
                         value={filtroPreso}
-                        onChange={(e) => setFiltroPreso(e.target.value)}
-                        className="w-full mb-2 bg-negro text-white p-2 rounded border border-amarillo placeholder:text-white/60"
-                    />
-
-                    <select
-                        value={presoSeleccionado?.id || ""}
-                        onChange={(e) => {
-                            if (e.target.value) {
-                                const selectedPreso = presos.find(p => p.id == e.target.value);
-                                setPresoSeleccionado(selectedPreso);
-                                setNombreLibre("");
-                            } else {
-                                setPresoSeleccionado(null);
-                            }
-                        }}
+                        onChange={e => setFiltroPreso(e.target.value)}
+                        placeholder="Buscar por nombre, celda o número de teléfono"
                         className="w-full bg-vino text-white p-2 rounded"
-                    >
-                        <option value="">-- Selecciona un preso --</option>
-                        {presos
-                            .filter(
-                                (p) =>
-                                p.reg_name.toLowerCase().includes(filtroPreso.toLowerCase()) ||
-                                p.id.toString().includes(filtroPreso)
-                            )
-                            .map((p) => (
-                                <option key={p.id} value={p.id}>
-                                    #{p.id} · {p.reg_name}
-                                </option>
-                            ))}
-                    </select>
+                    />
                 </div>
-            )}
+                
+                {filtroPreso && (
+                    <div className="mt-2 bg-negro rounded overflow-hidden max-h-40 overflow-y-auto">
+                        {presos
+                        .filter(p => 
+                            p.reg_name.toLowerCase().includes(filtroPreso.toLowerCase()) ||
+                            (p.igname && p.igname.toLowerCase().includes(filtroPreso.toLowerCase())) ||
+                            p.res_tel.includes(filtroPreso)
+                        )
+                        .slice(0, 5)
+                        .map(preso => (
+                            <button
+                                key={preso.id}
+                                onClick={() => {
+                                    setPresoSeleccionado(preso);
+                                    setFiltroPreso("");
+                                    setNombreLibre("");
+                                }}
+                                className="w-full text-left p-2 hover:bg-vino/30 flex justify-between items-center border-b border-gray-800"
+                            >
+                                <div>
+                                    <p>{preso.reg_name}</p>
+                                    {preso.igname && <p className="text-xs text-gray-400">IG: {preso.igname}</p>}
+                                </div>
+                                <p className="text-sm text-gray-400">Celda {preso.cellmate}</p>
+                            </button>
+                        ))}
+                    </div>
+                )}
+                
+                {presoSeleccionado && (
+                    <div className="mt-2 p-3 bg-vino/30 rounded flex justify-between">
+                        <div>
+                            <p className="font-bold">{presoSeleccionado.reg_name}</p>
+                            <p className="text-sm text-gray-300">TEL: {presoSeleccionado.res_tel}</p>
+                            {presoSeleccionado.igname && <p className="text-sm text-gray-300">IG: {presoSeleccionado.igname}</p>}
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <p className="text-sm">Compañero de Celda {presoSeleccionado.cellmate}</p>
+                            <button
+                                onClick={() => setPresoSeleccionado(null)}
+                                className="text-gray-300 hover:text-white"
+                            >
+                                ✕
+                            </button>
+                        </div>
+                    </div>
+                )}
+            </div>
             
             {!presoSeleccionado && (
                 <div>
@@ -995,6 +1064,36 @@ export default function CrearOrden() {
                         +
                     </button>
                 </div>
+            </div>
+            
+            {/* Campo para código promocional */}
+            <div>
+                <label className="block mb-2 text-amarillo font-bold">Código Promocional (opcional)</label>
+                <div className="flex gap-2">
+                    <input
+                        type="text"
+                        value={codigoPromocional}
+                        onChange={(e) => setCodigoPromocional(e.target.value.toUpperCase())}
+                        onBlur={validarCodigoPromocional}
+                        placeholder="Ej. VERANO2023"
+                        className="flex-1 bg-vino text-white p-2 rounded uppercase"
+                    />
+                    <button 
+                        onClick={validarCodigoPromocional}
+                        className="bg-amarillo text-negro px-3 rounded font-bold"
+                        disabled={verificandoCodigo || !codigoPromocional.trim()}
+                    >
+                        Validar
+                    </button>
+                </div>
+                {verificandoCodigo && (
+                    <p className="text-gray-400 text-sm mt-1">Verificando código...</p>
+                )}
+                {codigoValido && (
+                    <p className={`text-sm mt-1 ${codigoValido.valid ? 'text-green-500' : 'text-red-500'}`}>
+                        {codigoValido.message}
+                    </p>
+                )}
             </div>
             
             {/* Lista de productos seleccionados */}

@@ -14,6 +14,12 @@ import {
   cancelarProducto
 } from "../controllers/orders.controller.js";
 
+// Importamos las funciones para códigos promocionales
+import { 
+  applyCodigoToOrder, 
+  removeCodigoFromOrder 
+} from "../controllers/promociones.controller.js";
+
 import { verifyToken, authorizeRoles } from "../middlewares/auth.js"; // ✅ IMPORTANTE
 
 const router = express.Router();
@@ -32,6 +38,10 @@ router.put("/detalle/:id", updateEstadoProducto);  // Mantener la ruta anterior 
 router.get("/", fetchOrders);              // Todas las órdenes
 router.get("/open", fetchOpenOrders);      // Solo órdenes abiertas
 router.post("/", addOrder);                // Crear orden
+
+// Rutas para códigos promocionales
+router.post("/:id/promocion", applyCodigoToOrder);   // Aplicar código promocional
+router.delete("/:id/promocion", removeCodigoFromOrder);   // Remover código promocional
 
 // Rutas específicas con ID
 router.get("/:id/resumen", getOrderSummary);
