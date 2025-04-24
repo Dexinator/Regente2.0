@@ -2,29 +2,21 @@ import { useState, useEffect } from "react";
 import { API_URL } from "../utils/api.js";
 
 export default function HistorialCocina() {
-  const [historial, setHistorial] = useState([]);
+  const [pedidosAgrupados, setPedidosAgrupados] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [fecha, setFecha] = useState(obtenerFechaActual());
-
-  function obtenerFechaActual() {
-    const hoy = new Date();
-    const year = hoy.getFullYear();
-    const month = String(hoy.getMonth() + 1).padStart(2, '0');
-    const day = String(hoy.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-  }
+  const [pedidosEnProceso, setPedidosEnProceso] = useState({});
 
   useEffect(() => {
     cargarHistorial();
-  }, [fecha]);
+  }, []);
 
   const cargarHistorial = async () => {
     setLoading(true);
     setError("");
     
     try {
-      // Usamos el nuevo endpoint para historial de cocina
+      // Usamos el endpoint para historial de cocina (ya filtra por día actual)
       const res = await fetch(`${API_URL}/orders/cocina/historial`);
       const data = await res.json();
       
@@ -32,12 +24,9 @@ export default function HistorialCocina() {
         throw new Error(data.error || "Error al cargar historial");
       }
       
-      // Obtenemos todos los productos preparados en orden cronológico
-      const productosPreparados = data.sort((a, b) => new Date(a.tiempo_creacion) - new Date(b.tiempo_creacion));
-      
-      // Organizamos los datos para mostrarlos agrupados por orden
-      const historicoOrganizado = organizarHistorial(productosPreparados);
-      setHistorial(historicoOrganizado);
+      // Organizamos los datos por bloques de tiempo y productos similares
+      const historicoOrganizado = organizarHistorialPorBloques(data);
+      setPedidosAgrupados(historicoOrganizado);
     } catch (error) {
       console.error("Error:", error);
       setError("No se pudo cargar el historial. Intenta de nuevo.");
@@ -46,16 +35,28 @@ export default function HistorialCocina() {
     }
   };
 
-  const organizarHistorial = (data) => {
-    // Agrupamos los productos por orden_id
-    const historicoMap = {};
+  // Nueva función para organizar el historial en bloques de 10 minutos
+  const organizarHistorialPorBloques = (data) => {
+    // Ordenamos por tiempo de preparación
+    const preparadosOrdenados = [...data].sort((a, b) => 
+      new Date(b.tiempo_preparacion) - new Date(a.tiempo_preparacion)
+    );
     
-    data.forEach(item => {
-      if (!historicoMap[item.orden_id]) {
-        historicoMap[item.orden_id] = {
-          orden_id: item.orden_id,
-          cliente: item.cliente || "Cliente sin nombre",
-          hora: new Date(item.tiempo_creacion).toLocaleTimeString('es-ES', {
+    // Separamos productos por bloques de 10 minutos (según tiempo de preparación)
+    const bloquesTiempo = {};
+    
+    preparadosOrdenados.forEach(item => {
+      // Obtenemos la fecha de preparación y redondeamos a bloques de 10 minutos
+      const fecha = new Date(item.tiempo_preparacion);
+      const minutos = fecha.getMinutes();
+      const bloqueMinutos = Math.floor(minutos / 10) * 10;
+      fecha.setMinutes(bloqueMinutos, 0, 0);
+      
+      const bloqueKey = fecha.toISOString();
+      
+      if (!bloquesTiempo[bloqueKey]) {
+        bloquesTiempo[bloqueKey] = {
+          hora: fecha.toLocaleTimeString('es-ES', {
             hour: '2-digit',
             minute: '2-digit'
           }),
@@ -63,121 +64,141 @@ export default function HistorialCocina() {
         };
       }
       
-      // Añadimos el producto preparado con información de sabor, tamaño e ingrediente
-      historicoMap[item.orden_id].productos.push({
-        producto_id: item.producto_id,
-        detalle_id: item.detalle_id,
-        nombre: item.nombre,
-        categoria: item.categoria,
-        cantidad: item.cantidad,
-        notas: item.notas,
-        tiempo_creacion: item.tiempo_creacion,
-        sabor_id: item.sabor_id,
-        sabor_nombre: item.sabor_nombre,
-        sabor_categoria: item.sabor_categoria,
-        tamano_id: item.tamano_id,
-        tamano_nombre: item.tamano_nombre,
-        ingrediente_id: item.ingrediente_id,
-        ingrediente_nombre: item.ingrediente_nombre,
-        hora_preparacion: item.tiempo_preparacion ? 
-          new Date(item.tiempo_preparacion).toLocaleTimeString('es-ES', {
-            hour: '2-digit',
-            minute: '2-digit'
-          }) : 'N/A'
-      });
+      // Añadir el producto al bloque
+      bloquesTiempo[bloqueKey].productos.push(item);
     });
     
-    // Para cada orden, ordenamos los productos por tiempo de creación
-    Object.values(historicoMap).forEach(pedido => {
-      pedido.productos.sort((a, b) => new Date(a.tiempo_creacion) - new Date(b.tiempo_creacion));
-    });
-    
-    // Convertimos el objeto a un array y ordenamos por hora (más reciente primero)
-    return Object.values(historicoMap)
-      .sort((a, b) => {
-        // Convierte hora en formato HH:MM a minutos para comparar
-        const getMinutes = (time) => {
-          const [hours, minutes] = time.split(':').map(Number);
-          return hours * 60 + minutes;
-        };
+    // Agrupamos productos similares dentro de cada bloque
+    Object.keys(bloquesTiempo).forEach(bloqueKey => {
+      const bloque = bloquesTiempo[bloqueKey];
+      const productosAgrupados = {};
+      
+      bloque.productos.forEach(producto => {
+        // Creamos una clave única por producto con sus variantes
+        const clave = `${producto.producto_id}_${producto.sabor_id || 'sin'}_${producto.tamano_id || 'sin'}_${producto.ingrediente_id || 'sin'}`;
         
-        // Para ordenar descendente (más reciente primero)
-        return getMinutes(b.hora) - getMinutes(a.hora);
+        if (!productosAgrupados[clave]) {
+          productosAgrupados[clave] = {
+            detalle_ids: [producto.detalle_id], // Guardamos todos los IDs para despreparar
+            producto_id: producto.producto_id,
+            nombre: producto.nombre,
+            categoria: producto.categoria,
+            cantidad_total: producto.cantidad,
+            tiempo_preparacion: producto.tiempo_preparacion,
+            hora_preparacion: new Date(producto.tiempo_preparacion).toLocaleTimeString('es-ES', {
+              hour: '2-digit',
+              minute: '2-digit'
+            }),
+            sabor_id: producto.sabor_id,
+            sabor_nombre: producto.sabor_nombre,
+            sabor_categoria: producto.sabor_categoria,
+            tamano_id: producto.tamano_id,
+            tamano_nombre: producto.tamano_nombre,
+            ingrediente_id: producto.ingrediente_id,
+            ingrediente_nombre: producto.ingrediente_nombre,
+            notas: producto.notas ? [producto.notas] : [],
+            ordenes: [`#${producto.orden_id}`] // Guardamos números de orden para referencia
+          };
+        } else {
+          // Actualizamos los datos del producto existente
+          productosAgrupados[clave].detalle_ids.push(producto.detalle_id);
+          productosAgrupados[clave].cantidad_total += producto.cantidad;
+          
+          // Solo agregamos órdenes y notas si no están ya presentes
+          if (!productosAgrupados[clave].ordenes.includes(`#${producto.orden_id}`)) {
+            productosAgrupados[clave].ordenes.push(`#${producto.orden_id}`);
+          }
+          
+          if (producto.notas && !productosAgrupados[clave].notas.includes(producto.notas)) {
+            productosAgrupados[clave].notas.push(producto.notas);
+          }
+        }
       });
+      
+      // Actualizamos los productos del bloque con los productos agrupados
+      bloque.productos = Object.values(productosAgrupados);
+    });
+    
+    // Convertimos el objeto a un array, ordenado por tiempo (más reciente primero)
+    return Object.keys(bloquesTiempo)
+      .sort()
+      .reverse() // Para mostrar los más recientes primero
+      .map(key => ({
+        ...bloquesTiempo[key],
+        bloque_key: key
+      }));
   };
   
   // Función para "despreparar" un producto (marcar como no preparado)
-  const desprepararProducto = async (detalle_id) => {
+  const desprepararProducto = async (detalleIds) => {
+    // Si no es un array, lo convertimos
+    if (!Array.isArray(detalleIds)) {
+      detalleIds = [detalleIds];
+    }
+    
+    // Confirmación solo si hay múltiples productos
+    const mensaje = detalleIds.length > 1 
+      ? `¿Seguro que deseas marcar ${detalleIds.length} productos como no preparados?` 
+      : "¿Seguro que deseas marcar este producto como no preparado?";
+    
+    const confirmar = window.confirm(mensaje);
+    if (!confirmar) return;
+    
     try {
-      const confirmar = window.confirm("¿Seguro que deseas marcar este producto como no preparado?");
-      if (!confirmar) return;
+      // Marcamos los productos como "en proceso" para la animación
+      const nuevosEnProceso = detalleIds.reduce((obj, id) => {
+        obj[id] = true;
+        return obj;
+      }, {});
       
-      const res = await fetch(`${API_URL}/orders/detalle/${detalle_id}/despreparar`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({})
-      });
+      setPedidosEnProceso(prev => ({
+        ...prev,
+        ...nuevosEnProceso
+      }));
+
+      // Para cada detalle_id, enviamos la petición al servidor
+      const promesas = detalleIds.map(detalle_id => 
+        fetch(`${API_URL}/orders/detalle/${detalle_id}/despreparar`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({})
+        })
+      );
       
-      const data = await res.json();
+      // Esperamos a que todas las peticiones se completen
+      const resultados = await Promise.all(promesas);
       
-      if (!res.ok) {
-        throw new Error(data.error || "Error al actualizar estado");
+      // Verificamos si hubo errores
+      if (resultados.some(res => !res.ok)) {
+        throw new Error("Error al despreparar uno o más productos");
       }
       
-      // Actualizamos el estado localmente (quitamos el producto de la lista)
-      setHistorial(prevHistorial => {
-        const nuevoHistorial = prevHistorial.map(orden => {
-          // Filtramos el producto que se acaba de "despreparar"
-          const productosFiltrados = orden.productos.filter(
-            producto => producto.detalle_id !== detalle_id
-          );
-          
-          return {
-            ...orden,
-            productos: productosFiltrados
-          };
-        });
+      // Después de 2 segundos, recargamos todos los pedidos
+      setTimeout(() => {
+        cargarHistorial();
         
-        // Filtramos órdenes que ya no tienen productos preparados
-        return nuevoHistorial.filter(orden => orden.productos.length > 0);
-      });
+        // Y limpiamos la lista de "en proceso"
+        setPedidosEnProceso({});
+      }, 2000);
       
-      alert("Producto marcado como no preparado correctamente");
+      alert("Productos marcados como no preparados correctamente");
     } catch (error) {
-      console.error("Error al despreparar producto:", error);
+      console.error("Error al despreparar productos:", error);
       alert("Error: " + error.message);
+      
+      // Si hay error, quitamos el estado "en proceso"
+      setPedidosEnProceso({});
     }
   };
 
-  // Función para mostrar detalles del producto incluyendo sabor, tamaño e ingrediente
-  const formatearDetallesProducto = (producto) => {
-    let detalles = producto.nombre;
-    const esPulque = producto.categoria === 'Pulque' || producto.categoria === 'Pulques';
-    const esCena = producto.categoria === 'Cena' || producto.categoria === 'Cenas';
-    
-    // Añadir sabor si existe
-    if (producto.sabor_nombre) {
-      detalles += ` - ${producto.sabor_nombre}`;
+  // Función para verificar si un producto está en proceso
+  const estaEnProceso = (detalleIds) => {
+    if (!Array.isArray(detalleIds)) {
+      detalleIds = [detalleIds];
     }
-    
-    // Añadir tamaño para pulques
-    if (esPulque && producto.tamano_nombre) {
-      detalles += ` (${producto.tamano_nombre})`;
-    }
-    
-    // Añadir ingrediente extra para cenas
-    if (esCena && producto.ingrediente_nombre) {
-      detalles += ` + ${producto.ingrediente_nombre}`;
-    }
-
-    return detalles;
-  };
-
-  const formatearFecha = (fechaStr) => {
-    const [year, month, day] = fechaStr.split('-');
-    return `${day}/${month}/${year}`;
+    return detalleIds.some(id => pedidosEnProceso[id]);
   };
 
   if (loading) {
@@ -200,78 +221,104 @@ export default function HistorialCocina() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 mb-6">
-        <label className="font-bold text-amarillo">Seleccionar fecha:</label>
-        <input
-          type="date"
-          value={fecha}
-          onChange={(e) => setFecha(e.target.value)}
-          className="bg-vino text-white px-4 py-2 rounded w-full"
-        />
+      <div className="flex justify-between items-center">
+        <h2 className="text-xl font-subtitulo">Historial del día de hoy</h2>
+        <button
+          onClick={cargarHistorial}
+          className="bg-vino text-white px-3 py-1 rounded text-sm hover:bg-amarillo hover:text-negro transition-colors"
+        >
+          Actualizar
+        </button>
       </div>
       
-      <h2 className="text-xl font-subtitulo">
-        Historial: {formatearFecha(fecha)}
-      </h2>
-      
-      {historial.length === 0 ? (
+      {pedidosAgrupados.length === 0 ? (
         <p className="text-center text-gray-400 py-8">
-          No hay pedidos preparados para esta fecha
+          No hay pedidos preparados para hoy
         </p>
       ) : (
-        <div className="space-y-6">
-          {historial.map((pedido) => (
-            <div
-              key={pedido.orden_id}
-              className="bg-vino/80 rounded-xl p-4 shadow-md"
-            >
-              <div className="flex justify-between items-center mb-2">
-                <span className="text-sm text-amarillo font-bold">
-                  Orden #{pedido.orden_id}
-                </span>
-                <span className="text-sm bg-negro px-2 py-1 rounded">
-                  {pedido.hora}
-                </span>
-              </div>
+        <div className="space-y-8">
+          {pedidosAgrupados.map((bloque) => (
+            <div key={bloque.bloque_key} className="bg-negro/20 rounded-xl p-4">
+              <h3 className="text-lg font-bold text-amarillo border-b border-amarillo/40 pb-2 mb-3">
+                Preparados a las {bloque.hora}
+              </h3>
               
-              <p className="text-lg font-subtitulo mb-4">
-                {pedido.cliente}
-              </p>
-              
-              <div className="space-y-2">
-                {pedido.productos.map((producto) => (
-                  <div
-                    key={producto.detalle_id}
-                    className="flex justify-between items-center bg-negro/30 p-3 rounded"
-                  >
-                    <div>
-                      <p className="font-bold">
-                        {producto.cantidad}x {formatearDetallesProducto(producto)}
-                      </p>
-                      <p className="text-xs text-amarillo">
-                        {producto.categoria}
-                        {producto.sabor_categoria ? ` - ${producto.sabor_categoria}`: ''}
-                      </p>
-                      {producto.notas && (
-                        <p className="text-sm text-gray-300 italic">
-                          {producto.notas}
-                        </p>
-                      )}
-                    </div>
-                    
-                    <div className="flex items-center gap-2">
-                      <div className="text-verde text-sm font-bold">
-                        {producto.hora_preparacion}
+              <div className="space-y-3">
+                {bloque.productos.map((producto) => {
+                  const estaProcesando = estaEnProceso(producto.detalle_ids);
+                  
+                  return (
+                    <div
+                      key={producto.detalle_ids.join('-')}
+                      className={`bg-vino/80 rounded-xl p-4 shadow-md 
+                        ${estaProcesando ? 'animate-pulse opacity-60 bg-red-800/70 pointer-events-none' : ''}`}
+                    >
+                      {/* Producto y Cantidad */}
+                      <div className="flex items-center justify-between mb-2">
+                        <h3 className="text-xl font-bold">
+                          {producto.nombre}
+                        </h3>
+                        <div className="flex items-center space-x-2">
+                          <span className="text-2xl font-bold text-amarillo">
+                            {producto.cantidad_total}x
+                          </span>
+                          <span className="text-xs text-amarillo">{producto.categoria}</span>
+                        </div>
                       </div>
-                      <button
-                        onClick={() => desprepararProducto(producto.detalle_id)}
-                        className="bg-red-800 text-white text-xs px-2 py-1 rounded hover:bg-red-700"
-                      >
-                        Despreparar
-                      </button>
+                      
+                      {/* Variantes */}
+                      <div className="mt-2 space-y-1">
+                        {producto.sabor_nombre && (
+                          <div className="flex items-center">
+                            <span className="text-xs font-semibold w-20">Sabor:</span>
+                            <span className="bg-vino/70 px-2 py-0.5 rounded text-xl">{producto.sabor_nombre}</span>
+                          </div>
+                        )}
+                        
+                        {producto.tamano_nombre && (
+                          <div className="flex items-center">
+                            <span className="text-xs font-semibold w-20">Tamaño:</span>
+                            <span className="bg-vino/70 px-2 py-0.5 rounded text-xl">{producto.tamano_nombre}</span>
+                          </div>
+                        )}
+                        
+                        {producto.ingrediente_nombre && (
+                          <div className="flex items-center">
+                            <span className="text-xs font-semibold w-20">Ingrediente:</span>
+                            <span className="bg-vino/70 px-2 py-0.5 rounded text-xl">{producto.ingrediente_nombre}</span>
+                          </div>
+                        )}
+                      </div>
+                      
+                      {/* Información de órdenes (opcional) */}
+                      <div className="mt-2 text-xs text-gray-400">
+                        Órdenes: {producto.ordenes.join(', ')}
+                      </div>
+                      
+                      {/* Notas */}
+                      {producto.notas && producto.notas.length > 0 && (
+                        <div className="mt-2 text-sm text-gray-300 italic">
+                          <span className="font-semibold">Notas:</span> {producto.notas.join(' | ')}
+                        </div>
+                      )}
+                      
+                      {/* Botón de acción */}
+                      <div className="mt-3 flex justify-end">
+                        <button
+                          onClick={() => desprepararProducto(producto.detalle_ids)}
+                          className="bg-red-800 hover:bg-red-700 text-white font-bold px-4 py-2 rounded-lg transition-colors shadow-md flex items-center justify-center"
+                          disabled={estaProcesando}
+                        >
+                          {estaProcesando ? (
+                            <span className="mr-1">Procesando...</span>
+                          ) : (
+                            <span className="mr-1">Despreparar</span>
+                          )}
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           ))}
