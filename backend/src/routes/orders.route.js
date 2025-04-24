@@ -11,7 +11,10 @@ import {
   fetchHistorialProductosPreparados,
   updateEstadoProducto,
   revertirEstadoProducto,
-  cancelarProducto
+  cancelarProducto,
+  fetchProductosPorEntregar,
+  marcarComoEntregado,
+  revertirEntrega
 } from "../controllers/orders.controller.js";
 
 // Importamos las funciones para códigos promocionales
@@ -28,11 +31,16 @@ const router = express.Router();
 router.get("/cocina", fetchProductosPorPreparar);  // Productos por preparar (nueva ruta principal)
 router.get("/cocina/pendientes", fetchProductosPorPreparar);  // Mantener la ruta anterior por compatibilidad
 router.get("/cocina/historial", fetchHistorialProductosPreparados); // Historial
+router.get("/entregar", fetchProductosPorEntregar); // Nueva ruta para pedidos por entregar
 
 // Rutas para preparar/despreparar productos
 router.put("/detalle/:id/preparar", updateEstadoProducto);  // Marcar como preparado
 router.put("/detalle/:id/despreparar", revertirEstadoProducto);  // Marcar como NO preparado
 router.put("/detalle/:id", updateEstadoProducto);  // Mantener la ruta anterior por compatibilidad
+
+// Rutas para entregar productos
+router.put("/detalle/:id/entregar", marcarComoEntregado);
+router.put("/detalle/:id/revertir-entrega", revertirEntrega);
 
 // Rutas generales
 router.get("/", fetchOrders);              // Todas las órdenes

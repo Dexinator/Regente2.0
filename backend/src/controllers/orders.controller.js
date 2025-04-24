@@ -8,7 +8,10 @@ import {
   getHistorialProductosPreparados,
   marcarProductoComoPreparado,
   desprepararProducto,
-  cancelarProductoOrden
+  cancelarProductoOrden,
+  getProductosPorEntregar,
+  marcarProductoComoEntregado,
+  revertirEntregaProducto
 } from "../models/orders.model.js";
 
 export const fetchOrders = async (req, res) => {
@@ -209,5 +212,47 @@ export const cancelarProducto = async (req, res) => {
       error: "Error al cancelar el producto", 
       detail: err.message 
     });
+  }
+};
+
+// Obtener productos preparados pero no entregados (por entregar)
+export const fetchProductosPorEntregar = async (req, res) => {
+  try {
+    const productos = await getProductosPorEntregar();
+    res.json(productos);
+  } catch (err) {
+    res.status(500).json({ error: "Error obteniendo productos por entregar", detail: err.message });
+  }
+};
+
+// Marcar un producto como entregado
+export const marcarComoEntregado = async (req, res) => {
+  try {
+    const detalle_id = req.params.id;
+    const producto = await marcarProductoComoEntregado(detalle_id);
+    
+    if (!producto) {
+      return res.status(404).json({ error: "Detalle de producto no encontrado" });
+    }
+    
+    res.json(producto);
+  } catch (err) {
+    res.status(500).json({ error: "Error al marcar producto como entregado", detail: err.message });
+  }
+};
+
+// Marcar un producto como no entregado (revertir entrega)
+export const revertirEntrega = async (req, res) => {
+  try {
+    const detalle_id = req.params.id;
+    const producto = await revertirEntregaProducto(detalle_id);
+    
+    if (!producto) {
+      return res.status(404).json({ error: "Detalle de producto no encontrado" });
+    }
+    
+    res.json(producto);
+  } catch (err) {
+    res.status(500).json({ error: "Error al revertir entrega del producto", detail: err.message });
   }
 };

@@ -567,9 +567,12 @@ export const getHistorialProductosPreparados = async (fecha) => {
 
 // Marcar un producto como preparado
 export const marcarProductoComoPreparado = async (detalle_id) => {
-  const query = `    UPDATE detalles_orden
+  const query = `
+    UPDATE detalles_orden
     SET preparado = TRUE,
-        tiempo_preparacion = CURRENT_TIMESTAMP
+        tiempo_preparacion = CURRENT_TIMESTAMP,
+        entregado = FALSE,
+        tiempo_entrega = NULL
     WHERE id = $1
     RETURNING *
   `;
@@ -705,5 +708,78 @@ export const cancelarProductoOrden = async (orden_id, producto_id, cantidad, emp
   } finally {
     client.release();
   }
+};
+
+// Obtener productos preparados pero no entregados (por entregar a clientes)
+export const getProductosPorEntregar = async () => {
+  const query = `
+    SELECT 
+      d.id AS detalle_id, 
+      d.orden_id, 
+      d.producto_id, 
+      d.cantidad, 
+      d.notas,
+      d.tiempo_creacion,
+      d.tiempo_preparacion,
+      d.sabor_id,
+      d.tamano_id,
+      d.ingrediente_id,
+      p.nombre,
+      p.categoria,
+      COALESCE(pr.reg_name, o.nombre_cliente) AS cliente,
+      pr.id AS preso_id,
+      s.nombre AS sabor_nombre,
+      s.precio_adicional AS sabor_precio,
+      cv.nombre AS sabor_categoria,
+      t.nombre AS tamano_nombre,
+      t.precio_adicional AS tamano_precio,
+      i.nombre AS ingrediente_nombre,
+      i.precio_adicional AS ingrediente_precio,
+      cvi.nombre AS ingrediente_categoria
+    FROM detalles_orden d
+    JOIN productos p ON d.producto_id = p.id
+    JOIN ordenes o ON d.orden_id = o.orden_id
+    LEFT JOIN presos pr ON o.preso_id = pr.id
+    LEFT JOIN sabores s ON d.sabor_id = s.id
+    LEFT JOIN categorias_variantes cv ON s.categoria_id = cv.id
+    LEFT JOIN sabores t ON d.tamano_id = t.id
+    LEFT JOIN sabores i ON d.ingrediente_id = i.id
+    LEFT JOIN categorias_variantes cvi ON i.categoria_id = cvi.id
+    WHERE d.preparado = TRUE 
+    AND d.entregado = FALSE
+    AND d.cantidad > 0
+    ORDER BY d.tiempo_preparacion ASC
+  `;
+  
+  const result = await pool.query(query);
+  return result.rows;
+};
+
+// Marcar un producto como entregado
+export const marcarProductoComoEntregado = async (detalle_id) => {
+  const query = `
+    UPDATE detalles_orden
+    SET entregado = TRUE,
+        tiempo_entrega = CURRENT_TIMESTAMP
+    WHERE id = $1
+    RETURNING *
+  `;
+  
+  const result = await pool.query(query, [detalle_id]);
+  return result.rows[0];
+};
+
+// Marcar un producto como NO entregado (revertir)
+export const revertirEntregaProducto = async (detalle_id) => {
+  const query = `
+    UPDATE detalles_orden
+    SET entregado = FALSE,
+        tiempo_entrega = NULL
+    WHERE id = $1
+    RETURNING *
+  `;
+  
+  const result = await pool.query(query, [detalle_id]);
+  return result.rows[0];
 };
 

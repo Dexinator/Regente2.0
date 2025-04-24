@@ -26,8 +26,8 @@ export default function NavMenu() {
   const checkRoutePermission = (role) => {
     const path = window.location.pathname;
     const validRoutes = {
-      "mesero": ["/ordenes"],
-      "cocinero": ["/cocina"],
+      "mesero": ["/ordenes", "/entregar", "/cocina"],
+      "cocinero": ["/cocina", "/entregar"],
       "gerente": ["/reportes/gerente"],
       "financiero": ["/reportes/financiero"],
       "admin": ["/admin"],
@@ -103,6 +103,12 @@ export default function NavMenu() {
               <a href="/ordenes/nueva" className="text-white text-xl font-bold py-3 px-6 rounded-full bg-vino w-full max-w-xs text-center">
                 Nueva Orden
               </a>
+              <a href="/entregar" className="text-white text-xl font-bold py-3 px-6 rounded-full bg-vino w-full max-w-xs text-center">
+                Por Entregar
+              </a>
+              <a href="/cocina" className="text-white text-xl font-bold py-3 px-6 rounded-full bg-vino w-full max-w-xs text-center">
+                Vista de Cocina
+              </a>
             </>
           )}
 
@@ -114,6 +120,9 @@ export default function NavMenu() {
               </a>
               <a href="/cocina/historial" className="text-white text-xl font-bold py-3 px-6 rounded-full bg-vino w-full max-w-xs text-center">
                 Historial
+              </a>
+              <a href="/entregar" className="text-white text-xl font-bold py-3 px-6 rounded-full bg-vino w-full max-w-xs text-center">
+                Por Entregar
               </a>
             </>
           )}
