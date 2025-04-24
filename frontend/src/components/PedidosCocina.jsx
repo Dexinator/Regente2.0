@@ -7,6 +7,7 @@ export default function PedidosCocina() {
   const [error, setError] = useState("");
   const [intervalId, setIntervalId] = useState(null);
   const [filtroTipo, setFiltroTipo] = useState("todos");
+  const [pedidosEnProceso, setPedidosEnProceso] = useState({}); // Controla qué pedidos están en proceso de desaparecer
 
   // Mapeo de categorías a tipo (Alimentos/Bebidas)
   const categoriasTipo = {
@@ -158,6 +159,13 @@ export default function PedidosCocina() {
 
   const marcarComoPreparado = async (detalle_id) => {
     try {
+      // Primero marcamos el pedido como "en proceso" para la animación
+      setPedidosEnProceso(prev => ({
+        ...prev,
+        [detalle_id]: true
+      }));
+
+      // Enviamos la petición al servidor
       const res = await fetch(`${API_URL}/orders/detalle/${detalle_id}/preparar`, {
         method: "PUT",
         headers: {
@@ -172,13 +180,30 @@ export default function PedidosCocina() {
         throw new Error(data.error || "Error al actualizar estado");
       }
       
-      // Actualizamos el estado local eliminando el producto preparado
-      setPedidos(prevPedidos => 
-        prevPedidos.filter(producto => producto.detalle_id !== detalle_id)
-      );
+      // Esperamos 2 segundos antes de quitar el pedido de la vista
+      setTimeout(() => {
+        setPedidos(prevPedidos => 
+          prevPedidos.filter(producto => producto.detalle_id !== detalle_id)
+        );
+        
+        // Y también lo quitamos de la lista de "en proceso"
+        setPedidosEnProceso(prev => {
+          const newState = {...prev};
+          delete newState[detalle_id];
+          return newState;
+        });
+      }, 2000);
+      
     } catch (error) {
       console.error("Error al marcar como preparado:", error);
       alert("Error: " + error.message);
+      
+      // Si hay error, quitamos el estado "en proceso"
+      setPedidosEnProceso(prev => {
+        const newState = {...prev};
+        delete newState[detalle_id];
+        return newState;
+      });
     }
   };
 
@@ -192,7 +217,7 @@ export default function PedidosCocina() {
     
     // Añadir tamaño para pulques
     if (producto.tamano_nombre) {
-      detalles += ` (${producto.tamano_nombre})`;
+      detalles += ` ${producto.tamano_nombre}`;
     }
     
     // Añadir ingrediente extra para cenas
@@ -262,7 +287,8 @@ export default function PedidosCocina() {
               key={producto.detalle_id}
               className={`flex flex-col bg-vino/80 rounded-xl p-4 shadow-md 
                 ${producto.cancelacion_completa ? 'border-l-8 border-red-500' : 
-                  producto.tiene_cancelaciones ? 'border-l-4 border-red-500' : ''}`}
+                  producto.tiene_cancelaciones ? 'border-l-4 border-red-500' : ''}
+                ${pedidosEnProceso[producto.detalle_id] ? 'animate-pulse opacity-60 bg-green-800/70 pointer-events-none' : ''}`}
             >
               <div className="flex justify-between items-center mb-1">
                 <span className="text-sm text-amarillo font-bold">
@@ -273,83 +299,97 @@ export default function PedidosCocina() {
                 </span>
               </div>
               
-              <p className="text-lg font-subtitulo mb-2">
-                {producto.cliente}
-              </p>
-              
-              {/* Producto con toda la información */}
-              <div className={`flex justify-between items-center p-3 rounded ${producto.cancelacion_completa ? 'bg-red-900/40' : 'bg-negro/30'}`}>
-                <div className="flex-1">
-                  <div className="flex items-center flex-wrap">
-                    <p className="font-bold">
-                      {producto.cantidad_final === 0 ? "0" : producto.cantidad_final}x {formatearDetallesProducto(producto)}
-                    </p>
-                    {producto.cancelacion_completa ? (
-                      <span className="ml-2 px-2 py-0.5 bg-red-500 text-white text-xs rounded-full animate-pulse">
-                        CANCELADO COMPLETAMENTE
-                      </span>
-                    ) : producto.tiene_cancelaciones && (
-                      <span className="ml-2 px-2 py-0.5 bg-amarillo text-negro text-xs rounded-full animate-pulse">
-                        Cancelación parcial, cantidad cancelada: {producto.total_cancelado}
-                      </span>
-                    )}
+              {/* Rediseño del producto para mejor visualización */}
+              <div className={`p-3 rounded ${producto.cancelacion_completa ? 'bg-red-900/40' : 'bg-negro/30'}`}>
+                {/* Producto y Cantidad */}
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="text-lg font-bold">
+                    {producto.nombre}
+                  </h3>
+                  <div className="flex items-center space-x-2">
+                    <span className="text-lg font-bold text-amarillo">
+                      {producto.cantidad_final === 0 ? "0" : producto.cantidad_final}x
+                    </span>
+                    <span className="text-xs text-amarillo">{producto.categoria}</span>
                   </div>
-                  
-                  <p className="text-xs text-amarillo">
-                    {producto.categoria}
-                    {producto.sabor_categoria ? ` - ${producto.sabor_categoria}`: ''}
-                  </p>
-                  
-                  {/* Mostrar variantes para facilitar identificación */}
-                  <div className="mt-1 flex flex-wrap gap-1">
-                    {producto.sabor_nombre && (
-                      <span className="text-xs bg-vino/70 px-2 py-0.5 rounded">
-                        Sabor: {producto.sabor_nombre}
-                      </span>
-                    )}
-                    {producto.tamano_nombre && (
-                      <span className="text-xs bg-vino/70 px-2 py-0.5 rounded">
-                        Tamaño: {producto.tamano_nombre}
-                      </span>
-                    )}
-                    {producto.ingrediente_nombre && (
-                      <span className="text-xs bg-vino/70 px-2 py-0.5 rounded">
-                        Ingrediente: {producto.ingrediente_nombre}
-                      </span>
-                    )}
-                  </div>
-                  
-                  {producto.tiene_cancelaciones && producto.notas_cancelacion && (
-                    <p className="text-sm text-red-300 italic mt-1">
-                      <span className="font-semibold">Motivo:</span> {producto.notas_cancelacion}
-                    </p>
+                </div>
+                
+                {/* Variantes (Mostradas como lista para mejor legibilidad) */}
+                <div className="mt-2 space-y-1">
+                  {producto.sabor_nombre && (
+                    <div className="flex items-center">
+                      <span className="text-xs font-semibold w-20">Sabor:</span>
+                      <span className="bg-vino/70 px-2 py-0.5 rounded text-xl">{producto.sabor_nombre}</span>
+                    </div>
                   )}
                   
-                  {/* Siempre mostrar las notas originales si existen */}
-                  {producto.notas_originales && (
-                    <p className="text-sm text-gray-300 italic mt-1">
-                      <span className="font-semibold">Notas originales:</span> {producto.notas_originales}
-                    </p>
+                  {producto.tamano_nombre && (
+                    <div className="flex items-center">
+                      <span className="text-xs font-semibold w-20">Tamaño:</span>
+                      <span className="bg-vino/70 px-2 py-0.5 rounded text-xl">{producto.tamano_nombre}</span>
+                    </div>
+                  )}
+                  
+                  {producto.ingrediente_nombre && (
+                    <div className="flex items-center">
+                      <span className="text-xs font-semibold w-20">Ingrediente:</span>
+                      <span className="bg-vino/70 px-2 py-0.5 rounded text-xl">{producto.ingrediente_nombre}</span>
+                    </div>
                   )}
                 </div>
                 
-                {!producto.cancelacion_completa && (
-                  <button
-                    onClick={() => marcarComoPreparado(producto.detalle_id)}
-                    className="bg-green-700 hover:bg-green-600 text-black font-bold px-4 py-2 rounded-lg transition-colors shadow-md flex items-center justify-center"
-                  >
-                    <span className="mr-1">✓</span> Preparado
-                  </button>
+                {/* Alertas de Cancelación */}
+                {producto.cancelacion_completa ? (
+                  <div className="mt-2 px-2 py-1 bg-red-500 text-white text-xs font-bold rounded animate-pulse text-center">
+                    CANCELADO COMPLETAMENTE
+                  </div>
+                ) : producto.tiene_cancelaciones && (
+                  <div className="mt-2 px-2 py-1 bg-amarillo text-negro text-xs font-bold rounded animate-pulse text-center">
+                    Cancelación parcial: {producto.total_cancelado} cancelado(s)
+                  </div>
                 )}
                 
-                {producto.cancelacion_completa && (
-                  <button
-                    onClick={() => marcarComoPreparado(producto.detalle_id)}
-                    className="bg-red-700 hover:bg-red-600 text-white font-bold px-4 py-2 rounded-lg transition-colors shadow-md flex items-center justify-center"
-                  >
-                    <span className="mr-1">✓</span> Enterado
-                  </button>
+                {/* Notas */}
+                {(producto.tiene_cancelaciones && producto.notas_cancelacion) && (
+                  <div className="mt-2 text-sm text-red-300 italic">
+                    <span className="font-semibold">Motivo:</span> {producto.notas_cancelacion}
+                  </div>
                 )}
+                
+                {producto.notas_originales && (
+                  <div className="mt-2 text-sm text-gray-300 italic">
+                    <span className="font-semibold">Notas:</span> {producto.notas_originales}
+                  </div>
+                )}
+                
+                {/* Botón de acción */}
+                <div className="mt-3 flex justify-end">
+                  {!producto.cancelacion_completa ? (
+                    <button
+                      onClick={() => marcarComoPreparado(producto.detalle_id)}
+                      className="bg-green-700 hover:bg-green-600 text-black font-bold px-4 py-2 rounded-lg transition-colors shadow-md flex items-center justify-center"
+                      disabled={pedidosEnProceso[producto.detalle_id]}
+                    >
+                      {pedidosEnProceso[producto.detalle_id] ? (
+                        <span className="mr-1">✓ Procesando...</span>
+                      ) : (
+                        <span className="mr-1">✓ Preparado</span>
+                      )}
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => marcarComoPreparado(producto.detalle_id)}
+                      className="bg-red-700 hover:bg-red-600 text-white font-bold px-4 py-2 rounded-lg transition-colors shadow-md flex items-center justify-center"
+                      disabled={pedidosEnProceso[producto.detalle_id]}
+                    >
+                      {pedidosEnProceso[producto.detalle_id] ? (
+                        <span className="mr-1">✓ Procesando...</span>
+                      ) : (
+                        <span className="mr-1">✓ Enterado</span>
+                      )}
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
           ))}

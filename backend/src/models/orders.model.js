@@ -512,7 +512,6 @@ export const getProductosPorPreparar = async () => {
     LEFT JOIN sabores i ON d.ingrediente_id = i.id
     LEFT JOIN categorias_variantes cvi ON i.categoria_id = cvi.id
     WHERE d.preparado = FALSE 
-    AND o.estado = 'abierta'
     ORDER BY d.tiempo_creacion ASC
   `;
   
