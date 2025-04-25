@@ -219,8 +219,7 @@ export const closeOrder = async (orden_id) => {
     // Calcular total bruto (sin descuento)
     let total_bruto = 0;
     for (const det of detalles.rows) {
-      // Usar el valor real con signo para que las cancelaciones resten al total
-      total_bruto += det.precio_unitario * det.cantidad;
+      total_bruto += Math.abs(det.precio_unitario) * det.cantidad;
     }
 
     // Obtener información de la orden incluyendo descuentos
@@ -337,7 +336,7 @@ export const addProductsToOrder = async (orden_id, productos, empleado_id) => {
     await client.query(`
       WITH totales AS (
         SELECT 
-          SUM(precio_unitario * cantidad) AS total_bruto
+          SUM(ABS(precio_unitario) * cantidad) AS total_bruto
         FROM detalles_orden 
         WHERE orden_id = $1
       )
@@ -375,7 +374,7 @@ export const getOrderResumen = async (orden_id) => {
       p.nombre, 
       SUM(d.cantidad) AS cantidad, 
       d.precio_unitario,
-      (SUM(d.cantidad) * d.precio_unitario) AS subtotal,
+      (ABS(SUM(d.cantidad)) * d.precio_unitario) AS subtotal,
       CASE 
         WHEN d.precio_unitario < 0 THEN true 
         ELSE false 
@@ -411,10 +410,7 @@ export const getOrderResumen = async (orden_id) => {
 
   // Calcular subtotal basado en los productos (precio_unitario ya incluye descuentos si aplican)
   const subtotal = productos.reduce(
-    (acc, prod) => {
-      const value = parseFloat(prod.subtotal);
-      return acc + (isNaN(value) ? 0 : value);
-    },
+    (acc, prod) => acc + parseFloat(prod.subtotal),
     0
   );
 
