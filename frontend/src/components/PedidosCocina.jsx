@@ -9,17 +9,18 @@ export default function PedidosCocina() {
   const [filtroTipo, setFiltroTipo] = useState("todos");
   const [pedidosEnProceso, setPedidosEnProceso] = useState({});
 
-  // Mapeo de categorías a tipo (Alimentos/Bebidas)
+  // Mapeo de categorías a tipos (Alimentos/Bebidas/Barra)
   const categoriasTipo = {
-    "Antojitos": "Alimentos",
-    "Cenas": "Alimentos",
-    "Pulque": "Bebidas",
-    "Otras Bebidas": "Bebidas",
-    "Sin Alcohol": "Bebidas",
-    "Mezcal": "Bebidas",
-    "Sentencias": "Alimentos, Bebidas",
-    "Cerveza Artesanal": "Bebidas",
-    "Cerveza": "Bebidas"
+    "Antojitos": ["Alimentos"],
+    "Cenas": ["Alimentos"],
+    "Pulque": ["Bebidas"],
+    "Preparados": ["Bebidas"],
+    "Cerveza": ["Barra"],
+    "Cerveza Artesanal": ["Barra"],
+    "Mezcal": ["Bebidas", "Barra"],
+    "Otras Bebidas": ["Bebidas", "Barra"],
+    "Botana": ["Barra"],
+    "Sentencias": ["Alimentos", "Bebidas", "Barra"]
   };
 
   useEffect(() => {
@@ -256,11 +257,11 @@ export default function PedidosCocina() {
       ...bloque,
       productos: bloque.productos.filter(producto => {
         if (filtroTipo === "todos") return true;
-        const tipoProducto = categoriasTipo[producto.categoria];
-        return tipoProducto && tipoProducto.includes(filtroTipo);
+        const tiposProducto = categoriasTipo[producto.categoria];
+        return tiposProducto && tiposProducto.includes(filtroTipo);
       })
     }))
-    .filter(bloque => bloque.productos.length > 0); // Solo mostrar bloques con productos después del filtro
+    .filter(bloque => bloque.productos.length > 0);
 
   if (loading && pedidosAgrupados.length === 0) {
     return <p className="text-center text-gray-400">Cargando pedidos...</p>;
@@ -293,6 +294,7 @@ export default function PedidosCocina() {
             <option value="todos">Todos los pedidos</option>
             <option value="Alimentos">Solo Alimentos</option>
             <option value="Bebidas">Solo Bebidas</option>
+            <option value="Barra">Solo Barra</option>
           </select>
           <button
             onClick={cargarPedidos}
