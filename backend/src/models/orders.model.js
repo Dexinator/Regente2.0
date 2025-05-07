@@ -219,7 +219,7 @@ export const closeOrder = async (orden_id) => {
     // Calcular total bruto (sin descuento)
     let total_bruto = 0;
     for (const det of detalles.rows) {
-      total_bruto += Math.abs(det.precio_unitario) * Math.abs(det.cantidad);
+      total_bruto += Math.abs(det.precio_unitario) * det.cantidad;
     }
 
     // Obtener información de la orden incluyendo descuentos
