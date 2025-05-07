@@ -7,6 +7,21 @@ export default function PedidosPorEntregar() {
   const [error, setError] = useState("");
   const [intervalId, setIntervalId] = useState(null);
   const [pedidosEnProceso, setPedidosEnProceso] = useState({});
+  const [filtroTipo, setFiltroTipo] = useState("todos");
+
+  // Mapeo de categorías a tipos (Alimentos/Bebidas/Barra)
+  const categoriasTipo = {
+    "Antojitos": ["Alimentos"],
+    "Cenas": ["Alimentos"],
+    "Pulque": ["Bebidas"],
+    "Preparados": ["Bebidas"],
+    "Cerveza": ["Barra"],
+    "Cerveza Artesanal": ["Barra"],
+    "Mezcal": ["Bebidas", "Barra"],
+    "Otras Bebidas": ["Bebidas", "Barra"],
+    "Botana": ["Barra"],
+    "Sentencias": ["Alimentos", "Bebidas", "Barra"]
+  };
 
   useEffect(() => {
     // Al montar el componente, cargamos los pedidos iniciales
@@ -259,6 +274,18 @@ export default function PedidosPorEntregar() {
     return "bg-blue-800";
   };
 
+  // Filtramos las órdenes según el tipo seleccionado
+  const ordenesFiltradas = pedidosAgrupados
+    .map(orden => ({
+      ...orden,
+      productos: orden.productos.filter(producto => {
+        if (filtroTipo === "todos") return true;
+        const tiposProducto = categoriasTipo[producto.categoria];
+        return tiposProducto && tiposProducto.includes(filtroTipo);
+      })
+    }))
+    .filter(orden => orden.productos.length > 0);
+
   if (loading && pedidosAgrupados.length === 0) {
     return <p className="text-center text-gray-400">Cargando pedidos por entregar...</p>;
   }
@@ -281,21 +308,33 @@ export default function PedidosPorEntregar() {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h2 className="text-xl font-subtitulo">Pedidos listos para entregar</h2>
-        <button
-          onClick={cargarPedidos}
-          className="bg-vino text-white px-3 py-1 rounded text-sm hover:bg-amarillo hover:text-negro transition-colors"
-        >
-          Actualizar
-        </button>
+        <div className="flex items-center gap-4">
+          <select
+            value={filtroTipo}
+            onChange={(e) => setFiltroTipo(e.target.value)}
+            className="bg-vino text-white px-3 py-1 rounded text-sm hover:bg-amarillo hover:text-negro transition-colors"
+          >
+            <option value="todos">Todos los pedidos</option>
+            <option value="Alimentos">Solo Alimentos</option>
+            <option value="Bebidas">Solo Bebidas</option>
+            <option value="Barra">Solo Barra</option>
+          </select>
+          <button
+            onClick={cargarPedidos}
+            className="bg-vino text-white px-3 py-1 rounded text-sm hover:bg-amarillo hover:text-negro transition-colors"
+          >
+            Actualizar
+          </button>
+        </div>
       </div>
       
-      {pedidosAgrupados.length === 0 ? (
+      {ordenesFiltradas.length === 0 ? (
         <p className="text-center text-gray-400 py-8">
           No hay pedidos pendientes por entregar 🎉
         </p>
       ) : (
         <div className="space-y-6">
-          {pedidosAgrupados.map((orden) => (
+          {ordenesFiltradas.map((orden) => (
             <div
               key={orden.orden_id}
               className={`${getClaseUrgencia(orden.tiempo_espera)} rounded-xl p-4 shadow-md`}
