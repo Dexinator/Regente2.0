@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { getEmpleadoId } from "../utils/auth";
 import { API_URL } from "../utils/api.js";
+import SentenciaSelector from "./SentenciaSelector";
 
 export default function CrearOrden() {
     const [presos, setPresos] = useState([]);
@@ -47,6 +48,9 @@ export default function CrearOrden() {
     const [verificandoCodigo, setVerificandoCodigo] = useState(false);
 
     const [filtroPreso, setFiltroPreso] = useState("");
+
+    // Nuevo estado para mostrar el selector de sentencias
+    const [mostrarSelectorSentencias, setMostrarSelectorSentencias] = useState(false);
 
     useEffect(() => {
         // Cargar presos
@@ -665,6 +669,58 @@ export default function CrearOrden() {
         setSaborSeleccionado(null);
     };
 
+    // Nueva función para agregar productos de sentencias
+    const agregarProductosDeSentencia = (producto) => {
+        // Verificar si ya existe este producto con este sabor, tamaño, ingrediente y notas
+        const yaExiste = productosSeleccionados.find(p => 
+            p.id === producto.id && 
+            p.sabor_id === producto.sabor_id && 
+            p.tamano_id === producto.tamano_id && 
+            p.ingrediente_id === producto.ingrediente_id &&
+            ((p.notas || "") === (producto.notas || ""))
+        );
+        
+        if (yaExiste) {
+            // Si ya existe, incrementar cantidad
+            setProductosSeleccionados(prev => 
+                prev.map(p => 
+                    p.id === producto.id && 
+                    p.sabor_id === producto.sabor_id && 
+                    p.tamano_id === producto.tamano_id && 
+                    p.ingrediente_id === producto.ingrediente_id &&
+                    ((p.notas || "") === (producto.notas || ""))
+                        ? { ...p, cantidad: p.cantidad + producto.cantidad } 
+                        : p
+                )
+            );
+        } else {
+            // Calcular precio total con adicionales
+            let precioTotal = producto.precio;
+            
+            if (producto.precio_adicional) {
+                precioTotal += producto.precio_adicional;
+            }
+            
+            if (producto.tamano_precio) {
+                precioTotal += producto.tamano_precio;
+            }
+            
+            if (producto.ingrediente_precio) {
+                precioTotal += producto.ingrediente_precio;
+            }
+            
+            // Agregar nuevo producto a la lista
+            setProductosSeleccionados(prev => [
+                ...prev, 
+                { 
+                    ...producto, 
+                    precio_original: producto.precio,
+                    precio: precioTotal
+                }
+            ]);
+        }
+    };
+
     // Renderización principal
     if (loading) {
         return <p className="text-center text-gray-400">Cargando productos...</p>;
@@ -681,6 +737,16 @@ export default function CrearOrden() {
                     Reintentar
                 </button>
             </div>
+        );
+    }
+
+    // Mostrar selector de sentencias si está activo
+    if (mostrarSelectorSentencias) {
+        return (
+            <SentenciaSelector 
+                onAddProducts={agregarProductosDeSentencia} 
+                onClose={() => setMostrarSelectorSentencias(false)}
+            />
         );
     }
 
@@ -1171,7 +1237,17 @@ export default function CrearOrden() {
             </div>
 
             <hr className="my-6 border-amarillo" />
-            <h2 className="text-lg font-bold text-amarillo">Seleccionar productos</h2>
+            <div className="flex justify-between items-center">
+                <h2 className="text-lg font-bold text-amarillo">Seleccionar productos</h2>
+                
+                {/* Nuevo botón para mostrar el selector de sentencias */}
+                <button
+                    onClick={() => setMostrarSelectorSentencias(true)}
+                    className="bg-amarillo text-negro px-4 py-2 rounded font-bold hover:bg-yellow-500"
+                >
+                    Agregar Sentencia
+                </button>
+            </div>
             
             {/* Filtros de productos */}
             <div className="space-y-4">
