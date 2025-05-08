@@ -9,6 +9,7 @@ import employeesRoutes from "./routes/employees.route.js";
 import reportsRoutes from "./routes/reports.route.js";
 import pagosRoutes from "./routes/pagos.route.js";
 import promocionesRoutes from "./routes/promociones.route.js";
+import sentenciasRoutes from "./routes/sentencias.route.js";
 
 
 dotenv.config();
@@ -30,6 +31,12 @@ app.use(cors(corsOptions));
 
 app.use(express.json());
 
+// Logger middleware
+app.use((req, res, next) => {
+  console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
+  next();
+});
+
 // Rutas
 
 app.use("/orders", ordersRoutes);
@@ -39,6 +46,12 @@ app.use("/employees", employeesRoutes);
 app.use("/reports", reportsRoutes);
 app.use("/pagos", pagosRoutes);
 app.use("/promociones", promocionesRoutes);
+app.use("/sentencias", sentenciasRoutes);
+
+// Ruta base
+app.get("/", (req, res) => {
+  res.json({ message: "Bienvenido a la API del Penitenciario" });
+});
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {

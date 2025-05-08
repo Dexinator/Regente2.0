@@ -161,17 +161,56 @@ export const createOrder = async ({ preso_id, nombre_cliente, empleado_id, produ
     // 2. Agregar productos
     let total_bruto = 0;
 
-    for (const { producto_id, cantidad, sabor_id, tamano_id, ingrediente_id, notas, precio_unitario } of productos) {
+    // Crear una tabla temporal para almacenar metadatos de sentencias
+    await client.query(`
+      CREATE TEMP TABLE IF NOT EXISTS temp_sentencias_metadata (
+        detalle_id INTEGER PRIMARY KEY,
+        sentencia_id INTEGER,
+        es_parte_sentencia BOOLEAN,
+        es_sentencia_principal BOOLEAN
+      )
+    `);
+
+    for (const producto of productos) {
+      const { 
+        producto_id, 
+        cantidad, 
+        sabor_id, 
+        tamano_id, 
+        ingrediente_id, 
+        notas, 
+        precio_unitario,
+        sentencia_id,
+        es_parte_sentencia,
+        es_sentencia_principal
+      } = producto;
+
       // Usar el precio original sin aplicar descuento
       // Acumular total bruto para actualizar la orden
       total_bruto += precio_unitario * cantidad;
       
       // Insertar detalle con el precio original (sin descuento)
-      await client.query(
+      const detalleResult = await client.query(
         `INSERT INTO detalles_orden (orden_id, producto_id, cantidad, precio_unitario, empleado_id, sabor_id, tamano_id, ingrediente_id, notas)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+         RETURNING id`,
         [orden_id, producto_id, cantidad, precio_unitario, empleado_id, sabor_id || null, tamano_id || null, ingrediente_id || null, notas || null]
       );
+      
+      const detalleId = detalleResult.rows[0].id;
+      
+      // Si es parte de una sentencia, guardar metadatos
+      if (sentencia_id && (es_parte_sentencia || es_sentencia_principal)) {
+        await client.query(`
+          INSERT INTO temp_sentencias_metadata (detalle_id, sentencia_id, es_parte_sentencia, es_sentencia_principal)
+          VALUES ($1, $2, $3, $4)
+        `, [
+          detalleId, 
+          sentencia_id,
+          es_parte_sentencia || false,
+          es_sentencia_principal || false
+        ]);
+      }
     }
     
     // 3. Actualizar totales en la orden
@@ -184,6 +223,9 @@ export const createOrder = async ({ preso_id, nombre_cliente, empleado_id, produ
       `UPDATE ordenes SET total_bruto = $1, total = $2 WHERE orden_id = $3`,
       [total_bruto, total, orden_id]
     );
+
+    // Limpiar la tabla temporal
+    await client.query("DROP TABLE IF EXISTS temp_sentencias_metadata");
 
     await client.query("COMMIT");
     return await getOrderWithDetails(orden_id);

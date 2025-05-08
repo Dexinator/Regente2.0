@@ -1,6 +1,4 @@
 import { useState, useEffect } from "react";
-import SENTENCIAS from "../utils/sentencias";
-import { procesarSentencia, generarProductosSentencia } from "../utils/sentenciasHelper";
 import { API_URL } from "../utils/api.js";
 
 /**
@@ -10,6 +8,7 @@ import { API_URL } from "../utils/api.js";
  * @param {Function} props.onClose - Función para cerrar el selector
  */
 export default function SentenciaSelector({ onAddProducts, onClose }) {
+  const [sentencias, setSentencias] = useState([]);
   const [sentenciaSeleccionada, setSentenciaSeleccionada] = useState(null);
   const [productos, setProductos] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -17,22 +16,67 @@ export default function SentenciaSelector({ onAddProducts, onClose }) {
   const [paso, setPaso] = useState(1); // 1: Selección de sentencia, 2: Opciones, 3: Confirmación
   const [opcionesSeleccionadas, setOpcionesSeleccionadas] = useState({});
   const [productosFinales, setProductosFinales] = useState([]);
+  const [precioTotal, setPrecioTotal] = useState(0);
 
-  // Cargar productos al montar el componente
+  // Cargar sentencias al montar el componente
   useEffect(() => {
+    cargarSentencias();
     cargarProductos();
   }, []);
 
-  // Cuando se selecciona una sentencia, generar sus productos
+  // Cuando se selecciona una sentencia, cargar sus productos
   useEffect(() => {
     if (sentenciaSeleccionada) {
-      prepararSentencia(sentenciaSeleccionada);
+      cargarProductosSentencia(sentenciaSeleccionada.id);
     }
   }, [sentenciaSeleccionada]);
 
-  // Cargar todos los productos disponibles
-  const cargarProductos = async () => {
+  // Cargar todas las sentencias disponibles
+  const cargarSentencias = async () => {
     setLoading(true);
+    setError("");
+    try {
+      console.log("Solicitando sentencias al API:", `${API_URL}/sentencias`);
+      const res = await fetch(`${API_URL}/sentencias`);
+      const data = await res.json();
+      
+      console.log("Respuesta de sentencias:", data);
+      
+      if (!res.ok) {
+        throw new Error(data.error || "Error al cargar sentencias");
+      }
+      
+      if (!Array.isArray(data)) {
+        console.warn("Formato inesperado en respuesta de sentencias:", data);
+        if (data && typeof data === 'object') {
+          // Intento de adaptación si la API devuelve objeto en lugar de array
+          const sentenciasArray = Object.values(data);
+          if (Array.isArray(sentenciasArray) && sentenciasArray.length > 0) {
+            setSentencias(sentenciasArray);
+          } else {
+            throw new Error("Formato de respuesta de sentencias no válido");
+          }
+        } else {
+          throw new Error("Formato de respuesta de sentencias no válido");
+        }
+      } else {
+        // Asegurarnos de que los precios sean números
+        const sentenciasConPreciosNumericos = data.map(sentencia => ({
+          ...sentencia,
+          precio: parseFloat(sentencia.precio)
+        }));
+        setSentencias(sentenciasConPreciosNumericos);
+      }
+    } catch (error) {
+      console.error("Error en cargarSentencias:", error);
+      setError("No se pudieron cargar las sentencias. Intenta de nuevo. " + error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Cargar todos los productos disponibles (para opciones)
+  const cargarProductos = async () => {
     try {
       const res = await fetch(`${API_URL}/products`);
       const data = await res.json();
@@ -51,43 +95,78 @@ export default function SentenciaSelector({ onAddProducts, onClose }) {
     } catch (error) {
       console.error("Error:", error);
       setError("No se pudieron cargar los productos. Intenta de nuevo.");
-    } finally {
-      setLoading(false);
     }
   };
 
-  // Preparar los productos de la sentencia seleccionada
-  const prepararSentencia = async (nombreSentencia) => {
+  // Cargar productos de una sentencia específica
+  const cargarProductosSentencia = async (id) => {
     setLoading(true);
     try {
-      const productosSentencia = await generarProductosSentencia(nombreSentencia, productos);
+      const res = await fetch(`${API_URL}/sentencias/${id}/productos`);
+      const data = await res.json();
       
-      // Separar productos fijos y opciones
-      const fijos = productosSentencia.filter(p => p.tipo !== 'opcion');
-      const opciones = productosSentencia.filter(p => p.tipo === 'opcion');
+      if (!res.ok) {
+        throw new Error(data.error || "Error al cargar productos de la sentencia");
+      }
       
-      setProductosFinales(fijos);
+      console.log("Datos de la sentencia recibidos:", data);
       
-      // Si hay opciones, pasar al paso 2 para que el usuario elija
-      if (opciones.length > 0) {
-        setPaso(2);
+      // Si no hay estructura esperada, mostrar error
+      if (!data || typeof data !== 'object') {
+        throw new Error("Formato de respuesta inesperado");
+      }
+      
+      // Obtener la sentencia
+      const sentenciaInfo = {
+        ...sentenciaSeleccionada,
+        precio: parseFloat(sentenciaSeleccionada.precio)
+      };
+      
+      // Ver la estructura de los datos para adaptarnos a lo que viene del backend
+      if (Array.isArray(data)) {
+        // Si es un array, asumimos que son directamente los productos
+        setProductosFinales(data);
+      } else if (data.productos) {
+        // Si viene dentro de un objeto "productos"
+        if (Array.isArray(data.productos)) {
+          setProductosFinales(data.productos);
+        } else if (data.productos.fijos) {
+          // Separar productos fijos y opciones como se esperaba originalmente
+          const fijos = data.productos.fijos || [];
+          const grupos = data.productos.opcionales || [];
+          
+          // Establecer productos fijos
+          setProductosFinales(fijos);
+          
+          // Si hay opciones, pasar al paso 2 para que el usuario elija
+          if (grupos && grupos.length > 0) {
+            sentenciaSeleccionada.productos = data.productos;
+            setPaso(2);
+          } else {
+            // Si no hay opciones, pasar directamente a la confirmación
+            setPrecioTotal(sentenciaInfo.precio);
+            setPaso(3);
+          }
+        }
       } else {
-        // Si no hay opciones, pasar directamente a la confirmación
+        // Si no hay estructura clara, intentar usar lo que tengamos
+        setProductosFinales(data);
+        setPrecioTotal(sentenciaInfo.precio);
         setPaso(3);
       }
     } catch (error) {
-      console.error("Error al preparar sentencia:", error);
-      setError("Error al preparar la sentencia. Intenta de nuevo.");
+      console.error("Error al cargar productos de la sentencia:", error);
+      setError("Error al cargar los productos de la sentencia. Intenta de nuevo.");
     } finally {
       setLoading(false);
     }
   };
 
   // Manejar la selección de opciones
-  const seleccionarOpcion = (indiceOpcion, productoSeleccionado) => {
+  const seleccionarOpcion = (grupoIndex, producto) => {
     setOpcionesSeleccionadas(prev => ({
       ...prev,
-      [indiceOpcion]: productoSeleccionado
+      [grupoIndex]: producto
     }));
   };
 
@@ -95,18 +174,82 @@ export default function SentenciaSelector({ onAddProducts, onClose }) {
   const continuar = () => {
     if (paso === 2) {
       // Agregar las opciones seleccionadas a los productos finales
+      console.log("Opciones seleccionadas antes de continuar:", opcionesSeleccionadas);
+      
       const productosConOpciones = [
         ...productosFinales,
         ...Object.values(opcionesSeleccionadas)
       ];
       
+      console.log("Productos finales con opciones:", productosConOpciones);
+      
       setProductosFinales(productosConOpciones);
+      setPrecioTotal(sentenciaSeleccionada.precio);
       setPaso(3);
     } else if (paso === 3) {
-      // Finalizar y agregar todos los productos al carrito
+      console.log("Continuando desde paso 3 - Confirmación");
+      
+      // Finalizar y agregar la sentencia como producto principal
+      const sentenciaProducto = {
+        id: -1, // ID temporal para identificar que es una sentencia
+        sentencia_id: sentenciaSeleccionada.id,
+        nombre: sentenciaSeleccionada.nombre,
+        descripcion: sentenciaSeleccionada.descripcion || "Sentencia",
+        precio: sentenciaSeleccionada.precio,
+        categoria: "Sentencia",
+        cantidad: 1,
+        esSentencia: true
+      };
+      
+      console.log("Producto principal de sentencia a agregar:", sentenciaProducto);
+      
+      // Agregar cada producto de la sentencia con precio 0
+      console.log("Productos finales a agregar:", productosFinales);
+      
       productosFinales.forEach(producto => {
-        onAddProducts(producto);
+        // Enviar el producto como parte de una sentencia
+        const productoParaAgregar = {
+          ...producto,
+          precio: 0, // Precio base 0 por ser parte de la sentencia
+          precio_original: producto.producto_precio_original || producto.precio_original || producto.precio || 0,
+          categoria: producto.producto_categoria || producto.categoria,
+          nombre: producto.producto_nombre || producto.nombre,
+          es_parte_sentencia: true,
+          sentencia_id: sentenciaSeleccionada.id,
+          cantidad: producto.cantidad || 1,
+          // Mantener la información de sabor, tamaño, ingrediente si existe
+          sabor_id: producto.sabor_id,
+          sabor_nombre: producto.sabor_nombre,
+          tamano_id: producto.tamano_id,
+          tamano_nombre: producto.tamano_nombre,
+          ingrediente_id: producto.ingrediente_id,
+          ingrediente_nombre: producto.ingrediente_nombre
+        };
+        
+        console.log("Agregando producto de sentencia:", productoParaAgregar);
+        onAddProducts(productoParaAgregar);
       });
+      
+      // Agregar las opciones seleccionadas
+      console.log("Opciones seleccionadas a agregar:", Object.values(opcionesSeleccionadas));
+      
+      Object.values(opcionesSeleccionadas).forEach(producto => {
+        const opcionParaAgregar = {
+          ...producto,
+          precio: 0, // Precio base 0 por ser parte de la sentencia
+          precio_original: producto.precio,
+          es_parte_sentencia: true,
+          sentencia_id: sentenciaSeleccionada.id,
+          cantidad: producto.cantidad || 1
+        };
+        
+        console.log("Agregando opción de sentencia:", opcionParaAgregar);
+        onAddProducts(opcionParaAgregar);
+      });
+      
+      // Agregar el producto principal de la sentencia
+      console.log("Agregando el producto principal de la sentencia");
+      onAddProducts(sentenciaProducto);
       
       onClose();
     }
@@ -117,8 +260,14 @@ export default function SentenciaSelector({ onAddProducts, onClose }) {
     if (paso === 2) {
       setPaso(1);
       setSentenciaSeleccionada(null);
+      setOpcionesSeleccionadas({});
     } else if (paso === 3) {
-      setPaso(2);
+      if (productosFinales.some(p => p.es_opcional)) {
+        setPaso(2);
+      } else {
+        setPaso(1);
+        setSentenciaSeleccionada(null);
+      }
     }
   };
 
@@ -157,78 +306,94 @@ export default function SentenciaSelector({ onAddProducts, onClose }) {
   // Paso 1: Selección de sentencia
   if (paso === 1) {
     return (
-      <div className="bg-vino rounded-xl p-6 space-y-6">
+      <div className="bg-vino rounded-xl p-6 space-y-6 shadow-lg max-h-[80vh] overflow-y-auto">
         <div className="flex justify-between items-center">
           <h2 className="text-xl font-bold">Selecciona una Sentencia</h2>
           <button onClick={onClose} className="text-gray-300 hover:text-white">✕</button>
         </div>
         
-        <div className="grid grid-cols-1 gap-4">
-          {Object.keys(SENTENCIAS).map((key) => (
-            <button
-              key={key}
-              onClick={() => setSentenciaSeleccionada(key)}
-              className="bg-negro p-4 rounded-lg text-left hover:bg-gray-800 transition-colors"
+        {loading && (
+          <div className="flex justify-center my-4">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-amarillo"></div>
+          </div>
+        )}
+        
+        {error && (
+          <div className="bg-red-900/50 p-3 rounded text-red-200 text-sm">
+            {error}
+            <button 
+              onClick={cargarSentencias}
+              className="ml-2 underline hover:text-white"
             >
-              <h3 className="text-lg font-bold text-amarillo">{SENTENCIAS[key].nombre}</h3>
-              <p className="text-sm text-gray-300">{SENTENCIAS[key].descripcion}</p>
+              Reintentar
             </button>
-          ))}
-        </div>
+          </div>
+        )}
+        
+        {sentencias.length === 0 && !loading && !error ? (
+          <p className="text-center text-gray-300">No hay sentencias disponibles</p>
+        ) : (
+          <div className="grid grid-cols-1 gap-4">
+            {sentencias.map((sentencia) => (
+              <button
+                key={sentencia.id}
+                onClick={() => setSentenciaSeleccionada(sentencia)}
+                className="bg-negro p-4 rounded-lg text-left hover:bg-gray-800 transition-colors"
+              >
+                <div className="flex justify-between items-center">
+                  <h3 className="text-lg font-bold text-amarillo">{sentencia.nombre}</h3>
+                  <span className="text-amarillo font-bold">${sentencia.precio.toFixed(2)}</span>
+                </div>
+                <p className="text-sm text-gray-300">{sentencia.descripcion}</p>
+              </button>
+            ))}
+          </div>
+        )}
       </div>
     );
   }
 
   // Paso 2: Selección de opciones
   if (paso === 2) {
-    // Obtener las opciones de la sentencia seleccionada
-    const sentencia = SENTENCIAS[sentenciaSeleccionada];
-    const componentesOpcionales = sentencia.componentes.filter(c => c.tipo === 'opcion');
-    
     return (
       <div className="bg-vino rounded-xl p-6 space-y-6">
         <div className="flex justify-between items-center">
-          <h2 className="text-xl font-bold">Personaliza tu {sentencia.nombre}</h2>
+          <h2 className="text-xl font-bold">Personaliza tu {sentenciaSeleccionada.nombre}</h2>
           <button onClick={onClose} className="text-gray-300 hover:text-white">✕</button>
         </div>
         
-        {componentesOpcionales.map((componente, index) => (
+        {sentenciaSeleccionada.productos?.opcionales?.map((grupo, index) => (
           <div key={index} className="space-y-3">
             <h3 className="font-bold text-amarillo">Selecciona una opción:</h3>
             
             <div className="grid grid-cols-1 gap-2">
-              {componente.opciones.map((opcion, opIndex) => {
-                // Buscar productos que coincidan con esta opción
-                const productosFiltrados = productos.filter(p => 
-                  p.categoria === opcion.categoria && 
-                  (!opcion.filtro || p.nombre.toLowerCase().includes(opcion.filtro.toLowerCase()))
-                );
-                
-                return productosFiltrados.map(producto => (
-                  <button
-                    key={`${index}-${opIndex}-${producto.id}`}
-                    onClick={() => seleccionarOpcion(index, {
-                      ...producto,
-                      cantidad: opcion.cantidad || componente.cantidad || 1
-                    })}
-                    className={`p-3 rounded text-left ${
-                      opcionesSeleccionadas[index]?.id === producto.id
-                        ? 'bg-amarillo text-negro'
-                        : 'bg-negro hover:bg-gray-800'
-                    }`}
-                  >
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <p className="font-bold">{producto.nombre}</p>
-                        <p className="text-xs text-gray-400">{producto.categoria}</p>
-                      </div>
-                      <span className="text-sm">
-                        {opcion.cantidad || componente.cantidad || 1}x
-                      </span>
+              {grupo.map((producto, prodIndex) => (
+                <button
+                  key={`${index}-${prodIndex}-${producto.producto_id}`}
+                  onClick={() => seleccionarOpcion(index, producto)}
+                  className={`p-3 rounded text-left ${
+                    opcionesSeleccionadas[index]?.producto_id === producto.producto_id
+                      ? 'bg-amarillo text-negro'
+                      : 'bg-negro hover:bg-gray-800'
+                  }`}
+                >
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <p className="font-bold">{producto.producto_nombre}</p>
+                      <p className="text-xs text-gray-400">{producto.producto_categoria}</p>
+                      {producto.sabor_nombre && (
+                        <p className="text-xs text-gray-300">Sabor: {producto.sabor_nombre}</p>
+                      )}
+                      {producto.tamano_nombre && (
+                        <p className="text-xs text-gray-300">Tamaño: {producto.tamano_nombre}</p>
+                      )}
                     </div>
-                  </button>
-                ));
-              })}
+                    <span className="text-sm">
+                      {producto.cantidad || 1}x
+                    </span>
+                  </div>
+                </button>
+              ))}
             </div>
           </div>
         ))}
@@ -243,9 +408,9 @@ export default function SentenciaSelector({ onAddProducts, onClose }) {
           
           <button
             onClick={continuar}
-            disabled={Object.keys(opcionesSeleccionadas).length < componentesOpcionales.length}
+            disabled={Object.keys(opcionesSeleccionadas).length < sentenciaSeleccionada.productos?.opcionales?.length}
             className={`px-4 py-2 rounded font-bold ${
-              Object.keys(opcionesSeleccionadas).length < componentesOpcionales.length
+              Object.keys(opcionesSeleccionadas).length < sentenciaSeleccionada.productos?.opcionales?.length
                 ? 'bg-gray-500 cursor-not-allowed'
                 : 'bg-amarillo text-negro'
             }`}
@@ -259,15 +424,10 @@ export default function SentenciaSelector({ onAddProducts, onClose }) {
 
   // Paso 3: Confirmación
   if (paso === 3) {
-    const sentencia = SENTENCIAS[sentenciaSeleccionada];
-    const precioTotal = productosFinales.reduce(
-      (total, p) => total + (p.precio * p.cantidad), 0
-    );
-    
     return (
       <div className="bg-vino rounded-xl p-6 space-y-6">
         <div className="flex justify-between items-center">
-          <h2 className="text-xl font-bold">Confirmar {sentencia.nombre}</h2>
+          <h2 className="text-xl font-bold">Confirmar {sentenciaSeleccionada.nombre}</h2>
           <button onClick={onClose} className="text-gray-300 hover:text-white">✕</button>
         </div>
         
@@ -278,12 +438,40 @@ export default function SentenciaSelector({ onAddProducts, onClose }) {
             <div key={index} className="bg-negro p-3 rounded">
               <div className="flex justify-between items-start">
                 <div>
-                  <p className="font-bold">{producto.nombre}</p>
-                  <p className="text-xs text-gray-400">{producto.categoria}</p>
+                  <p className="font-bold">{producto.producto_nombre}</p>
+                  <p className="text-xs text-gray-400">{producto.producto_categoria}</p>
+                  {producto.sabor_nombre && (
+                    <p className="text-xs text-gray-300">Sabor: {producto.sabor_nombre}</p>
+                  )}
+                  {producto.tamano_nombre && (
+                    <p className="text-xs text-gray-300">Tamaño: {producto.tamano_nombre}</p>
+                  )}
+                  {producto.ingrediente_nombre && (
+                    <p className="text-xs text-gray-300">Ingrediente: {producto.ingrediente_nombre}</p>
+                  )}
                 </div>
                 <div className="text-right">
                   <p className="font-bold">{producto.cantidad}x</p>
-                  <p className="text-xs text-amarillo">${producto.precio.toFixed(2)}</p>
+                </div>
+              </div>
+            </div>
+          ))}
+          
+          {Object.values(opcionesSeleccionadas).map((producto, index) => (
+            <div key={`opcion-${index}`} className="bg-negro p-3 rounded">
+              <div className="flex justify-between items-start">
+                <div>
+                  <p className="font-bold">{producto.producto_nombre}</p>
+                  <p className="text-xs text-gray-400">{producto.producto_categoria}</p>
+                  {producto.sabor_nombre && (
+                    <p className="text-xs text-gray-300">Sabor: {producto.sabor_nombre}</p>
+                  )}
+                  {producto.tamano_nombre && (
+                    <p className="text-xs text-gray-300">Tamaño: {producto.tamano_nombre}</p>
+                  )}
+                </div>
+                <div className="text-right">
+                  <p className="font-bold">{producto.cantidad}x</p>
                 </div>
               </div>
             </div>

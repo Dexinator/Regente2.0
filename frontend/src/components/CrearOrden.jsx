@@ -617,15 +617,34 @@ export default function CrearOrden() {
                     empleado_id: getEmpleadoId(),
                     num_personas: numPersonas,
                     codigo_promocional: codigoValido?.valid ? codigoPromocional.trim() : null,
-                    productos: productosSeleccionados.map(p => ({
-                        producto_id: p.id,
-                        cantidad: p.cantidad,
-                        precio_unitario: p.precio,
-                        sabor_id: p.sabor_id,
-                        tamano_id: p.tamano_id,
-                        ingrediente_id: p.ingrediente_id,
-                        notas: p.notas
-                    }))
+                    productos: productosSeleccionados.map(p => {
+                        // Producto normal o de sentencia
+                        const productoData = {
+                            producto_id: p.id,
+                            cantidad: p.cantidad,
+                            precio_unitario: p.precio,
+                            sabor_id: p.sabor_id,
+                            tamano_id: p.tamano_id,
+                            ingrediente_id: p.ingrediente_id,
+                            notas: p.notas
+                        };
+
+                        // Si es parte de una sentencia, agregar metadatos
+                        if (p.es_parte_sentencia) {
+                            productoData.es_parte_sentencia = true;
+                            productoData.sentencia_id = p.sentencia_id;
+                        }
+
+                        // Si es la sentencia principal
+                        if (p.esSentencia) {
+                            productoData.es_sentencia_principal = true;
+                            productoData.sentencia_id = p.sentencia_id;
+                            // Usamos ID -1 para la sentencia principal, ya que no es un producto real
+                            productoData.producto_id = -1; 
+                        }
+
+                        return productoData;
+                    })
                 })
             });
 
@@ -671,6 +690,77 @@ export default function CrearOrden() {
 
     // Nueva función para agregar productos de sentencias
     const agregarProductosDeSentencia = (producto) => {
+        // Si es una sentencia principal (el producto con precio y nombre de la sentencia)
+        if (producto.esSentencia) {
+            // Verificar si ya existe esta sentencia
+            const yaExiste = productosSeleccionados.find(p => 
+                p.esSentencia && p.sentencia_id === producto.sentencia_id
+            );
+            
+            if (yaExiste) {
+                // Si ya existe, incrementar cantidad
+                setProductosSeleccionados(prev => 
+                    prev.map(p => 
+                        p.esSentencia && p.sentencia_id === producto.sentencia_id
+                            ? { ...p, cantidad: p.cantidad + producto.cantidad } 
+                            : p
+                    )
+                );
+            } else {
+                // Agregar la sentencia como un producto especial
+                setProductosSeleccionados(prev => [
+                    ...prev, 
+                    { 
+                        ...producto,
+                        cantidad: producto.cantidad || 1
+                    }
+                ]);
+            }
+            return;
+        }
+        
+        // Si es un producto que forma parte de una sentencia
+        if (producto.es_parte_sentencia) {
+            // Verificar si ya existe este producto exacto
+            const yaExiste = productosSeleccionados.find(p => 
+                p.id === producto.id && 
+                p.es_parte_sentencia &&
+                p.sentencia_id === producto.sentencia_id &&
+                p.sabor_id === producto.sabor_id && 
+                p.tamano_id === producto.tamano_id && 
+                p.ingrediente_id === producto.ingrediente_id &&
+                ((p.notas || "") === (producto.notas || ""))
+            );
+            
+            if (yaExiste) {
+                // Si ya existe, incrementar cantidad
+                setProductosSeleccionados(prev => 
+                    prev.map(p => 
+                        p.id === producto.id && 
+                        p.es_parte_sentencia &&
+                        p.sentencia_id === producto.sentencia_id &&
+                        p.sabor_id === producto.sabor_id && 
+                        p.tamano_id === producto.tamano_id && 
+                        p.ingrediente_id === producto.ingrediente_id &&
+                        ((p.notas || "") === (producto.notas || ""))
+                            ? { ...p, cantidad: p.cantidad + producto.cantidad } 
+                            : p
+                    )
+                );
+            } else {
+                // Agregar producto de sentencia
+                setProductosSeleccionados(prev => [
+                    ...prev, 
+                    { 
+                        ...producto,
+                        cantidad: producto.cantidad || 1
+                    }
+                ]);
+            }
+            return;
+        }
+        
+        // Para productos normales (no sentencias), usar el comportamiento existente
         // Verificar si ya existe este producto con este sabor, tamaño, ingrediente y notas
         const yaExiste = productosSeleccionados.find(p => 
             p.id === producto.id && 
@@ -737,16 +827,6 @@ export default function CrearOrden() {
                     Reintentar
                 </button>
             </div>
-        );
-    }
-
-    // Mostrar selector de sentencias si está activo
-    if (mostrarSelectorSentencias) {
-        return (
-            <SentenciaSelector 
-                onAddProducts={agregarProductosDeSentencia} 
-                onClose={() => setMostrarSelectorSentencias(false)}
-            />
         );
     }
 
@@ -1308,6 +1388,18 @@ export default function CrearOrden() {
                     ))
                 )}
             </div>
+            
+            {/* Selector de Sentencias - como overlay */}
+            {mostrarSelectorSentencias && (
+                <div className="fixed inset-0 bg-negro/80 flex items-center justify-center z-50 p-4">
+                    <div className="w-full max-w-md">
+                        <SentenciaSelector 
+                            onAddProducts={agregarProductosDeSentencia}
+                            onClose={() => setMostrarSelectorSentencias(false)}
+                        />
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
