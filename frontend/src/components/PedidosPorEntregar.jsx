@@ -17,8 +17,8 @@ export default function PedidosPorEntregar() {
     "Preparados": ["Bebidas"],
     "Cerveza": ["Barra"],
     "Cerveza Artesanal": ["Barra"],
-    "Mezcal": ["Bebidas", "Barra"],
-    "Otras Bebidas": ["Bebidas", "Barra"],
+    "Mezcal": ["Barra"],
+    "Otras Bebidas": ["Barra"],
     "Botana": ["Barra"],
     "Sentencias": ["Alimentos", "Bebidas", "Barra"]
   };
