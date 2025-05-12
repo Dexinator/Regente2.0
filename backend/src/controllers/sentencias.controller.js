@@ -64,7 +64,22 @@ export const fetchProductosSentencia = async (req, res) => {
         p.precio AS producto_precio_original,
         s1.nombre AS sabor_nombre,
         s2.nombre AS tamano_nombre,
-        s3.nombre AS ingrediente_nombre
+        s3.nombre AS ingrediente_nombre,
+        -- Verificar si hay relaciones para este producto en la tabla producto_sabor según tipo
+        (SELECT COUNT(*) > 0 FROM producto_sabor ps2 
+         JOIN sabores s ON ps2.sabor_id = s.id 
+         JOIN categorias_variantes cv ON s.categoria_id = cv.id 
+         WHERE ps2.producto_id = p.id AND cv.tipo = 'sabor_comida') AS requiere_sabor,
+        
+        (SELECT COUNT(*) > 0 FROM producto_sabor ps2 
+         JOIN sabores s ON ps2.sabor_id = s.id 
+         JOIN categorias_variantes cv ON s.categoria_id = cv.id 
+         WHERE ps2.producto_id = p.id AND cv.tipo = 'tamano') AS requiere_tamano,
+        
+        (SELECT COUNT(*) > 0 FROM producto_sabor ps2 
+         JOIN sabores s ON ps2.sabor_id = s.id 
+         JOIN categorias_variantes cv ON s.categoria_id = cv.id 
+         WHERE ps2.producto_id = p.id AND cv.tipo = 'ingrediente_extra') AS requiere_ingrediente
       FROM 
         productos_sentencias ps
       JOIN 
@@ -82,7 +97,7 @@ export const fetchProductosSentencia = async (req, res) => {
     `;
     
     const productosResult = await pool.query(query, [id]);
-    
+    console.log(productosResult.rows);
     // Agrupar productos opcionales por grupo
     const productos = productosResult.rows;
     const sentencia = sentenciaResult.rows[0];

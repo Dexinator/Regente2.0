@@ -110,6 +110,8 @@ export default function SentenciaSelector({ onAddProducts, onClose }) {
       }
       
       console.log("Datos de la sentencia recibidos:", data);
+      console.log("Productos fijos recibidos:", data.productos?.fijos);
+      console.log("Productos opcionales recibidos:", data.productos?.opcionales);
       
       // Si no hay estructura esperada, mostrar error
       if (!data || typeof data !== 'object') {
@@ -164,26 +166,39 @@ export default function SentenciaSelector({ onAddProducts, onClose }) {
 
   // Manejar la selección de opciones
   const seleccionarOpcion = (grupoIndex, producto) => {
+    console.log("Opción seleccionada para grupo", grupoIndex, ":", producto);
+    
+    // Conservar todos los atributos, incluyendo los de requerimientos de variantes
     setOpcionesSeleccionadas(prev => ({
       ...prev,
-      [grupoIndex]: producto
+      [grupoIndex]: {
+        ...producto,
+        // Asegurarnos de conservar estos atributos que son importantes para la detección de variantes
+        requiere_sabor: producto.requiere_sabor,
+        requiere_tamano: producto.requiere_tamano,
+        requiere_ingrediente: producto.requiere_ingrediente
+      }
     }));
   };
 
   // Continuar al siguiente paso
   const continuar = () => {
     if (paso === 2) {
-      // Agregar las opciones seleccionadas a los productos finales
+      // Evitar duplicar productos - solo agregar productos fijos
+      // No incluir las opciones seleccionadas en productosFinales
       console.log("Opciones seleccionadas antes de continuar:", opcionesSeleccionadas);
       
-      const productosConOpciones = [
-        ...productosFinales,
-        ...Object.values(opcionesSeleccionadas)
-      ];
+      // Verificar que las opciones tienen los atributos de variantes
+      Object.entries(opcionesSeleccionadas).forEach(([key, opcion]) => {
+        console.log(`Opción ${key} - requiere_sabor:`, opcion.requiere_sabor);
+        console.log(`Opción ${key} - requiere_tamano:`, opcion.requiere_tamano);
+        console.log(`Opción ${key} - requiere_ingrediente:`, opcion.requiere_ingrediente);
+      });
       
-      console.log("Productos finales con opciones:", productosConOpciones);
+      // Mantener productosFinales como está (solo productos fijos)
+      // No agregamos las opciones seleccionadas aquí
+      console.log("Productos finales para paso 3:", productosFinales);
       
-      setProductosFinales(productosConOpciones);
       setPrecioTotal(sentenciaSeleccionada.precio);
       setPaso(3);
     } else if (paso === 3) {
@@ -203,53 +218,105 @@ export default function SentenciaSelector({ onAddProducts, onClose }) {
       
       console.log("Producto principal de sentencia a agregar:", sentenciaProducto);
       
-      // Agregar cada producto de la sentencia con precio 0
-      console.log("Productos finales a agregar:", productosFinales);
+      // Preparar array para productos que necesitan selección de variantes
+      const productosConVariantesPendientes = [];
       
+      // Evaluar cada producto de la sentencia para determinar si necesita selección de variantes
       productosFinales.forEach(producto => {
-        // Enviar el producto como parte de una sentencia
-        const productoParaAgregar = {
-          ...producto,
-          precio: 0, // Precio base 0 por ser parte de la sentencia
-          precio_original: producto.producto_precio_original || producto.precio_original || producto.precio || 0,
-          categoria: producto.producto_categoria || producto.categoria,
-          nombre: producto.producto_nombre || producto.nombre,
-          es_parte_sentencia: true,
-          sentencia_id: sentenciaSeleccionada.id,
-          cantidad: producto.cantidad || 1,
-          // Mantener la información de sabor, tamaño, ingrediente si existe
-          sabor_id: producto.sabor_id,
-          sabor_nombre: producto.sabor_nombre,
-          tamano_id: producto.tamano_id,
-          tamano_nombre: producto.tamano_nombre,
-          ingrediente_id: producto.ingrediente_id,
-          ingrediente_nombre: producto.ingrediente_nombre
-        };
+        // Determinar si el producto necesita selección de variantes
+        const necesitaSeleccionVariante = 
+          // Si tiene sabor_id definido, no necesita selección
+          (producto.sabor_id === null && producto.requiere_sabor) || 
+          // Si tiene tamano_id definido, no necesita selección
+          (producto.tamano_id === null && producto.requiere_tamano) || 
+          // Si tiene ingrediente_id definido, no necesita selección
+          (producto.ingrediente_id === null && producto.requiere_ingrediente);
         
-        console.log("Agregando producto de sentencia:", productoParaAgregar);
-        onAddProducts(productoParaAgregar);
+        if (necesitaSeleccionVariante) {
+          // Guardar para procesamiento posterior
+          productosConVariantesPendientes.push({
+            ...producto,
+            precio: 0, // Precio base 0 por ser parte de la sentencia
+            precio_original: producto.producto_precio_original || producto.precio_original || producto.precio || 0,
+            categoria: producto.producto_categoria || producto.categoria,
+            nombre: producto.producto_nombre || producto.nombre,
+            es_parte_sentencia: true,
+            sentencia_id: sentenciaSeleccionada.id,
+            cantidad: producto.cantidad || 1,
+            pendiente_seleccion_variante: true
+          });
+        } else {
+          // Enviar el producto como parte de una sentencia inmediatamente
+          const productoParaAgregar = {
+            ...producto,
+            id: producto.producto_id || producto.id,
+            nombre: producto.producto_nombre || producto.nombre,
+            categoria: producto.producto_categoria || producto.categoria,
+            precio: 0, // Precio base 0 por ser parte de la sentencia
+            precio_original: producto.producto_precio_original || producto.precio_original || producto.precio || 0,
+            es_parte_sentencia: true,
+            sentencia_id: sentenciaSeleccionada.id,
+            cantidad: producto.cantidad || 1
+          };
+          
+          console.log("Agregando producto fijo de sentencia:", productoParaAgregar);
+          onAddProducts(productoParaAgregar);
+        }
       });
-      
-      // Agregar las opciones seleccionadas
-      console.log("Opciones seleccionadas a agregar:", Object.values(opcionesSeleccionadas));
-      
+
+      // También revisar las opciones seleccionadas para variantes pendientes
       Object.values(opcionesSeleccionadas).forEach(producto => {
-        const opcionParaAgregar = {
-          ...producto,
-          precio: 0, // Precio base 0 por ser parte de la sentencia
-          precio_original: producto.precio,
-          es_parte_sentencia: true,
-          sentencia_id: sentenciaSeleccionada.id,
-          cantidad: producto.cantidad || 1
-        };
+        const necesitaSeleccionVariante = 
+          (producto.sabor_id === null && producto.requiere_sabor) || 
+          (producto.tamano_id === null && producto.requiere_tamano) || 
+          (producto.ingrediente_id === null && producto.requiere_ingrediente);
         
-        console.log("Agregando opción de sentencia:", opcionParaAgregar);
-        onAddProducts(opcionParaAgregar);
+        if (necesitaSeleccionVariante) {
+          productosConVariantesPendientes.push({
+            ...producto,
+            id: producto.producto_id || producto.id,
+            nombre: producto.producto_nombre || producto.nombre,
+            categoria: producto.producto_categoria || producto.categoria,
+            precio: 0, // Precio base 0 por ser parte de la sentencia
+            precio_original: producto.producto_precio_original || producto.precio_original || producto.precio || 0,
+            es_parte_sentencia: true,
+            sentencia_id: sentenciaSeleccionada.id,
+            cantidad: producto.cantidad || 1,
+            pendiente_seleccion_variante: true
+          });
+        } else {
+          // Agregar opción directamente
+          const opcionParaAgregar = {
+            ...producto,
+            id: producto.producto_id || producto.id,
+            nombre: producto.producto_nombre || producto.nombre,
+            categoria: producto.producto_categoria || producto.categoria,
+            precio: 0, // Precio base 0 por ser parte de la sentencia
+            precio_original: producto.producto_precio_original || producto.precio_original || producto.precio || 0,
+            es_parte_sentencia: true,
+            sentencia_id: sentenciaSeleccionada.id,
+            cantidad: producto.cantidad || 1
+          };
+          
+          console.log("Agregando opción de sentencia:", opcionParaAgregar);
+          onAddProducts(opcionParaAgregar);
+        }
       });
       
       // Agregar el producto principal de la sentencia
       console.log("Agregando el producto principal de la sentencia");
       onAddProducts(sentenciaProducto);
+      
+      // Si hay productos que necesitan selección de variantes, los enviamos primero
+      if (productosConVariantesPendientes.length > 0) {
+        console.log("Productos con variantes pendientes:", productosConVariantesPendientes);
+        // Enviar los productos con variantes pendientes como un grupo
+        onAddProducts({
+          tipo: "grupo_variantes_pendientes",
+          productos: productosConVariantesPendientes,
+          sentencia_id: sentenciaSeleccionada.id
+        });
+      }
       
       onClose();
     }
@@ -434,8 +501,9 @@ export default function SentenciaSelector({ onAddProducts, onClose }) {
         <div className="space-y-4">
           <h3 className="font-bold text-amarillo">Productos incluidos:</h3>
           
+          {/* Productos fijos de la sentencia */}
           {productosFinales.map((producto, index) => (
-            <div key={index} className="bg-negro p-3 rounded">
+            <div key={`fijo-${index}`} className="bg-negro p-3 rounded">
               <div className="flex justify-between items-start">
                 <div>
                   <p className="font-bold">{producto.producto_nombre}</p>
@@ -456,6 +524,11 @@ export default function SentenciaSelector({ onAddProducts, onClose }) {
               </div>
             </div>
           ))}
+          
+          {/* Opciones seleccionadas por el usuario */}
+          {Object.entries(opcionesSeleccionadas).length > 0 && (
+            <h3 className="font-bold text-amarillo mt-4">Opciones seleccionadas:</h3>
+          )}
           
           {Object.values(opcionesSeleccionadas).map((producto, index) => (
             <div key={`opcion-${index}`} className="bg-negro p-3 rounded">
