@@ -55,31 +55,43 @@ export const getOpenOrdersWithPayments = async () => {
 export const getOrderWithDetails = async (orden_id) => {
   // Traemos los datos de la orden y el nombre del preso (si hay)
   const orden = await pool.query(
-    `SELECT o.*, p.reg_name AS nombre_preso
+    `SELECT o.*, p.reg_name AS nombre_preso, c.codigo AS codigo_promocional_aplicado
      FROM ordenes o
      LEFT JOIN presos p ON o.preso_id = p.id
+     LEFT JOIN codigos_promocionales c ON o.codigo_descuento_id = c.id
      WHERE o.orden_id = $1`,
     [orden_id]
   );
 
   if (orden.rows.length === 0) return null;
 
-  // Traemos los productos incluidos en la orden con información de sabores
+  // Traemos los productos incluidos en la orden
+  // Asegúrate de que esta consulta traiga todos los campos relevantes, incluyendo los de sentencia
   const detalles = await pool.query(
-    `SELECT d.*, p.nombre AS nombre_producto, p.categoria,
-            s.nombre AS sabor_nombre, s.precio_adicional AS sabor_precio_adicional,
-            cv.nombre AS sabor_categoria,
-            t.nombre AS tamano_nombre, t.precio_adicional AS tamano_precio_adicional,
-            i.nombre AS ingrediente_nombre, i.precio_adicional AS ingrediente_precio_adicional,
-            cvi.nombre AS ingrediente_categoria
+    `SELECT 
+        d.*, 
+        p.nombre AS nombre_producto, 
+        p.categoria AS categoria_producto,
+        s.nombre AS sabor_nombre, 
+        s.precio_adicional AS sabor_precio_adicional,
+        cv.nombre AS sabor_categoria,
+        t.nombre AS tamano_nombre, 
+        t.precio_adicional AS tamano_precio_adicional,
+        i.nombre AS ingrediente_nombre, 
+        i.precio_adicional AS ingrediente_precio_adicional,
+        cvi.nombre AS ingrediente_categoria
+        -- Los campos de sentencia como d.sentencia_id, d.es_sentencia_principal, 
+        -- d.sentencia_detalle_orden_padre_id, d.nombre_sentencia, d.descripcion_sentencia
+        -- ya están en d.* si existen en la tabla detalles_orden
      FROM detalles_orden d
-     JOIN productos p ON d.producto_id = p.id
+     LEFT JOIN productos p ON d.producto_id = p.id -- LEFT JOIN por si producto_id es NULL (para sentencia principal)
      LEFT JOIN sabores s ON d.sabor_id = s.id
      LEFT JOIN categorias_variantes cv ON s.categoria_id = cv.id
      LEFT JOIN sabores t ON d.tamano_id = t.id
      LEFT JOIN sabores i ON d.ingrediente_id = i.id
      LEFT JOIN categorias_variantes cvi ON i.categoria_id = cvi.id
-     WHERE d.orden_id = $1`,
+     WHERE d.orden_id = $1
+     ORDER BY d.id ASC`,
     [orden_id]
   );
 
@@ -124,9 +136,9 @@ export const createOrder = async ({ preso_id, nombre_cliente, empleado_id, produ
     
     // 1. Crear la orden (total y total_bruto inician en 0)
     const ordenRes = await client.query(
-      `INSERT INTO ordenes (preso_id, nombre_cliente, total, total_bruto, empleado_id, num_personas, codigo_descuento_id)
-       VALUES ($1, $2, 0, 0, $3, $4, $5)
-       RETURNING *`,
+      `INSERT INTO ordenes (preso_id, nombre_cliente, total, total_bruto, empleado_id, num_personas, codigo_descuento_id, estado)
+       VALUES ($1, $2, 0, 0, $3, $4, $5, 'abierta')
+       RETURNING orden_id`,
       [
         preso_id || null,
         preso_id ? null : nombre_cliente,
@@ -138,7 +150,6 @@ export const createOrder = async ({ preso_id, nombre_cliente, empleado_id, produ
 
     const orden_id = ordenRes.rows[0].orden_id;
     
-    // Obtener descuento de grado si existe
     let descuento_grado = 0;
     if (preso_id) {
       const gradoResult = await client.query(`
@@ -154,84 +165,95 @@ export const createOrder = async ({ preso_id, nombre_cliente, empleado_id, produ
       }
     }
     
-    // Calcular el descuento total (acumulativo)
     const porcentaje_descuento_total = porcentaje_descuento + descuento_grado;
     const factor_descuento = (100 - porcentaje_descuento_total) / 100;
 
-    // 2. Agregar productos
     let total_bruto = 0;
+    const mapaSentenciasCreadas = {}; // Key: payload sentencia_id, Value: detalles_orden.id de la sentencia principal
 
-    // Crear una tabla temporal para almacenar metadatos de sentencias
-    await client.query(`
-      CREATE TEMP TABLE IF NOT EXISTS temp_sentencias_metadata (
-        detalle_id INTEGER PRIMARY KEY,
-        sentencia_id INTEGER,
-        es_parte_sentencia BOOLEAN,
-        es_sentencia_principal BOOLEAN
-      )
-    `);
+    // 2. Primera pasada: Insertar Sentencias Principales
+    const sentenciasPrincipalesItems = productos.filter(p => p.es_sentencia_principal);
+    for (const spItem of sentenciasPrincipalesItems) {
+      total_bruto += (spItem.precio_unitario || 0) * (spItem.cantidad || 1);
 
-    for (const producto of productos) {
-      const { 
-        producto_id, 
-        cantidad, 
-        sabor_id, 
-        tamano_id, 
-        ingrediente_id, 
-        notas, 
-        precio_unitario,
-        sentencia_id,
-        es_parte_sentencia,
-        es_sentencia_principal
-      } = producto;
+      const qDetalleSentencia = `
+        INSERT INTO detalles_orden (
+            orden_id, producto_id, cantidad, precio_unitario, empleado_id, notas,
+            sentencia_id, es_sentencia_principal, nombre_sentencia, descripcion_sentencia
+        )
+        VALUES ($1, NULL, $2, $3, $4, $5, $6, TRUE, $7, $8)
+        RETURNING id;
+      `;
+      const rDetalleSentencia = await client.query(qDetalleSentencia, [
+        orden_id,
+        spItem.cantidad,
+        spItem.precio_unitario,
+        empleado_id, // Asumimos que el mismo empleado_id de la orden aplica a los detalles
+        spItem.notas,
+        spItem.sentencia_id,
+        spItem.nombre_sentencia,
+        spItem.descripcion_sentencia
+      ]);
+      mapaSentenciasCreadas[spItem.sentencia_id] = rDetalleSentencia.rows[0].id;
+    }
 
-      // Usar el precio original sin aplicar descuento
-      // Acumular total bruto para actualizar la orden
-      total_bruto += precio_unitario * cantidad;
-      
-      // Insertar detalle con el precio original (sin descuento)
-      const detalleResult = await client.query(
-        `INSERT INTO detalles_orden (orden_id, producto_id, cantidad, precio_unitario, empleado_id, sabor_id, tamano_id, ingrediente_id, notas)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-         RETURNING id`,
-        [orden_id, producto_id, cantidad, precio_unitario, empleado_id, sabor_id || null, tamano_id || null, ingrediente_id || null, notas || null]
-      );
-      
-      const detalleId = detalleResult.rows[0].id;
-      
-      // Si es parte de una sentencia, guardar metadatos
-      if (sentencia_id && (es_parte_sentencia || es_sentencia_principal)) {
-        await client.query(`
-          INSERT INTO temp_sentencias_metadata (detalle_id, sentencia_id, es_parte_sentencia, es_sentencia_principal)
-          VALUES ($1, $2, $3, $4)
-        `, [
-          detalleId, 
-          sentencia_id,
-          es_parte_sentencia || false,
-          es_sentencia_principal || false
-        ]);
+    // 3. Segunda pasada: Insertar Productos Normales y Componentes de Sentencia
+    for (const prodItem of productos) {
+      if (prodItem.es_sentencia_principal) {
+        continue; // Ya procesada
       }
+
+      total_bruto += (prodItem.precio_unitario || 0) * (prodItem.cantidad || 1);
+      let sentenciaDetalleOrdenPadreId = null;
+
+      if (prodItem.es_parte_sentencia && prodItem.sentencia_id) {
+        sentenciaDetalleOrdenPadreId = mapaSentenciasCreadas[prodItem.sentencia_id];
+        if (!sentenciaDetalleOrdenPadreId) {
+          console.error(`Error de consistencia: No se encontró el detalle padre para la sentencia_id ${prodItem.sentencia_id} del producto ${prodItem.producto_id || 'N/A'} en orden ${orden_id}`);
+          // Considera si lanzar un error aquí es apropiado o si hay un manejo alternativo
+          // throw new Error(`Error de consistencia: Detalle padre no encontrado para sentencia_id ${prodItem.sentencia_id}.`);
+        }
+      }
+
+      const qDetalleProducto = `
+        INSERT INTO detalles_orden (
+            orden_id, producto_id, cantidad, precio_unitario, empleado_id,
+            sabor_id, tamano_id, ingrediente_id, notas,
+            sentencia_id, es_sentencia_principal, sentencia_detalle_orden_padre_id
+        )
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, FALSE, $11);
+      `;
+      await client.query(qDetalleProducto, [
+        orden_id,
+        prodItem.producto_id,
+        prodItem.cantidad,
+        prodItem.precio_unitario,
+        empleado_id,
+        prodItem.sabor_id,
+        prodItem.tamano_id,
+        prodItem.ingrediente_id,
+        prodItem.notas,
+        prodItem.es_parte_sentencia ? prodItem.sentencia_id : null, // sentencia_id de la tabla 'sentencias'
+        sentenciaDetalleOrdenPadreId
+      ]);
     }
     
-    // 3. Actualizar totales en la orden
-    // El total considera el descuento, pero el total_bruto es sin descuento
-    const total = porcentaje_descuento_total > 0 
+    // 4. Actualizar totales en la orden
+    const total_final_con_descuento = porcentaje_descuento_total > 0 
       ? Math.round((total_bruto * factor_descuento) * 100) / 100
       : total_bruto;
       
     await client.query(
       `UPDATE ordenes SET total_bruto = $1, total = $2 WHERE orden_id = $3`,
-      [total_bruto, total, orden_id]
+      [total_bruto, total_final_con_descuento, orden_id]
     );
-
-    // Limpiar la tabla temporal
-    await client.query("DROP TABLE IF EXISTS temp_sentencias_metadata");
 
     await client.query("COMMIT");
     return await getOrderWithDetails(orden_id);
 
   } catch (err) {
     await client.query("ROLLBACK");
+    console.error("Error en createOrder (models/orders.model.js):", err);
     throw err;
   } finally {
     client.release();

@@ -48,10 +48,14 @@ export const addOrder = async (req, res) => {
 
   // Validar que cada producto tenga la información correcta
   for (const producto of productos) {
-    if (!producto.producto_id || !producto.cantidad) {
-      return res.status(400).json({ error: "Cada producto debe tener producto_id y cantidad" });
+    // Si no es una sentencia principal, debe tener producto_id. Las sentencias principales no tienen producto_id.
+    if (!producto.es_sentencia_principal && !producto.producto_id) {
+      return res.status(400).json({ error: `Cada producto componente o normal debe tener producto_id. Producto problemático: ${JSON.stringify(producto)}` });
     }
-    // sabor_id es opcional
+    if (!producto.cantidad) {
+        return res.status(400).json({ error: `Cada producto debe tener cantidad. Producto problemático: ${JSON.stringify(producto)}` });
+    }
+    // sabor_id, precio_unitario, etc., son validados por la lógica del modelo o se asume que vienen bien del frontend.
   }
 
   try {

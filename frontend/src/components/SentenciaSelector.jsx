@@ -138,14 +138,14 @@ export default function SentenciaSelector({ onAddProducts, onClose }) {
           const grupos = data.productos.opcionales || [];
           
           // Establecer productos fijos
-          setProductosFinales(fijos);
-          
-          // Si hay opciones, pasar al paso 2 para que el usuario elija
+      setProductosFinales(fijos);
+      
+      // Si hay opciones, pasar al paso 2 para que el usuario elija
           if (grupos && grupos.length > 0) {
             sentenciaSeleccionada.productos = data.productos;
-            setPaso(2);
-          } else {
-            // Si no hay opciones, pasar directamente a la confirmación
+        setPaso(2);
+      } else {
+        // Si no hay opciones, pasar directamente a la confirmación
             setPrecioTotal(sentenciaInfo.precio);
             setPaso(3);
           }
@@ -168,16 +168,21 @@ export default function SentenciaSelector({ onAddProducts, onClose }) {
   const seleccionarOpcion = (grupoIndex, producto) => {
     console.log("Opción seleccionada para grupo", grupoIndex, ":", producto);
     
-    // Conservar todos los atributos, incluyendo los de requerimientos de variantes
+    // Asegurarnos de convertir todos los precios a números
+    const productoConPreciosNumericos = {
+      ...producto,
+      precio_adicional: parseFloat(producto.precio_adicional || 0),
+      tamano_precio: parseFloat(producto.tamano_precio || 0),
+      ingrediente_precio: parseFloat(producto.ingrediente_precio || 0),
+      // Conservar estos atributos que son importantes para la detección de variantes
+      requiere_sabor: producto.requiere_sabor,
+      requiere_tamano: producto.requiere_tamano,
+      requiere_ingrediente: producto.requiere_ingrediente
+    };
+    
     setOpcionesSeleccionadas(prev => ({
       ...prev,
-      [grupoIndex]: {
-        ...producto,
-        // Asegurarnos de conservar estos atributos que son importantes para la detección de variantes
-        requiere_sabor: producto.requiere_sabor,
-        requiere_tamano: producto.requiere_tamano,
-        requiere_ingrediente: producto.requiere_ingrediente
-      }
+      [grupoIndex]: productoConPreciosNumericos
     }));
   };
 
@@ -193,13 +198,33 @@ export default function SentenciaSelector({ onAddProducts, onClose }) {
         console.log(`Opción ${key} - requiere_sabor:`, opcion.requiere_sabor);
         console.log(`Opción ${key} - requiere_tamano:`, opcion.requiere_tamano);
         console.log(`Opción ${key} - requiere_ingrediente:`, opcion.requiere_ingrediente);
+        console.log(`Opción ${key} - sabor_nombre:`, opcion.sabor_nombre);
+        console.log(`Opción ${key} - tamano_nombre:`, opcion.tamano_nombre);
+        console.log(`Opción ${key} - ingrediente_nombre:`, opcion.ingrediente_nombre);
+        console.log(`Opción ${key} - precio_adicional:`, opcion.precio_adicional);
+        console.log(`Opción ${key} - tamano_precio:`, opcion.tamano_precio);
+        console.log(`Opción ${key} - ingrediente_precio:`, opcion.ingrediente_precio);
       });
       
       // Mantener productosFinales como está (solo productos fijos)
       // No agregamos las opciones seleccionadas aquí
       console.log("Productos finales para paso 3:", productosFinales);
       
-      setPrecioTotal(sentenciaSeleccionada.precio);
+      // Calcular el precio total incluyendo los costos adicionales de variantes
+      let precioVariantes = 0;
+      Object.values(opcionesSeleccionadas).forEach(opcion => {
+        if (opcion.precio_adicional && !isNaN(parseFloat(opcion.precio_adicional))) {
+          precioVariantes += parseFloat(opcion.precio_adicional);
+        }
+        if (opcion.tamano_precio && !isNaN(parseFloat(opcion.tamano_precio))) {
+          precioVariantes += parseFloat(opcion.tamano_precio);
+        }
+        if (opcion.ingrediente_precio && !isNaN(parseFloat(opcion.ingrediente_precio))) {
+          precioVariantes += parseFloat(opcion.ingrediente_precio);
+        }
+      });
+      
+      setPrecioTotal(sentenciaSeleccionada.precio + precioVariantes);
       setPaso(3);
     } else if (paso === 3) {
       console.log("Continuando desde paso 3 - Confirmación");
@@ -223,7 +248,7 @@ export default function SentenciaSelector({ onAddProducts, onClose }) {
       
       // Evaluar cada producto de la sentencia para determinar si necesita selección de variantes
       productosFinales.forEach(producto => {
-        // Determinar si el producto necesita selección de variantes
+        // Determinar si el producto necesita selección de variante
         const necesitaSeleccionVariante = 
           // Si tiene sabor_id definido, no necesita selección
           (producto.sabor_id === null && producto.requiere_sabor) || 
@@ -243,7 +268,11 @@ export default function SentenciaSelector({ onAddProducts, onClose }) {
             es_parte_sentencia: true,
             sentencia_id: sentenciaSeleccionada.id,
             cantidad: producto.cantidad || 1,
-            pendiente_seleccion_variante: true
+            pendiente_seleccion_variante: true,
+            // Asegurar que los precios estén en formato numérico
+            precio_adicional: parseFloat(producto.precio_adicional || 0),
+            tamano_precio: parseFloat(producto.tamano_precio || 0),
+            ingrediente_precio: parseFloat(producto.ingrediente_precio || 0)
           });
         } else {
           // Enviar el producto como parte de una sentencia inmediatamente
@@ -256,7 +285,11 @@ export default function SentenciaSelector({ onAddProducts, onClose }) {
             precio_original: producto.producto_precio_original || producto.precio_original || producto.precio || 0,
             es_parte_sentencia: true,
             sentencia_id: sentenciaSeleccionada.id,
-            cantidad: producto.cantidad || 1
+            cantidad: producto.cantidad || 1,
+            // Asegurar que los precios están en formato numérico
+            precio_adicional: parseFloat(producto.precio_adicional || 0),
+            tamano_precio: parseFloat(producto.tamano_precio || 0),
+            ingrediente_precio: parseFloat(producto.ingrediente_precio || 0)
           };
           
           console.log("Agregando producto fijo de sentencia:", productoParaAgregar);
@@ -282,7 +315,11 @@ export default function SentenciaSelector({ onAddProducts, onClose }) {
             es_parte_sentencia: true,
             sentencia_id: sentenciaSeleccionada.id,
             cantidad: producto.cantidad || 1,
-            pendiente_seleccion_variante: true
+            pendiente_seleccion_variante: true,
+            // Asegurar que los precios estén en formato numérico
+            precio_adicional: parseFloat(producto.precio_adicional || 0),
+            tamano_precio: parseFloat(producto.tamano_precio || 0),
+            ingrediente_precio: parseFloat(producto.ingrediente_precio || 0)
           });
         } else {
           // Agregar opción directamente
@@ -295,7 +332,11 @@ export default function SentenciaSelector({ onAddProducts, onClose }) {
             precio_original: producto.producto_precio_original || producto.precio_original || producto.precio || 0,
             es_parte_sentencia: true,
             sentencia_id: sentenciaSeleccionada.id,
-            cantidad: producto.cantidad || 1
+            cantidad: producto.cantidad || 1,
+            // Asegurar que los precios estén en formato numérico
+            precio_adicional: parseFloat(producto.precio_adicional || 0),
+            tamano_precio: parseFloat(producto.tamano_precio || 0),
+            ingrediente_precio: parseFloat(producto.ingrediente_precio || 0)
           };
           
           console.log("Agregando opción de sentencia:", opcionParaAgregar);
@@ -330,7 +371,7 @@ export default function SentenciaSelector({ onAddProducts, onClose }) {
       setOpcionesSeleccionadas({});
     } else if (paso === 3) {
       if (productosFinales.some(p => p.es_opcional)) {
-        setPaso(2);
+      setPaso(2);
       } else {
         setPaso(1);
         setSentenciaSeleccionada(null);
@@ -388,7 +429,7 @@ export default function SentenciaSelector({ onAddProducts, onClose }) {
         {error && (
           <div className="bg-red-900/50 p-3 rounded text-red-200 text-sm">
             {error}
-            <button 
+            <button
               onClick={cargarSentencias}
               className="ml-2 underline hover:text-white"
             >
@@ -405,16 +446,16 @@ export default function SentenciaSelector({ onAddProducts, onClose }) {
               <button
                 key={sentencia.id}
                 onClick={() => setSentenciaSeleccionada(sentencia)}
-                className="bg-negro p-4 rounded-lg text-left hover:bg-gray-800 transition-colors"
-              >
+              className="bg-negro p-4 rounded-lg text-left hover:bg-gray-800 transition-colors"
+            >
                 <div className="flex justify-between items-center">
                   <h3 className="text-lg font-bold text-amarillo">{sentencia.nombre}</h3>
                   <span className="text-amarillo font-bold">${sentencia.precio.toFixed(2)}</span>
                 </div>
                 <p className="text-sm text-gray-300">{sentencia.descripcion}</p>
-              </button>
-            ))}
-          </div>
+            </button>
+          ))}
+        </div>
         )}
       </div>
     );
@@ -435,31 +476,49 @@ export default function SentenciaSelector({ onAddProducts, onClose }) {
             
             <div className="grid grid-cols-1 gap-2">
               {grupo.map((producto, prodIndex) => (
-                <button
+                  <button
                   key={`${index}-${prodIndex}-${producto.producto_id}`}
                   onClick={() => seleccionarOpcion(index, producto)}
-                  className={`p-3 rounded text-left ${
+                    className={`p-3 rounded text-left ${
                     opcionesSeleccionadas[index]?.producto_id === producto.producto_id
-                      ? 'bg-amarillo text-negro'
-                      : 'bg-negro hover:bg-gray-800'
-                  }`}
-                >
-                  <div className="flex justify-between items-center">
-                    <div>
-                      <p className="font-bold">{producto.producto_nombre}</p>
-                      <p className="text-xs text-gray-400">{producto.producto_categoria}</p>
+                        ? 'bg-amarillo text-negro'
+                        : 'bg-negro hover:bg-gray-800'
+                    }`}
+                  >
+                    <div className="flex justify-between items-center">
+                    <div className="flex-1">
+                      <p className="font-bold">{producto.producto_nombre || producto.nombre}</p>
+                      <p className="text-xs text-gray-400">{producto.producto_categoria || producto.categoria}</p>
                       {producto.sabor_nombre && (
-                        <p className="text-xs text-gray-300">Sabor: {producto.sabor_nombre}</p>
+                        <div className="flex justify-between text-xs text-gray-300">
+                          <span>Sabor: {producto.sabor_nombre}</span>
+                          {parseFloat(producto.precio_adicional) > 0 && (
+                            <span className="text-amarillo">+${parseFloat(producto.precio_adicional).toFixed(2)}</span>
+                          )}
+                        </div>
                       )}
                       {producto.tamano_nombre && (
-                        <p className="text-xs text-gray-300">Tamaño: {producto.tamano_nombre}</p>
+                        <div className="flex justify-between text-xs text-gray-300">
+                          <span>Tamaño: {producto.tamano_nombre}</span>
+                          {parseFloat(producto.tamano_precio) > 0 && (
+                            <span className="text-amarillo">+${parseFloat(producto.tamano_precio).toFixed(2)}</span>
+                          )}
+                        </div>
                       )}
-                    </div>
-                    <span className="text-sm">
+                      {producto.ingrediente_nombre && (
+                        <div className="flex justify-between text-xs text-gray-300">
+                          <span>Ingrediente: {producto.ingrediente_nombre}</span>
+                          {parseFloat(producto.ingrediente_precio) > 0 && (
+                            <span className="text-amarillo">+${parseFloat(producto.ingrediente_precio).toFixed(2)}</span>
+                          )}
+                        </div>
+                      )}
+                      </div>
+                      <span className="text-sm">
                       {producto.cantidad || 1}x
-                    </span>
-                  </div>
-                </button>
+                      </span>
+                    </div>
+                  </button>
               ))}
             </div>
           </div>
@@ -505,21 +564,36 @@ export default function SentenciaSelector({ onAddProducts, onClose }) {
           {productosFinales.map((producto, index) => (
             <div key={`fijo-${index}`} className="bg-negro p-3 rounded">
               <div className="flex justify-between items-start">
-                <div>
-                  <p className="font-bold">{producto.producto_nombre}</p>
-                  <p className="text-xs text-gray-400">{producto.producto_categoria}</p>
+                <div className="flex-1">
+                  <p className="font-bold">{producto.producto_nombre || producto.nombre}</p>
+                  <p className="text-xs text-gray-400">{producto.producto_categoria || producto.categoria}</p>
                   {producto.sabor_nombre && (
-                    <p className="text-xs text-gray-300">Sabor: {producto.sabor_nombre}</p>
+                    <div className="flex justify-between text-xs text-gray-300">
+                      <span>Sabor: {producto.sabor_nombre}</span>
+                      {parseFloat(producto.precio_adicional) > 0 && (
+                        <span className="text-amarillo">+${parseFloat(producto.precio_adicional).toFixed(2)}</span>
+                      )}
+                    </div>
                   )}
                   {producto.tamano_nombre && (
-                    <p className="text-xs text-gray-300">Tamaño: {producto.tamano_nombre}</p>
+                    <div className="flex justify-between text-xs text-gray-300">
+                      <span>Tamaño: {producto.tamano_nombre}</span>
+                      {parseFloat(producto.tamano_precio) > 0 && (
+                        <span className="text-amarillo">+${parseFloat(producto.tamano_precio).toFixed(2)}</span>
+                      )}
+                    </div>
                   )}
                   {producto.ingrediente_nombre && (
-                    <p className="text-xs text-gray-300">Ingrediente: {producto.ingrediente_nombre}</p>
+                    <div className="flex justify-between text-xs text-gray-300">
+                      <span>Ingrediente: {producto.ingrediente_nombre}</span>
+                      {parseFloat(producto.ingrediente_precio) > 0 && (
+                        <span className="text-amarillo">+${parseFloat(producto.ingrediente_precio).toFixed(2)}</span>
+                      )}
+                    </div>
                   )}
                 </div>
                 <div className="text-right">
-                  <p className="font-bold">{producto.cantidad}x</p>
+                  <p className="font-bold">{producto.cantidad || 1}x</p>
                 </div>
               </div>
             </div>
@@ -533,18 +607,36 @@ export default function SentenciaSelector({ onAddProducts, onClose }) {
           {Object.values(opcionesSeleccionadas).map((producto, index) => (
             <div key={`opcion-${index}`} className="bg-negro p-3 rounded">
               <div className="flex justify-between items-start">
-                <div>
-                  <p className="font-bold">{producto.producto_nombre}</p>
-                  <p className="text-xs text-gray-400">{producto.producto_categoria}</p>
+                <div className="flex-1">
+                  <p className="font-bold">{producto.producto_nombre || producto.nombre}</p>
+                  <p className="text-xs text-gray-400">{producto.producto_categoria || producto.categoria}</p>
                   {producto.sabor_nombre && (
-                    <p className="text-xs text-gray-300">Sabor: {producto.sabor_nombre}</p>
+                    <div className="flex justify-between text-xs text-gray-300">
+                      <span>Sabor: {producto.sabor_nombre}</span>
+                      {parseFloat(producto.precio_adicional) > 0 && (
+                        <span className="text-amarillo">+${parseFloat(producto.precio_adicional).toFixed(2)}</span>
+                      )}
+                    </div>
                   )}
                   {producto.tamano_nombre && (
-                    <p className="text-xs text-gray-300">Tamaño: {producto.tamano_nombre}</p>
+                    <div className="flex justify-between text-xs text-gray-300">
+                      <span>Tamaño: {producto.tamano_nombre}</span>
+                      {parseFloat(producto.tamano_precio) > 0 && (
+                        <span className="text-amarillo">+${parseFloat(producto.tamano_precio).toFixed(2)}</span>
+                      )}
+                    </div>
+                  )}
+                  {producto.ingrediente_nombre && (
+                    <div className="flex justify-between text-xs text-gray-300">
+                      <span>Ingrediente: {producto.ingrediente_nombre}</span>
+                      {parseFloat(producto.ingrediente_precio) > 0 && (
+                        <span className="text-amarillo">+${parseFloat(producto.ingrediente_precio).toFixed(2)}</span>
+                      )}
+                    </div>
                   )}
                 </div>
                 <div className="text-right">
-                  <p className="font-bold">{producto.cantidad}x</p>
+                  <p className="font-bold">{producto.cantidad || 1}x</p>
                 </div>
               </div>
             </div>
