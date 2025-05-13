@@ -434,47 +434,112 @@ export const getOrderResumen = async (orden_id) => {
   // 1. Obtener productos de la orden con detalle de cancelaciones
   const productosQuery = await pool.query(`
     SELECT 
-      p.id AS producto_id,
-      p.nombre, 
-      SUM(d.cantidad) AS cantidad, 
+      d.id AS detalle_orden_id, -- Alias para claridad
+      d.producto_id, -- Puede ser NULL para la sentencia principal
+      COALESCE(p.nombre, d.nombre_sentencia) AS nombre, -- Nombre del producto o de la sentencia
+      d.cantidad, 
       d.precio_unitario,
-      (ABS(SUM(d.cantidad)) * d.precio_unitario) AS subtotal,
-      CASE 
-        WHEN d.precio_unitario < 0 THEN true 
-        ELSE false 
-      END AS es_cancelacion,
-      BOOL_OR(d.preparado) AS preparado,
+      (d.cantidad * d.precio_unitario) AS subtotal, -- No usar ABS aquí todavía para el subtotal individual
+      d.preparado,
+      d.entregado, -- Añadido para saber el estado de entrega
       d.sabor_id,
       s.nombre AS sabor_nombre,
       cv.nombre AS sabor_categoria,
+      s.precio_adicional AS sabor_precio,
       d.tamano_id,
       t.nombre AS tamano_nombre,
       t.precio_adicional AS tamano_precio,
-      s.precio_adicional AS sabor_precio,
       d.ingrediente_id,
       i.nombre AS ingrediente_nombre,
       i.precio_adicional AS ingrediente_precio,
       cvi.nombre AS ingrediente_categoria,
-      d.notas
+      d.notas,
+      d.sentencia_id AS promocion_id, -- ID de la tabla sentencias
+      d.es_sentencia_principal,
+      d.sentencia_detalle_orden_padre_id,
+      d.nombre_sentencia AS nombre_promocion, 
+      d.descripcion_sentencia AS descripcion_promocion,
+      p.categoria AS categoria_producto -- Categoría del producto si existe
     FROM detalles_orden d
-    JOIN productos p ON d.producto_id = p.id
+    LEFT JOIN productos p ON d.producto_id = p.id
     LEFT JOIN sabores s ON d.sabor_id = s.id
     LEFT JOIN categorias_variantes cv ON s.categoria_id = cv.id
     LEFT JOIN sabores t ON d.tamano_id = t.id
     LEFT JOIN sabores i ON d.ingrediente_id = i.id
     LEFT JOIN categorias_variantes cvi ON i.categoria_id = cvi.id
     WHERE d.orden_id = $1
-    GROUP BY p.id, p.nombre, d.precio_unitario, d.producto_id, (d.precio_unitario < 0), 
-             d.sabor_id, s.nombre, cv.nombre, d.tamano_id, t.nombre, t.precio_adicional, s.precio_adicional, 
-             d.ingrediente_id, i.nombre, i.precio_adicional, cvi.nombre, d.notas
-    ORDER BY es_cancelacion, p.nombre
+    ORDER BY d.id ASC -- Ordenar por el ID del detalle para mantener un orden consistente
   `, [orden_id]);
 
-  const productos = productosQuery.rows;
+  // Procesar productos para agrupar cancelaciones y calcular cantidades netas
+  const productosProcesados = [];
+  const mapaProductos = new Map(); // Para agrupar por item único (producto+variantes o sentencia)
 
-  // Calcular subtotal basado en los productos (precio_unitario ya incluye descuentos si aplican)
-  const subtotal = productos.reduce(
-    (acc, prod) => acc + parseFloat(prod.subtotal),
+  for (const row of productosQuery.rows) {
+    // Crear una clave única para agrupar: para sentencias principales, su propio d.id;
+    // para productos y componentes, producto_id + variantes.
+    // Las sentencias principales son únicas por su d.id.
+    // Los componentes de sentencia se tratan como productos individuales con variantes.
+    let claveUnica;
+    if (row.es_sentencia_principal) {
+        claveUnica = `sentencia_principal_${row.detalle_orden_id}`;
+    } else if (row.producto_id) { // Productos normales o componentes de sentencia
+        claveUnica = `prod_${row.producto_id}_sabor_${row.sabor_id || 'null'}_tam_${row.tamano_id || 'null'}_ing_${row.ingrediente_id || 'null'}`;
+    } else {
+        // Caso inesperado, podría ser un error de datos si no es sentencia principal y no tiene producto_id
+        claveUnica = `detalle_directo_${row.detalle_orden_id}`;
+    }
+
+    if (!mapaProductos.has(claveUnica)) {
+      mapaProductos.set(claveUnica, {
+        // Usar detalle_orden_id como id único para la lista en el frontend si es necesario
+        id_detalle_original: row.detalle_orden_id, 
+        producto_id: row.producto_id,
+        nombre: row.nombre, // Ya toma nombre_sentencia si p.nombre es null
+        cantidad_neta: 0,
+        precio_unitario: parseFloat(row.precio_unitario),
+        subtotal_neto: 0,
+        preparado: row.preparado, // Asumimos que una sentencia principal no se marca como preparada individualmente
+        entregado: row.entregado,
+        sabor_id: row.sabor_id, sabor_nombre: row.sabor_nombre, sabor_categoria: row.sabor_categoria, sabor_precio: row.sabor_precio ? parseFloat(row.sabor_precio) : 0,
+        tamano_id: row.tamano_id, tamano_nombre: row.tamano_nombre, tamano_precio: row.tamano_precio ? parseFloat(row.tamano_precio) : 0,
+        ingrediente_id: row.ingrediente_id, ingrediente_nombre: row.ingrediente_nombre, ingrediente_precio: row.ingrediente_precio ? parseFloat(row.ingrediente_precio) : 0, ingrediente_categoria: row.ingrediente_categoria,
+        notas: row.notas,
+        promocion_id: row.promocion_id,
+        es_sentencia_principal: row.es_sentencia_principal,
+        sentencia_detalle_orden_padre_id: row.sentencia_detalle_orden_padre_id,
+        nombre_promocion: row.nombre_promocion,
+        descripcion_promocion: row.descripcion_promocion,
+        categoria_producto: row.categoria_producto,
+        es_cancelacion_item: false // Para marcar si el item agrupado es en sí una cancelación total
+      });
+    }
+
+    const prodAgrupado = mapaProductos.get(claveUnica);
+    prodAgrupado.cantidad_neta += row.cantidad; // Suma cantidades (positivas y negativas)
+    // El preparado se considera true si alguna de sus instancias está preparada (esto podría necesitar revisión según la lógica de negocio)
+    if(row.preparado) prodAgrupado.preparado = true;
+    if(row.entregado) prodAgrupado.entregado = true; 
+  }
+  
+  mapaProductos.forEach(prod => {
+    prod.subtotal_neto = prod.cantidad_neta * prod.precio_unitario;
+    // Un item es una "cancelación" a mostrar si su cantidad neta final es <= 0 Y ERA una sentencia principal o un producto.
+    // Los productos con precio_unitario < 0 son registros de cancelación y no deberían aparecer como items principales.
+    if (prod.cantidad_neta <= 0 && prod.precio_unitario > 0) {
+        prod.es_cancelacion_item = true; // El item en sí ha sido completamente cancelado o más
+    }
+    // Solo añadir a productos procesados si la cantidad neta es diferente de cero, o si es una sentencia principal (para mostrarla incluso si sus items se cancelan)
+    // O si es un registro de cancelación que queremos mostrar (esto último depende de la UI deseada)
+    // Por ahora, mostramos todo lo que tenga cantidad neta != 0 o sea sentencia principal.
+    if (prod.cantidad_neta !== 0 || prod.es_sentencia_principal) {
+        productosProcesados.push(prod);
+    }
+  });
+
+  // Calcular subtotal general de la orden basado en las cantidades netas y precios unitarios
+  const subtotal_orden = productosProcesados.reduce(
+    (acc, prod) => acc + prod.subtotal_neto,
     0
   );
 
@@ -503,8 +568,8 @@ export const getOrderResumen = async (orden_id) => {
   const ordenInfo = ordenQuery.rows[0];
   const cliente = ordenInfo.cliente || "Cliente desconocido";
   const num_personas = ordenInfo.num_personas || 1;
-  const total_bruto = parseFloat(ordenInfo.total_bruto || subtotal);
-  const total = parseFloat(ordenInfo.total || subtotal);
+  const total_bruto = parseFloat(ordenInfo.total_bruto || subtotal_orden);
+  const total = parseFloat(ordenInfo.total || subtotal_orden);
 
   // 3. Obtener pagos
   const pagosQuery = await pool.query(`
@@ -528,7 +593,7 @@ export const getOrderResumen = async (orden_id) => {
     orden_id,
     cliente,
     num_personas,
-    productos,
+    productos: productosProcesados,
     total_bruto,
     total,
     total_pagado,
@@ -565,9 +630,10 @@ export const getProductosPorPreparar = async () => {
       t.precio_adicional AS tamano_precio,
       i.nombre AS ingrediente_nombre,
       i.precio_adicional AS ingrediente_precio,
-      cvi.nombre AS ingrediente_categoria
+      cvi.nombre AS ingrediente_categoria,
+      sp.nombre_sentencia AS nombre_sentencia_padre -- Nombre de la sentencia a la que pertenece
     FROM detalles_orden d
-    JOIN productos p ON d.producto_id = p.id
+    JOIN productos p ON d.producto_id = p.id -- Componentes de sentencia o productos normales SIEMPRE tienen producto_id
     JOIN ordenes o ON d.orden_id = o.orden_id
     LEFT JOIN presos pr ON o.preso_id = pr.id
     LEFT JOIN sabores s ON d.sabor_id = s.id
@@ -575,7 +641,10 @@ export const getProductosPorPreparar = async () => {
     LEFT JOIN sabores t ON d.tamano_id = t.id
     LEFT JOIN sabores i ON d.ingrediente_id = i.id
     LEFT JOIN categorias_variantes cvi ON i.categoria_id = cvi.id
+    LEFT JOIN detalles_orden sp ON d.sentencia_detalle_orden_padre_id = sp.id AND sp.es_sentencia_principal = TRUE
     WHERE d.preparado = FALSE 
+      AND d.cantidad > 0 -- Solo items con cantidad positiva (no cancelaciones directas)
+      AND d.es_sentencia_principal = FALSE -- Muy importante: Excluir las sentencias principales como items a preparar
     ORDER BY d.tiempo_creacion ASC
   `;
   

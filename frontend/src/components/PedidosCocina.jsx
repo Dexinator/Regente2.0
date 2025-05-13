@@ -118,7 +118,8 @@ export default function PedidosCocina() {
             ingrediente_id: producto.ingrediente_id,
             ingrediente_nombre: producto.ingrediente_nombre,
             notas: producto.notas ? [producto.notas] : [],
-            ordenes: [`#${producto.orden_id}`] // Guardamos números de orden para referencia
+            ordenes: [`#${producto.orden_id}`], // Guardamos números de orden para referencia
+            nombre_sentencia_padre: producto.nombre_sentencia_padre || null // Añadido
           };
         } else {
           // Actualizamos los datos del producto existente
@@ -132,6 +133,10 @@ export default function PedidosCocina() {
           
           if (producto.notas && !productosAgrupados[clave].notas.includes(producto.notas)) {
             productosAgrupados[clave].notas.push(producto.notas);
+          }
+          // Conservar el nombre_sentencia_padre si ya existe o el nuevo producto lo trae
+          if (producto.nombre_sentencia_padre && !productosAgrupados[clave].nombre_sentencia_padre) {
+            productosAgrupados[clave].nombre_sentencia_padre = producto.nombre_sentencia_padre;
           }
         }
       });
@@ -339,6 +344,19 @@ export default function PedidosCocina() {
                           </span>
                           <span className="text-xs text-amarillo">{producto.categoria}</span>
                         </div>
+                      </div>
+                      
+                      {/* Info del producto */}
+                      <div className="flex-1">
+                        <p className="font-bold text-amarillo text-lg">
+                          {producto.nombre} x{producto.cantidad_total}
+                        </p>
+                        {/* Mostrar si es parte de una sentencia */}
+                        {producto.nombre_sentencia_padre && (
+                          <p className="text-xs text-cyan-400 italic">
+                            Parte de: {producto.nombre_sentencia_padre}
+                          </p>
+                        )}
                       </div>
                       
                       {/* Variantes */}
