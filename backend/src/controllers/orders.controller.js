@@ -11,7 +11,8 @@ import {
   cancelarProductoOrden,
   getProductosPorEntregar,
   marcarProductoComoEntregado,
-  revertirEntregaProducto
+  revertirEntregaProducto,
+  addProductsToOrder
 } from "../models/orders.model.js";
 
 export const fetchOrders = async (req, res) => {
@@ -80,8 +81,6 @@ export const closeOrderById = async (req, res) => {
   res.json(updated);
 };
 
-import { addProductsToOrder } from "../models/orders.model.js";
-
 // Agregar productos a una orden abierta
 export const addProducts = async (req, res) => {
   const orden_id = req.params.id;
@@ -93,10 +92,14 @@ export const addProducts = async (req, res) => {
 
   // Validar que cada producto tenga la información correcta
   for (const producto of productos) {
-    if (!producto.producto_id || !producto.cantidad) {
-      return res.status(400).json({ error: "Cada producto debe tener producto_id y cantidad" });
+    // Si no es una sentencia principal, debe tener producto_id. Las sentencias principales no tienen producto_id.
+    if (!producto.es_sentencia_principal && !producto.producto_id) {
+      return res.status(400).json({ error: `Cada producto componente o normal debe tener producto_id. Producto problemático: ${JSON.stringify(producto)}` });
     }
-    // sabor_id y notas son opcionales
+    if (!producto.cantidad) {
+      return res.status(400).json({ error: `Cada producto debe tener cantidad. Producto problemático: ${JSON.stringify(producto)}` });
+    }
+    // sabor_id, precio_unitario, etc., son validados por la lógica del modelo.
   }
 
   try {

@@ -188,7 +188,7 @@ export const createOrder = async ({ preso_id, nombre_cliente, empleado_id, produ
         orden_id,
         spItem.cantidad,
         spItem.precio_unitario,
-        empleado_id, // Asumimos que el mismo empleado_id de la orden aplica a los detalles
+        empleado_id,
         spItem.notas,
         spItem.sentencia_id,
         spItem.nombre_sentencia,
@@ -210,8 +210,6 @@ export const createOrder = async ({ preso_id, nombre_cliente, empleado_id, produ
         sentenciaDetalleOrdenPadreId = mapaSentenciasCreadas[prodItem.sentencia_id];
         if (!sentenciaDetalleOrdenPadreId) {
           console.error(`Error de consistencia: No se encontró el detalle padre para la sentencia_id ${prodItem.sentencia_id} del producto ${prodItem.producto_id || 'N/A'} en orden ${orden_id}`);
-          // Considera si lanzar un error aquí es apropiado o si hay un manejo alternativo
-          // throw new Error(`Error de consistencia: Detalle padre no encontrado para sentencia_id ${prodItem.sentencia_id}.`);
         }
       }
 
@@ -233,7 +231,7 @@ export const createOrder = async ({ preso_id, nombre_cliente, empleado_id, produ
         prodItem.tamano_id,
         prodItem.ingrediente_id,
         prodItem.notas,
-        prodItem.es_parte_sentencia ? prodItem.sentencia_id : null, // sentencia_id de la tabla 'sentencias'
+        prodItem.es_parte_sentencia ? prodItem.sentencia_id : null,
         sentenciaDetalleOrdenPadreId
       ]);
     }
@@ -386,14 +384,72 @@ export const addProductsToOrder = async (orden_id, productos, empleado_id) => {
     const porcentaje_descuento_total = porcentaje_descuento_codigo + porcentaje_descuento_grado;
     const factor_descuento = (100 - porcentaje_descuento_total) / 100;
 
-    // Insertar cada producto
-    for (const { producto_id, cantidad, sabor_id, tamano_id, ingrediente_id, notas, precio_unitario } of productos) {
-      // Insertar con el precio original (sin descuento)
-      await client.query(
-        `INSERT INTO detalles_orden (orden_id, producto_id, cantidad, precio_unitario, empleado_id, sabor_id, tamano_id, ingrediente_id, notas)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
-        [orden_id, producto_id, cantidad, precio_unitario, empleado_id, sabor_id || null, tamano_id || null, ingrediente_id || null, notas || null]
-      );
+    let total_bruto = 0;
+    const mapaSentenciasCreadas = {}; // Key: payload sentencia_id, Value: detalles_orden.id de la sentencia principal
+
+    // 1. Primera pasada: Insertar Sentencias Principales
+    const sentenciasPrincipalesItems = productos.filter(p => p.es_sentencia_principal);
+    for (const spItem of sentenciasPrincipalesItems) {
+      total_bruto += (spItem.precio_unitario || 0) * (spItem.cantidad || 1);
+
+      const qDetalleSentencia = `
+        INSERT INTO detalles_orden (
+            orden_id, producto_id, cantidad, precio_unitario, empleado_id, notas,
+            sentencia_id, es_sentencia_principal, nombre_sentencia, descripcion_sentencia
+        )
+        VALUES ($1, NULL, $2, $3, $4, $5, $6, TRUE, $7, $8)
+        RETURNING id;
+      `;
+      const rDetalleSentencia = await client.query(qDetalleSentencia, [
+        orden_id,
+        spItem.cantidad,
+        spItem.precio_unitario,
+        empleado_id,
+        spItem.notas,
+        spItem.sentencia_id,
+        spItem.nombre_sentencia,
+        spItem.descripcion_sentencia
+      ]);
+      mapaSentenciasCreadas[spItem.sentencia_id] = rDetalleSentencia.rows[0].id;
+    }
+
+    // 2. Segunda pasada: Insertar Productos Normales y Componentes de Sentencia
+    for (const prodItem of productos) {
+      if (prodItem.es_sentencia_principal) {
+        continue; // Ya procesada
+      }
+
+      total_bruto += (prodItem.precio_unitario || 0) * (prodItem.cantidad || 1);
+      let sentenciaDetalleOrdenPadreId = null;
+
+      if (prodItem.es_parte_sentencia && prodItem.sentencia_id) {
+        sentenciaDetalleOrdenPadreId = mapaSentenciasCreadas[prodItem.sentencia_id];
+        if (!sentenciaDetalleOrdenPadreId) {
+          console.error(`Error de consistencia: No se encontró el detalle padre para la sentencia_id ${prodItem.sentencia_id} del producto ${prodItem.producto_id || 'N/A'} en orden ${orden_id}`);
+        }
+      }
+
+      const qDetalleProducto = `
+        INSERT INTO detalles_orden (
+            orden_id, producto_id, cantidad, precio_unitario, empleado_id,
+            sabor_id, tamano_id, ingrediente_id, notas,
+            sentencia_id, es_sentencia_principal, sentencia_detalle_orden_padre_id
+        )
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, FALSE, $11);
+      `;
+      await client.query(qDetalleProducto, [
+        orden_id,
+        prodItem.producto_id,
+        prodItem.cantidad,
+        prodItem.precio_unitario,
+        empleado_id,
+        prodItem.sabor_id,
+        prodItem.tamano_id,
+        prodItem.ingrediente_id,
+        prodItem.notas,
+        prodItem.es_parte_sentencia ? prodItem.sentencia_id : null,
+        sentenciaDetalleOrdenPadreId
+      ]);
     }
 
     // Recalcular el total bruto de la orden (siempre suma todos los productos)
