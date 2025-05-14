@@ -23,7 +23,7 @@ const corsOptions = {
   origin: process.env.NODE_ENV === 'production' 
     ? ['https://regente2-0.vercel.app'] // Dominios de producción
     : process.env.NODE_ENV === 'staging'
-      ? ['https://regente2-0-git-development-dexins-projects.vercel.app'] // Dominio de staging
+      ? ['https://regente2-0-staging.vercel.app/login'] // Dominio de staging
       : 'http://localhost:4321', // Dominio de desarrollo (puerto por defecto de Astro)
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
