@@ -189,7 +189,26 @@ POST /orders
   "preso_id": "integer", // opcional
   "nombre_cliente": "string",
   "empleado_id": "integer",
-  "num_personas": "integer" // opcional, default: 1
+  "num_personas": "integer", // opcional, default: 1
+  "codigo_promocional": "string", // opcional
+  "productos": [
+    {
+      "producto_id": "integer", // null para sentencias principales
+      "cantidad": "integer",
+      "precio_unitario": "number",
+      "sabor_id": "integer", // opcional
+      "tamano_id": "integer", // opcional
+      "ingrediente_id": "integer", // opcional
+      "notas": "string", // opcional
+      
+      // Campos para sentencias
+      "sentencia_id": "integer", // opcional, ID de la sentencia
+      "es_sentencia_principal": "boolean", // opcional, true para registro principal de sentencia
+      "es_parte_sentencia": "boolean", // opcional, true para productos componentes
+      "nombre_sentencia": "string", // opcional, nombre de la sentencia
+      "descripcion_sentencia": "string" // opcional, descripción de la sentencia
+    }
+  ]
 }
 ```
 
@@ -197,7 +216,8 @@ POST /orders
 ```json
 {
   "orden_id": "integer",
-  "mensaje": "Orden creada exitosamente"
+  "mensaje": "Orden creada exitosamente",
+  "detalles": [...] // Detalles de la orden creada
 }
 ```
 
@@ -223,6 +243,7 @@ POST /orders/:id/productos
 **Body:**
 ```json
 {
+  "empleado_id": "integer",
   "productos": [
     {
       "producto_id": "integer",
@@ -230,7 +251,15 @@ POST /orders/:id/productos
       "precio_unitario": "number",
       "sabor_id": "integer", // opcional
       "tamano_id": "integer", // opcional
-      "notas": "string" // opcional
+      "ingrediente_id": "integer", // opcional
+      "notas": "string", // opcional
+      
+      // Campos para sentencias
+      "sentencia_id": "integer", // opcional, ID de la sentencia
+      "es_sentencia_principal": "boolean", // opcional, true para registro principal de sentencia
+      "es_parte_sentencia": "boolean", // opcional, true para productos componentes
+      "nombre_sentencia": "string", // opcional, nombre de la sentencia
+      "descripcion_sentencia": "string" // opcional, descripción de la sentencia
     }
   ]
 }
@@ -239,10 +268,15 @@ POST /orders/:id/productos
 **Respuesta:**
 ```json
 {
-  "mensaje": "Productos agregados exitosamente",
-  "productos_agregados": "integer"
+  "mensaje": "Productos agregados correctamente"
 }
 ```
+
+**Para agregar una sentencia completa**, se deben enviar múltiples productos:
+1. Un producto principal con `es_sentencia_principal: true`
+2. Los productos componentes con `es_parte_sentencia: true`
+
+Todos deben tener el mismo `sentencia_id` para mantener la relación.
 
 #### Cancelar productos
 
@@ -821,180 +855,3 @@ GET /reports/ventas
   ]
 }
 ```
-
-#### Obtener productos populares
-
-```
-GET /reports/productos/populares
-```
-
-**Parámetros de consulta (opcionales):**
-- `limite`: Número máximo de productos a devolver (default: 10)
-- `fechaInicio`: Fecha de inicio (YYYY-MM-DD)
-- `fechaFin`: Fecha de fin (YYYY-MM-DD)
-
-**Respuesta:**
-```json
-[
-  {
-    "id": "integer",
-    "nombre": "string",
-    "cantidad": "integer",
-    "ingresos": "number",
-    "categoria": "string"
-  }
-]
-```
-
-#### Obtener reporte del día
-
-```
-GET /reports/detalle-dia
-```
-
-**Parámetros de consulta (opcionales):**
-- `fecha`: Fecha específica (YYYY-MM-DD) (default: hoy)
-
-**Respuesta:**
-```json
-{
-  "fecha": "string",
-  "ventas_totales": "number",
-  "ordenes_total": "integer",
-  "productos_vendidos": "integer",
-  "clientes_atendidos": "integer",
-  "pagos": {
-    "efectivo": "number",
-    "tarjeta": "number",
-    "transferencia": "number",
-    "otro": "number"
-  },
-  "propinas": "number",
-  "ventas_por_hora": [
-    {
-      "hora": "integer",
-      "ingresos": "number",
-      "ordenes": "integer"
-    }
-  ]
-}
-```
-
-#### Obtener clientes frecuentes
-
-```
-GET /reports/presos/top
-```
-
-**Parámetros de consulta (opcionales):**
-- `limite`: Número máximo de clientes a devolver (default: 10)
-
-**Respuesta:**
-```json
-[
-  {
-    "id": "integer",
-    "nombre": "string",
-    "visitas": "integer",
-    "gasto_total": "number",
-    "ultima_visita": "string"
-  }
-]
-```
-
-## Modelos de Datos
-
-### Orden
-```json
-{
-  "orden_id": "integer",
-  "preso_id": "integer",
-  "nombre_cliente": "string",
-  "total": "number",
-  "fecha": "string",
-  "estado": "string", // "abierta" o "cerrada"
-  "empleado_id": "integer",
-  "num_personas": "integer"
-}
-```
-
-### Detalle de Orden
-```json
-{
-  "id": "integer",
-  "orden_id": "integer",
-  "producto_id": "integer",
-  "cantidad": "integer",
-  "precio_unitario": "number",
-  "empleado_id": "integer",
-  "sabor_id": "integer",
-  "tamano_id": "integer",
-  "preparado": "boolean",
-  "tiempo_creacion": "string",
-  "tiempo_preparacion": "string"
-}
-```
-
-### Producto
-```json
-{
-  "id": "integer",
-  "nombre": "string",
-  "precio": "number",
-  "categoria": "string"
-}
-```
-
-### Sabor/Variante
-```json
-{
-  "id": "integer",
-  "nombre": "string",
-  "descripcion": "string",
-  "categoria_id": "integer",
-  "disponible": "boolean",
-  "precio_adicional": "number"
-}
-```
-
-### Cliente (Preso)
-```json
-{
-  "id": "integer",
-  "reg_name": "string",
-  "res_tel": "string",
-  "IGname": "string",
-  "Bday": "string",
-  "mkt": "boolean",
-  "cellmate": "integer",
-  "referidos": "integer",
-  "fecha_registro": "string"
-}
-```
-
-### Pago
-```json
-{
-  "id": "integer",
-  "orden_id": "integer",
-  "metodo": "string", // "efectivo", "tarjeta", "transferencia", "otro"
-  "monto": "number",
-  "fecha": "string",
-  "empleado_id": "integer",
-  "propina": "number",
-  "porcentaje_propina": "number"
-}
-```
-
-### Empleado
-```json
-{
-  "id": "integer",
-  "nombre": "string",
-  "usuario": "string",
-  "password": "string", // No se muestra en las respuestas
-  "rol": "string", // "admin", "mesero", "cocinero", "financiero"
-  "fecha_ingreso": "string",
-  "activo": "boolean"
-}
-``` 
