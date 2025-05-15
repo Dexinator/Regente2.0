@@ -10,6 +10,10 @@ import reportsRoutes from "./routes/reports.route.js";
 import pagosRoutes from "./routes/pagos.route.js";
 import promocionesRoutes from "./routes/promociones.route.js";
 import sentenciasRoutes from "./routes/sentencias.route.js";
+import proveedoresRoutes from "./routes/proveedores.routes.js";
+import insumosRoutes from "./routes/insumos.routes.js";
+import requisicionesRoutes from "./routes/requisiciones.routes.js";
+import comprasRoutes from "./routes/compras.routes.js";
 
 
 dotenv.config();
@@ -49,6 +53,10 @@ app.use("/reports", reportsRoutes);
 app.use("/pagos", pagosRoutes);
 app.use("/promociones", promocionesRoutes);
 app.use("/sentencias", sentenciasRoutes);
+app.use("/proveedores", proveedoresRoutes);
+app.use("/insumos", insumosRoutes);
+app.use("/requisiciones", requisicionesRoutes);
+app.use("/compras", comprasRoutes);
 
 // Ruta base
 app.get("/", (req, res) => {

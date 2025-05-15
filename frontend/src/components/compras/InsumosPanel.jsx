@@ -1,0 +1,405 @@
+import { useState, useEffect } from "react";
+import { 
+  getInsumos, 
+  getCategoriasInsumos,
+  getProveedores,
+  getInsumoById,
+  createInsumo, 
+  updateInsumo, 
+  deleteInsumo 
+} from "../../utils/compras-api";
+
+export default function InsumosPanel() {
+  const [insumos, setInsumos] = useState([]);
+  const [categorias, setCategorias] = useState([]);
+  const [proveedores, setProveedores] = useState([]);
+  const [categoriaSeleccionada, setCategoriaSeleccionada] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [mostrarFormulario, setMostrarFormulario] = useState(false);
+  const [insumoEditando, setInsumoEditando] = useState(null);
+  const [formData, setFormData] = useState({
+    nombre: "",
+    descripcion: "",
+    categoria: "",
+    unidad_medida_default: "unidad",
+    proveedores: []
+  });
+
+  useEffect(() => {
+    cargarDatos();
+  }, []);
+
+  useEffect(() => {
+    cargarInsumos();
+  }, [categoriaSeleccionada]);
+
+  const cargarDatos = async () => {
+    setLoading(true);
+    setError("");
+    
+    try {
+      // Cargar categorías
+      const categoriasData = await getCategoriasInsumos();
+      setCategorias(categoriasData);
+      
+      // Cargar proveedores
+      const proveedoresData = await getProveedores();
+      setProveedores(proveedoresData);
+      
+      // Cargar insumos
+      await cargarInsumos();
+    } catch (error) {
+      console.error("Error:", error);
+      setError("Error al cargar los datos. Intenta de nuevo.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const cargarInsumos = async () => {
+    try {
+      const data = await getInsumos(categoriaSeleccionada || null);
+      setInsumos(data);
+    } catch (error) {
+      console.error("Error:", error);
+      setError("No se pudieron cargar los insumos. Intenta de nuevo.");
+    }
+  };
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData({
+      ...formData,
+      [name]: value
+    });
+  };
+
+  const handleProveedorChange = (e, proveedorId) => {
+    const { checked } = e.target;
+    
+    if (checked) {
+      // Agregar proveedor
+      setFormData({
+        ...formData,
+        proveedores: [
+          ...formData.proveedores,
+          { id: proveedorId, precio_referencia: null }
+        ]
+      });
+    } else {
+      // Quitar proveedor
+      setFormData({
+        ...formData,
+        proveedores: formData.proveedores.filter(p => p.id !== proveedorId)
+      });
+    }
+  };
+
+  const handlePrecioChange = (e, proveedorId) => {
+    const precio = e.target.value ? parseFloat(e.target.value) : null;
+    
+    setFormData({
+      ...formData,
+      proveedores: formData.proveedores.map(p => 
+        p.id === proveedorId ? { ...p, precio_referencia: precio } : p
+      )
+    });
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError("");
+    
+    try {
+      if (insumoEditando) {
+        await updateInsumo(insumoEditando.id, {
+          ...formData,
+          activo: true
+        });
+      } else {
+        await createInsumo(formData);
+      }
+      
+      resetForm();
+      await cargarInsumos();
+    } catch (error) {
+      console.error("Error:", error);
+      setError(error.message || "Error al guardar el insumo");
+    }
+  };
+
+  const editarInsumo = async (id) => {
+    setError("");
+    
+    try {
+      // Obtener insumo con sus proveedores
+      const insumo = await getInsumoById(id);
+      
+      setInsumoEditando(insumo);
+      setFormData({
+        nombre: insumo.nombre,
+        descripcion: insumo.descripcion || "",
+        categoria: insumo.categoria || "",
+        unidad_medida_default: insumo.unidad_medida_default || "unidad",
+        proveedores: insumo.proveedores || []
+      });
+      setMostrarFormulario(true);
+    } catch (error) {
+      console.error("Error:", error);
+      setError("Error al cargar los datos del insumo");
+    }
+  };
+
+  const eliminarInsumo = async (id) => {
+    if (!confirm("¿Estás seguro de eliminar este insumo?")) return;
+    
+    setError("");
+    
+    try {
+      await deleteInsumo(id);
+      await cargarInsumos();
+    } catch (error) {
+      console.error("Error:", error);
+      setError(error.message || "Error al eliminar el insumo");
+    }
+  };
+
+  const resetForm = () => {
+    setInsumoEditando(null);
+    setFormData({
+      nombre: "",
+      descripcion: "",
+      categoria: "",
+      unidad_medida_default: "unidad",
+      proveedores: []
+    });
+    setMostrarFormulario(false);
+  };
+
+  if (loading && insumos.length === 0) {
+    return <div className="text-center py-10">Cargando insumos...</div>;
+  }
+
+  return (
+    <div className="w-full">
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-2xl font-subtitulo text-amarillo">Insumos</h2>
+        <button
+          onClick={() => setMostrarFormulario(!mostrarFormulario)}
+          className="bg-vino text-white px-4 py-2 rounded-full font-bold"
+        >
+          {mostrarFormulario ? "Cancelar" : "Nuevo Insumo"}
+        </button>
+      </div>
+
+      {error && (
+        <div className="bg-red-900/50 border border-red-500 text-white p-3 rounded mb-4">
+          {error}
+        </div>
+      )}
+
+      {/* Filtro por categoría */}
+      <div className="mb-6">
+        <label className="block text-white mb-1">Filtrar por categoría</label>
+        <select
+          value={categoriaSeleccionada}
+          onChange={(e) => setCategoriaSeleccionada(e.target.value)}
+          className="w-full md:w-64 bg-negro border border-gray-700 rounded p-2 text-white"
+        >
+          <option value="">Todas las categorías</option>
+          {categorias.map((cat, index) => (
+            <option key={index} value={cat}>
+              {cat}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      {mostrarFormulario && (
+        <form onSubmit={handleSubmit} className="bg-negro/50 p-4 rounded-lg mb-6">
+          <h3 className="text-xl text-amarillo mb-4">
+            {insumoEditando ? "Editar Insumo" : "Nuevo Insumo"}
+          </h3>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <div>
+              <label className="block text-white mb-1">Nombre *</label>
+              <input
+                type="text"
+                name="nombre"
+                value={formData.nombre}
+                onChange={handleInputChange}
+                required
+                className="w-full bg-negro border border-gray-700 rounded p-2 text-white"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-white mb-1">Categoría</label>
+              <input
+                type="text"
+                name="categoria"
+                value={formData.categoria}
+                onChange={handleInputChange}
+                list="categorias-list"
+                className="w-full bg-negro border border-gray-700 rounded p-2 text-white"
+              />
+              <datalist id="categorias-list">
+                {categorias.map((cat, index) => (
+                  <option key={index} value={cat} />
+                ))}
+              </datalist>
+            </div>
+            
+            <div>
+              <label className="block text-white mb-1">Unidad de Medida</label>
+              <select
+                name="unidad_medida_default"
+                value={formData.unidad_medida_default}
+                onChange={handleInputChange}
+                className="w-full bg-negro border border-gray-700 rounded p-2 text-white"
+              >
+                <option value="unidad">Unidad</option>
+                <option value="kg">Kilogramo</option>
+                <option value="g">Gramo</option>
+                <option value="l">Litro</option>
+                <option value="ml">Mililitro</option>
+                <option value="pza">Pieza</option>
+              </select>
+            </div>
+            
+            <div className="md:col-span-2">
+              <label className="block text-white mb-1">Descripción</label>
+              <textarea
+                name="descripcion"
+                value={formData.descripcion}
+                onChange={handleInputChange}
+                rows="3"
+                className="w-full bg-negro border border-gray-700 rounded p-2 text-white"
+              ></textarea>
+            </div>
+          </div>
+          
+          {/* Selección de proveedores */}
+          <div className="mb-4">
+            <label className="block text-white mb-2">Proveedores</label>
+            <div className="bg-negro/50 p-3 rounded max-h-60 overflow-y-auto">
+              {proveedores.length === 0 ? (
+                <p className="text-gray-400">No hay proveedores disponibles</p>
+              ) : (
+                proveedores.map((proveedor) => {
+                  const isSelected = formData.proveedores.some(p => p.id === proveedor.id);
+                  const precioReferencia = formData.proveedores.find(p => p.id === proveedor.id)?.precio_referencia;
+                  
+                  return (
+                    <div key={proveedor.id} className="mb-2 pb-2 border-b border-gray-700 last:border-0">
+                      <div className="flex items-center">
+                        <input
+                          type="checkbox"
+                          id={`proveedor-${proveedor.id}`}
+                          checked={isSelected}
+                          onChange={(e) => handleProveedorChange(e, proveedor.id)}
+                          className="mr-2"
+                        />
+                        <label htmlFor={`proveedor-${proveedor.id}`} className="text-white">
+                          {proveedor.nombre}
+                        </label>
+                      </div>
+                      
+                      {isSelected && (
+                        <div className="mt-2 ml-6">
+                          <label className="block text-gray-300 text-sm mb-1">
+                            Precio referencia:
+                          </label>
+                          <input
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            value={precioReferencia || ""}
+                            onChange={(e) => handlePrecioChange(e, proveedor.id)}
+                            className="w-32 bg-negro border border-gray-700 rounded p-1 text-white"
+                          />
+                        </div>
+                      )}
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </div>
+          
+          <div className="flex justify-end gap-2">
+            <button
+              type="button"
+              onClick={resetForm}
+              className="bg-gray-700 text-white px-4 py-2 rounded"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              className="bg-amarillo text-negro px-4 py-2 rounded font-bold"
+            >
+              {insumoEditando ? "Actualizar" : "Guardar"}
+            </button>
+          </div>
+        </form>
+      )}
+
+      {insumos.length === 0 ? (
+        <div className="text-center py-10 text-gray-400">
+          No hay insumos registrados
+        </div>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full text-white">
+            <thead className="bg-vino text-white">
+              <tr>
+                <th className="p-2 text-left">Nombre</th>
+                <th className="p-2 text-left">Categoría</th>
+                <th className="p-2 text-left">Unidad</th>
+                <th className="p-2 text-left">Proveedores</th>
+                <th className="p-2 text-center">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              {insumos.map((insumo) => (
+                <tr key={insumo.id} className="border-b border-gray-700">
+                  <td className="p-2">{insumo.nombre}</td>
+                  <td className="p-2">{insumo.categoria || "-"}</td>
+                  <td className="p-2">{insumo.unidad_medida_default}</td>
+                  <td className="p-2">
+                    {insumo.proveedores ? insumo.proveedores.length : 0}
+                  </td>
+                  <td className="p-2 text-center">
+                    <div className="flex justify-center gap-2">
+                      <button
+                        onClick={() => editarInsumo(insumo.id)}
+                        className="bg-amarillo text-negro p-1 rounded"
+                        title="Editar"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                        </svg>
+                      </button>
+                      <button
+                        onClick={() => eliminarInsumo(insumo.id)}
+                        className="bg-red-700 text-white p-1 rounded"
+                        title="Eliminar"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+} 

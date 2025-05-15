@@ -30,8 +30,8 @@ export default function NavMenu() {
       "cocinero": ["/cocina", "/entregar"],
       "gerente": ["/reportes/gerente"],
       "financiero": ["/reportes/financiero"],
-      "admin": ["/admin"],
-      "administrador": ["/admin"]
+      "admin": ["/admin", "/admin/compras"],
+      "administrador": ["/admin", "/admin/compras"]
     };
 
     // Verificar si el usuario está en una ruta permitida para su rol
@@ -168,6 +168,9 @@ export default function NavMenu() {
               </a>
               <a href="/admin/productos" className="text-white text-xl font-bold py-3 px-6 rounded-full bg-vino w-full max-w-xs text-center">
                 Gestión de Productos
+              </a>
+              <a href="/admin/compras" className="text-white text-xl font-bold py-3 px-6 rounded-full bg-vino w-full max-w-xs text-center">
+                Sistema de Compras
               </a>
               <a href="/admin/configuracion" className="text-white text-xl font-bold py-3 px-6 rounded-full bg-vino w-full max-w-xs text-center">
                 Configuración
