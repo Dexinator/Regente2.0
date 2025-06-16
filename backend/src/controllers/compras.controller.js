@@ -12,7 +12,8 @@ import {
   updateItemCompra,
   deleteItemCompra,
   getAnalisisPrecios,
-  getItemsRequisicionPendientes
+  getItemsRequisicionPendientes,
+  getComprasDelDia
 } from "../models/compras.model.js";
 
 /**
@@ -275,5 +276,23 @@ export const fetchItemsRequisicionPendientes = async (req, res) => {
   } catch (error) {
     console.error('Error al obtener items de requisición pendientes:', error);
     res.status(500).json({ error: 'Error al obtener items de requisición pendientes' });
+  }
+};
+
+/**
+ * Obtiene qué comprar hoy por día y proveedor
+ */
+export const fetchComprasDelDia = async (req, res) => {
+  try {
+    const { dia } = req.params;
+    const { proveedor_id } = req.query;
+    
+    const proveedorId = proveedor_id ? parseInt(proveedor_id) : null;
+    
+    const compras = await getComprasDelDia(dia, proveedorId);
+    res.json(compras);
+  } catch (error) {
+    console.error('Error al obtener compras del día:', error);
+    res.status(500).json({ error: 'Error al obtener compras del día' });
   }
 }; 

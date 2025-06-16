@@ -8,7 +8,9 @@ import {
   createProveedor,
   updateProveedor,
   deleteProveedor,
-  getInsumosByProveedor
+  getInsumosByProveedor,
+  getProveedoresPorDia,
+  getDiasCompraDisponibles
 } from "../models/proveedores.model.js";
 
 /**
@@ -48,7 +50,7 @@ export const fetchProveedorById = async (req, res) => {
  * Crea un nuevo proveedor
  */
 export const addProveedor = async (req, res) => {
-  const { nombre, rfc, direccion, telefono, email, contacto_nombre } = req.body;
+  const { nombre, rfc, direccion, telefono, email, contacto_nombre, dias_compra } = req.body;
 
   // Validar campos requeridos
   if (!nombre || !rfc) {
@@ -62,7 +64,8 @@ export const addProveedor = async (req, res) => {
       direccion, 
       telefono, 
       email, 
-      contacto_nombre
+      contacto_nombre,
+      dias_compra
     });
     
     res.status(201).json(nuevoProveedor);
@@ -80,7 +83,7 @@ export const addProveedor = async (req, res) => {
  */
 export const editProveedor = async (req, res) => {
   const { id } = req.params;
-  const { nombre, rfc, direccion, telefono, email, contacto_nombre, activo } = req.body;
+  const { nombre, rfc, direccion, telefono, email, contacto_nombre, activo, dias_compra } = req.body;
 
   // Validar campos requeridos
   if (!nombre || !rfc) {
@@ -95,7 +98,8 @@ export const editProveedor = async (req, res) => {
       telefono, 
       email, 
       contacto_nombre, 
-      activo
+      activo,
+      dias_compra
     });
 
     if (!proveedorActualizado) {
@@ -154,5 +158,33 @@ export const fetchInsumosByProveedor = async (req, res) => {
   } catch (error) {
     console.error('Error al obtener insumos del proveedor:', error);
     res.status(500).json({ error: 'Error al obtener insumos del proveedor' });
+  }
+};
+
+/**
+ * Obtiene proveedores que compran en un día específico
+ */
+export const fetchProveedoresPorDia = async (req, res) => {
+  const { dia } = req.params;
+
+  try {
+    const proveedores = await getProveedoresPorDia(dia);
+    res.json(proveedores);
+  } catch (error) {
+    console.error('Error al obtener proveedores por día:', error);
+    res.status(500).json({ error: 'Error al obtener proveedores por día' });
+  }
+};
+
+/**
+ * Obtiene la lista de días disponibles para compras
+ */
+export const fetchDiasCompraDisponibles = async (req, res) => {
+  try {
+    const dias = getDiasCompraDisponibles();
+    res.json(dias);
+  } catch (error) {
+    console.error('Error al obtener días de compra:', error);
+    res.status(500).json({ error: 'Error al obtener días de compra' });
   }
 }; 

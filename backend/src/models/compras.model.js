@@ -589,6 +589,96 @@ export const getItemsRequisicionPendientes = async (proveedor_id = null) => {
 };
 
 /**
+ * Obtiene qué comprar hoy por día y proveedor
+ */
+export const getComprasDelDia = async (dia, proveedor_id = null) => {
+  let query = `
+    SELECT DISTINCT
+      p.id as proveedor_id,
+      p.nombre as proveedor_nombre,
+      ir.id as requisicion_item_id,
+      ir.insumo_id,
+      i.nombre as insumo_nombre,
+      i.categoria as insumo_categoria,
+      ir.cantidad,
+      ir.unidad,
+      ir.urgencia,
+      r.fecha_solicitud,
+      e.nombre as solicitante_nombre,
+      ip.precio_referencia,
+      inv.cantidad_actual as stock_actual,
+      inv.stock_minimo,
+      CASE 
+        WHEN inv.stock_minimo > 0 AND inv.cantidad_actual <= inv.stock_minimo THEN true
+        ELSE false
+      END as necesita_reposicion
+    FROM proveedores p
+    JOIN insumo_proveedor ip ON p.id = ip.proveedor_id
+    JOIN insumos i ON ip.insumo_id = i.id
+    LEFT JOIN items_requisicion ir ON i.id = ir.insumo_id AND ir.completado = false
+    LEFT JOIN requisiciones r ON ir.requisicion_id = r.id
+    LEFT JOIN empleados e ON r.usuario_id = e.id
+    LEFT JOIN inventario inv ON i.id = inv.insumo_id AND ir.unidad = inv.unidad
+    WHERE p.activo = true 
+    AND p.dias_compra::jsonb ? $1
+    AND i.activo = true
+    AND (
+      ir.id IS NOT NULL OR 
+      (inv.stock_minimo > 0 AND inv.cantidad_actual <= inv.stock_minimo)
+    )
+  `;
+  
+  const params = [dia];
+  let paramIndex = 2;
+  
+  // Filtrar por proveedor específico si se proporciona
+  if (proveedor_id) {
+    query += ` AND p.id = $${paramIndex}`;
+    params.push(proveedor_id);
+    paramIndex++;
+  }
+  
+  query += ` ORDER BY p.nombre, ir.urgencia DESC, r.fecha_solicitud`;
+  
+  const result = await pool.query(query, params);
+  
+  // Agrupar por proveedor
+  const comprasPorProveedor = {};
+  
+  result.rows.forEach(row => {
+    if (!comprasPorProveedor[row.proveedor_id]) {
+      comprasPorProveedor[row.proveedor_id] = {
+        proveedor_id: row.proveedor_id,
+        proveedor_nombre: row.proveedor_nombre,
+        items: []
+      };
+    }
+    
+    // Solo agregar si hay datos del item (no es solo el proveedor)
+    if (row.insumo_id) {
+      comprasPorProveedor[row.proveedor_id].items.push({
+        requisicion_item_id: row.requisicion_item_id,
+        insumo_id: row.insumo_id,
+        insumo_nombre: row.insumo_nombre,
+        insumo_categoria: row.insumo_categoria,
+        cantidad: row.cantidad,
+        unidad: row.unidad,
+        urgencia: row.urgencia,
+        fecha_solicitud: row.fecha_solicitud,
+        solicitante_nombre: row.solicitante_nombre,
+        precio_referencia: row.precio_referencia,
+        stock_actual: row.stock_actual,
+        stock_minimo: row.stock_minimo,
+        necesita_reposicion: row.necesita_reposicion,
+        es_requisicion: row.requisicion_item_id !== null
+      });
+    }
+  });
+  
+  return Object.values(comprasPorProveedor);
+};
+
+/**
  * Función auxiliar para recalcular el total de una compra
  */
 const recalcularTotalCompra = async (compraId, clientParam = null) => {

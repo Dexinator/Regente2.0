@@ -10,13 +10,19 @@ import {
   addProveedor,
   editProveedor,
   removeProveedor,
-  fetchInsumosByProveedor
+  fetchInsumosByProveedor,
+  fetchProveedoresPorDia,
+  fetchDiasCompraDisponibles
 } from '../controllers/proveedores.controller.js';
 
 const router = express.Router();
 
 // Aplicar middleware de autenticación a todas las rutas
 router.use(verifyToken);
+
+// Rutas especiales (deben ir antes de las rutas con parámetros)
+router.get('/dias-compra/disponibles', fetchDiasCompraDisponibles);
+router.get('/dia/:dia', fetchProveedoresPorDia);
 
 // Rutas para proveedores
 router.get('/', fetchProveedores);

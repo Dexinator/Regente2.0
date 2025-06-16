@@ -22,7 +22,7 @@ export const getProveedorById = async (id) => {
  * Crea un nuevo proveedor
  */
 export const createProveedor = async (data) => {
-  const { nombre, rfc, direccion, telefono, email, contacto_nombre } = data;
+  const { nombre, rfc, direccion, telefono, email, contacto_nombre, dias_compra } = data;
   
   // Verificar si ya existe un proveedor con el mismo RFC
   const existingRFC = await pool.query(
@@ -36,12 +36,12 @@ export const createProveedor = async (data) => {
 
   const query = `
     INSERT INTO proveedores 
-    (nombre, rfc, direccion, telefono, email, contacto_nombre) 
-    VALUES ($1, $2, $3, $4, $5, $6) 
+    (nombre, rfc, direccion, telefono, email, contacto_nombre, dias_compra) 
+    VALUES ($1, $2, $3, $4, $5, $6, $7) 
     RETURNING *
   `;
   
-  const values = [nombre, rfc, direccion, telefono, email, contacto_nombre];
+  const values = [nombre, rfc, direccion, telefono, email, contacto_nombre, JSON.stringify(dias_compra || [])];
   const result = await pool.query(query, values);
   return result.rows[0];
 };
@@ -50,7 +50,7 @@ export const createProveedor = async (data) => {
  * Actualiza un proveedor existente
  */
 export const updateProveedor = async (id, data) => {
-  const { nombre, rfc, direccion, telefono, email, contacto_nombre, activo } = data;
+  const { nombre, rfc, direccion, telefono, email, contacto_nombre, activo, dias_compra } = data;
   
   // Verificar si ya existe otro proveedor con el mismo RFC
   const existingRFC = await pool.query(
@@ -65,12 +65,12 @@ export const updateProveedor = async (id, data) => {
   const query = `
     UPDATE proveedores 
     SET nombre = $1, rfc = $2, direccion = $3, 
-        telefono = $4, email = $5, contacto_nombre = $6, activo = $7
-    WHERE id = $8 
+        telefono = $4, email = $5, contacto_nombre = $6, activo = $7, dias_compra = $8
+    WHERE id = $9 
     RETURNING *
   `;
   
-  const values = [nombre, rfc, direccion, telefono, email, contacto_nombre, activo, id];
+  const values = [nombre, rfc, direccion, telefono, email, contacto_nombre, activo, JSON.stringify(dias_compra), id];
   const result = await pool.query(query, values);
   return result.rows[0] || null;
 };
@@ -112,4 +112,33 @@ export const getInsumosByProveedor = async (id) => {
   
   const result = await pool.query(query, [id]);
   return result.rows;
+};
+
+/**
+ * Obtiene proveedores que compran en un día específico
+ */
+export const getProveedoresPorDia = async (dia) => {
+  const query = `
+    SELECT * FROM proveedores 
+    WHERE activo = true 
+    AND dias_compra::jsonb ? $1
+    ORDER BY nombre
+  `;
+  const result = await pool.query(query, [dia]);
+  return result.rows;
+};
+
+/**
+ * Obtiene la lista de días de compra disponibles
+ */
+export const getDiasCompraDisponibles = () => {
+  return [
+    { value: 'lunes', label: 'Lunes' },
+    { value: 'martes', label: 'Martes' },
+    { value: 'miercoles', label: 'Miércoles' },
+    { value: 'jueves', label: 'Jueves' },
+    { value: 'viernes', label: 'Viernes' },
+    { value: 'sabado', label: 'Sábado' },
+    { value: 'domingo', label: 'Domingo' }
+  ];
 }; 

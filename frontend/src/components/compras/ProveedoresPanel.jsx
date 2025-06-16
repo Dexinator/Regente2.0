@@ -3,7 +3,8 @@ import {
   getProveedores, 
   createProveedor, 
   updateProveedor, 
-  deleteProveedor 
+  deleteProveedor,
+  getDiasCompraDisponibles
 } from "../../utils/compras-api";
 
 export default function ProveedoresPanel() {
@@ -12,21 +13,43 @@ export default function ProveedoresPanel() {
   const [error, setError] = useState("");
   const [mostrarFormulario, setMostrarFormulario] = useState(false);
   const [proveedorEditando, setProveedorEditando] = useState(null);
+  const [diasDisponibles, setDiasDisponibles] = useState([]);
   const [formData, setFormData] = useState({
     nombre: "",
     rfc: "",
     direccion: "",
     telefono: "",
     email: "",
-    contacto_nombre: ""
+    contacto_nombre: "",
+    dias_compra: []
   });
 
   useEffect(() => {
-    cargarProveedores();
+    cargarDatos();
   }, []);
 
-  const cargarProveedores = async () => {
+  const cargarDatos = async () => {
     setLoading(true);
+    setError("");
+    
+    try {
+      // Cargar proveedores y días disponibles en paralelo
+      const [proveedoresData, diasData] = await Promise.all([
+        getProveedores(),
+        getDiasCompraDisponibles()
+      ]);
+      
+      setProveedores(proveedoresData);
+      setDiasDisponibles(diasData);
+    } catch (error) {
+      console.error("Error:", error);
+      setError("No se pudieron cargar los datos. Intenta de nuevo.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const cargarProveedores = async () => {
     setError("");
     
     try {
@@ -35,8 +58,6 @@ export default function ProveedoresPanel() {
     } catch (error) {
       console.error("Error:", error);
       setError("No se pudieron cargar los proveedores. Intenta de nuevo.");
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -45,6 +66,23 @@ export default function ProveedoresPanel() {
     setFormData({
       ...formData,
       [name]: value
+    });
+  };
+
+  const handleDiaCompraChange = (diaValue, checked) => {
+    setFormData(prev => {
+      const diasActuales = prev.dias_compra || [];
+      if (checked) {
+        return {
+          ...prev,
+          dias_compra: [...diasActuales, diaValue]
+        };
+      } else {
+        return {
+          ...prev,
+          dias_compra: diasActuales.filter(dia => dia !== diaValue)
+        };
+      }
     });
   };
 
@@ -75,7 +113,8 @@ export default function ProveedoresPanel() {
       direccion: proveedor.direccion || "",
       telefono: proveedor.telefono || "",
       email: proveedor.email || "",
-      contacto_nombre: proveedor.contacto_nombre || ""
+      contacto_nombre: proveedor.contacto_nombre || "",
+      dias_compra: proveedor.dias_compra || []
     });
     setMostrarFormulario(true);
   };
@@ -102,7 +141,8 @@ export default function ProveedoresPanel() {
       direccion: "",
       telefono: "",
       email: "",
-      contacto_nombre: ""
+      contacto_nombre: "",
+      dias_compra: []
     });
     setMostrarFormulario(false);
   };
@@ -205,6 +245,23 @@ export default function ProveedoresPanel() {
             </div>
           </div>
           
+          <div className="mb-4">
+            <label className="block text-white mb-2">Días de Compra</label>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+              {diasDisponibles.map((dia) => (
+                <label key={dia.value} className="flex items-center space-x-2 text-white">
+                  <input
+                    type="checkbox"
+                    checked={formData.dias_compra.includes(dia.value)}
+                    onChange={(e) => handleDiaCompraChange(dia.value, e.target.checked)}
+                    className="w-4 h-4"
+                  />
+                  <span className="text-sm">{dia.label}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+          
           <div className="flex justify-end gap-2">
             <button
               type="button"
@@ -236,6 +293,7 @@ export default function ProveedoresPanel() {
                 <th className="p-2 text-left">RFC</th>
                 <th className="p-2 text-left">Teléfono</th>
                 <th className="p-2 text-left">Email</th>
+                <th className="p-2 text-left">Días de Compra</th>
                 <th className="p-2 text-center">Acciones</th>
               </tr>
             </thead>
@@ -246,6 +304,25 @@ export default function ProveedoresPanel() {
                   <td className="p-2">{proveedor.rfc}</td>
                   <td className="p-2">{proveedor.telefono || "-"}</td>
                   <td className="p-2">{proveedor.email || "-"}</td>
+                  <td className="p-2">
+                    {proveedor.dias_compra && proveedor.dias_compra.length > 0 ? (
+                      <div className="flex flex-wrap gap-1">
+                        {proveedor.dias_compra.map((dia) => {
+                          const diaLabel = diasDisponibles.find(d => d.value === dia)?.label || dia;
+                          return (
+                            <span
+                              key={dia}
+                              className="bg-amarillo text-negro px-2 py-1 rounded text-xs"
+                            >
+                              {diaLabel}
+                            </span>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <span className="text-gray-400">Sin días configurados</span>
+                    )}
+                  </td>
                   <td className="p-2 text-center">
                     <div className="flex justify-center gap-2">
                       <button

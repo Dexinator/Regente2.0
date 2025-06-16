@@ -3,12 +3,14 @@ import ProveedoresPanel from "./ProveedoresPanel";
 import InsumosPanel from "./InsumosPanel";
 import RequisicionesPanel from "./RequisicionesPanel";
 import ComprasListado from "./ComprasListado";
+import ComprasDelDia from "./ComprasDelDia";
 
 export default function ComprasPanel() {
-  const [seccionActiva, setSeccionActiva] = useState("compras");
+  const [seccionActiva, setSeccionActiva] = useState("compras-del-dia");
 
   const secciones = [
-    { id: "compras", nombre: "Compras" },
+    { id: "compras-del-dia", nombre: "Compras del Día" },
+    { id: "compras", nombre: "Historial de Compras" },
     { id: "requisiciones", nombre: "Requisiciones" },
     { id: "insumos", nombre: "Insumos" },
     { id: "proveedores", nombre: "Proveedores" },
@@ -39,6 +41,7 @@ export default function ComprasPanel() {
 
       {/* Contenido de la sección activa */}
       <div className="bg-negro/30 p-4 rounded-lg">
+        {seccionActiva === "compras-del-dia" && <ComprasDelDia />}
         {seccionActiva === "compras" && <ComprasListado />}
         {seccionActiva === "requisiciones" && <RequisicionesPanel />}
         {seccionActiva === "insumos" && <InsumosPanel />}

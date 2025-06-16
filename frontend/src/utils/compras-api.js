@@ -187,4 +187,54 @@ export const getAnalisisPrecios = async (filters = {}) => {
 export const getItemsRequisicionPendientes = async (proveedor_id = null) => {
   const query = proveedor_id ? `?proveedor_id=${proveedor_id}` : "";
   return await fetchApi(`/compras/items-requisicion-pendientes${query}`);
+};
+
+// Nuevas funciones para días de compra y compras del día
+export const getDiasCompraDisponibles = async () => {
+  return await fetchApi("/proveedores/dias-compra/disponibles");
+};
+
+export const getProveedoresPorDia = async (dia) => {
+  return await fetchApi(`/proveedores/dia/${dia}`);
+};
+
+export const getComprasDelDia = async (dia, proveedor_id = null) => {
+  const query = proveedor_id ? `?proveedor_id=${proveedor_id}` : "";
+  return await fetchApi(`/compras/dia/${dia}${query}`);
+};
+
+// Funciones de inventario
+export const getInventario = async (filters = {}) => {
+  const params = new URLSearchParams();
+  if (filters.categoria) params.append("categoria", filters.categoria);
+  if (filters.bajo_minimo) params.append("bajo_minimo", filters.bajo_minimo);
+  
+  const query = params.toString() ? `?${params.toString()}` : "";
+  return await fetchApi(`/inventario${query}`);
+};
+
+export const getInventarioByInsumo = async (insumo_id) => {
+  return await fetchApi(`/inventario/insumo/${insumo_id}`);
+};
+
+export const updateInventario = async (data) => {
+  return await fetchApi("/inventario", {
+    method: "PUT",
+    body: JSON.stringify(data),
+  });
+};
+
+export const ajustarInventario = async (data) => {
+  return await fetchApi("/inventario/ajustar", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+};
+
+export const getInventarioBajoPorProveedor = async (proveedor_id) => {
+  return await fetchApi(`/inventario/proveedor/${proveedor_id}/bajo-minimo`);
+};
+
+export const getEstadisticasInventario = async () => {
+  return await fetchApi("/inventario/estadisticas");
 }; 
