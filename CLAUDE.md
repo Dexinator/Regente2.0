@@ -116,12 +116,13 @@ regente2.0/
 - **Database SSL** enabled automatically for production/staging
 
 ### Compras (Purchasing) Module
-Recent addition for supply chain management:
-- **Proveedores**: Supplier management
-- **Insumos**: Inventory/supply items  
-- **Requisiciones**: Purchase requisitions
-- **Compras**: Purchase orders
-- Located in `backend/src/controllers/compras.controller.js` and related files
+**Complete supply chain management system**:
+- **Proveedores**: Supplier management with purchase day scheduling
+- **Insumos**: Inventory items with brand, category, and unit tracking
+- **Requisiciones**: Staff purchase requests with approval workflow
+- **Compras**: Purchase orders with inventory integration
+- **Daily Planning**: "Compras del Día" view for daily purchase planning
+- Located in `backend/src/controllers/compras.controller.js` and frontend components
 
 ### Product Variants System
 **Complex multi-level variant system** handling:
@@ -146,13 +147,39 @@ Recent addition for supply chain management:
 - **Pricing Logic**: Combo gets full price, components get $0.00
 - **Kitchen Integration**: All components appear in kitchen queue individually
 
-### Compras (Purchasing) Module
-**Complete supply chain management**:
-- **Proveedores**: Supplier management (RFC, contact info, addresses)
-- **Insumos**: Inventory items with categories and units
-- **Requisiciones**: Internal purchase requests with approval workflow
-- **Compras**: Purchase orders with pricing analysis
-- **Price Analysis**: Historical pricing, supplier comparison, cost optimization
+### Compras (Purchasing) Module - Detailed
+**Complete supply chain management system with daily planning**:
+
+**Core Features**:
+- **Proveedores**: Supplier management with purchase day configuration
+  - RFC, contact information, addresses
+  - Configurable purchase days (Monday-Sunday selection)
+  - Integration with daily purchase planning
+- **Insumos**: Inventory items with comprehensive tracking
+  - Brand field for product identification
+  - Categories and units of measurement
+  - Supplier associations with reference pricing
+- **Requisiciones**: Staff purchase requests with improved workflow
+  - Multi-item creation process (no more empty requisitions)
+  - Integrated item addition within creation form
+  - Urgency levels and completion tracking
+- **Compras**: Purchase orders with inventory integration
+  - Direct creation from daily planning view
+  - Automatic total calculation
+  - Integration with requisition items
+
+**Daily Planning Workflow**:
+1. **Compras del Día**: Smart daily view showing what to buy
+   - Filters suppliers by configured purchase days
+   - Combines requisition requests with low inventory alerts
+   - Allows direct purchase registration from planning view
+   - Real-time inventory status integration
+
+**Technical Implementation**:
+- Backend models in `models/` directory (proveedores, insumos, requisiciones, compras, inventario)
+- Frontend components in `components/compras/` directory
+- Centralized API utilities in `utils/compras-api.js`
+- SSR-compatible authentication integration
 
 ### Kitchen Workflow Improvements
 **Enhanced kitchen operations**:
@@ -195,4 +222,31 @@ Recent addition for supply chain management:
 - Frontend components should use existing API utilities for consistency
 - **Variant additions**: Check `categoria_producto_tipo_variante` table before modifying code
 - **Kitchen improvements**: Focus on chronological ordering and error correction features
-- **Purchasing module**: Complete workflow from requisition to purchase analysis
+- **SSR Compatibility**: Use `typeof window !== 'undefined'` checks for localStorage access
+- **Purchasing module**: Complete workflow from requisition to daily purchase planning
+
+### Recent Improvements (Latest Updates)
+
+**Insumos Management**:
+- Added "marca" (brand) field to insumos table and full frontend/backend support
+- Enhanced InsumosPanel with brand column and form field
+- Updated API endpoints to handle brand information
+
+**Requisiciones Workflow**:
+- **Fixed Error 400**: Resolved "Bad Request" error when creating requisitions
+- **Improved UX**: Complete requisition creation with items in single form
+- **Multi-item creation**: Add multiple items before creating requisition
+- **Validation**: Prevents empty requisitions and duplicate items
+- **Real-time feedback**: Shows item count in creation button
+- **Item management**: Add/remove items within creation form
+
+**SSR Compatibility**:
+- Fixed localStorage errors during server-side rendering
+- Added proper window checks in auth utilities
+- Enhanced component initialization for hydration compatibility
+
+**Daily Purchase Planning**:
+- Integrated supplier purchase day configuration
+- Smart filtering by weekdays for purchase planning
+- Combined requisition and inventory data in single view
+- Direct purchase registration from daily planning interface

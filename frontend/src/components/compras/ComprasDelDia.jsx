@@ -14,15 +14,21 @@ export default function ComprasDelDia() {
   const [error, setError] = useState("");
   const [mostrarFormularioCompra, setMostrarFormularioCompra] = useState(null);
   const [itemsSeleccionados, setItemsSeleccionados] = useState({});
-  const [usuarioId] = useState(getEmpleadoId());
+  const [usuarioId, setUsuarioId] = useState(null);
 
   useEffect(() => {
-    cargarDiasDisponibles();
-    // Configurar día actual por defecto
-    const hoy = new Date();
-    const diasSemana = ['domingo', 'lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado'];
-    const diaHoy = diasSemana[hoy.getDay()];
-    setDiaSeleccionado(diaHoy);
+    // Solo ejecutar en el cliente (después del hydrate)
+    if (typeof window !== 'undefined') {
+      // Obtener ID del usuario
+      setUsuarioId(getEmpleadoId());
+      
+      cargarDiasDisponibles();
+      // Configurar día actual por defecto
+      const hoy = new Date();
+      const diasSemana = ['domingo', 'lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado'];
+      const diaHoy = diasSemana[hoy.getDay()];
+      setDiaSeleccionado(diaHoy);
+    }
   }, []);
 
   useEffect(() => {
@@ -70,6 +76,11 @@ export default function ComprasDelDia() {
   };
 
   const registrarCompra = async (proveedor) => {
+    if (!usuarioId) {
+      alert("Error: No se pudo obtener el ID del usuario");
+      return;
+    }
+
     const itemsParaComprar = proveedor.items.filter((_, index) => 
       itemsSeleccionados[`${proveedor.proveedor_id}_${index}`]
     );
@@ -133,6 +144,11 @@ export default function ComprasDelDia() {
       default: return 'bg-gray-900/50 text-gray-200';
     }
   };
+
+  // Mostrar loading inicial si estamos en el servidor o aún no se ha cargado el usuario
+  if (typeof window === 'undefined' || !usuarioId) {
+    return <div className="text-center py-10">Cargando...</div>;
+  }
 
   if (loading && comprasDelDia.length === 0) {
     return <div className="text-center py-10">Cargando compras del día...</div>;

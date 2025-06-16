@@ -53,6 +53,7 @@ export const addInsumo = async (req, res) => {
     nombre, 
     descripcion, 
     categoria, 
+    marca,
     unidad_medida_default,
     proveedores 
   } = req.body;
@@ -67,6 +68,7 @@ export const addInsumo = async (req, res) => {
       nombre,
       descripcion,
       categoria,
+      marca,
       unidad_medida_default,
       proveedores
     });
@@ -90,6 +92,7 @@ export const editInsumo = async (req, res) => {
     nombre, 
     descripcion, 
     categoria, 
+    marca,
     unidad_medida_default,
     proveedores,
     activo
@@ -105,6 +108,7 @@ export const editInsumo = async (req, res) => {
       nombre,
       descripcion,
       categoria,
+      marca,
       unidad_medida_default,
       proveedores,
       activo

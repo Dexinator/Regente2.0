@@ -22,6 +22,7 @@ export default function InsumosPanel() {
     nombre: "",
     descripcion: "",
     categoria: "",
+    marca: "",
     unidad_medida_default: "unidad",
     proveedores: []
   });
@@ -141,6 +142,7 @@ export default function InsumosPanel() {
         nombre: insumo.nombre,
         descripcion: insumo.descripcion || "",
         categoria: insumo.categoria || "",
+        marca: insumo.marca || "",
         unidad_medida_default: insumo.unidad_medida_default || "unidad",
         proveedores: insumo.proveedores || []
       });
@@ -171,6 +173,7 @@ export default function InsumosPanel() {
       nombre: "",
       descripcion: "",
       categoria: "",
+      marca: "",
       unidad_medida_default: "unidad",
       proveedores: []
     });
@@ -250,6 +253,17 @@ export default function InsumosPanel() {
                   <option key={index} value={cat} />
                 ))}
               </datalist>
+            </div>
+            
+            <div>
+              <label className="block text-white mb-1">Marca</label>
+              <input
+                type="text"
+                name="marca"
+                value={formData.marca}
+                onChange={handleInputChange}
+                className="w-full bg-negro border border-gray-700 rounded p-2 text-white"
+              />
             </div>
             
             <div>
@@ -358,6 +372,7 @@ export default function InsumosPanel() {
               <tr>
                 <th className="p-2 text-left">Nombre</th>
                 <th className="p-2 text-left">Categoría</th>
+                <th className="p-2 text-left">Marca</th>
                 <th className="p-2 text-left">Unidad</th>
                 <th className="p-2 text-left">Proveedores</th>
                 <th className="p-2 text-center">Acciones</th>
@@ -368,6 +383,7 @@ export default function InsumosPanel() {
                 <tr key={insumo.id} className="border-b border-gray-700">
                   <td className="p-2">{insumo.nombre}</td>
                   <td className="p-2">{insumo.categoria || "-"}</td>
+                  <td className="p-2">{insumo.marca || "-"}</td>
                   <td className="p-2">{insumo.unidad_medida_default}</td>
                   <td className="p-2">
                     {insumo.proveedores ? insumo.proveedores.length : 0}

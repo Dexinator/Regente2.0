@@ -22,7 +22,8 @@ export default function RequisicionesPanel() {
   const [error, setError] = useState("");
   const [filtroCompletada, setFiltroCompletada] = useState(null);
   const [formData, setFormData] = useState({
-    notas: ""
+    notas: "",
+    items: []
   });
   const [formItemData, setFormItemData] = useState({
     insumo_id: "",
@@ -117,11 +118,17 @@ export default function RequisicionesPanel() {
     e.preventDefault();
     setError("");
     
+    // Validar que haya al menos un item
+    if (formData.items.length === 0) {
+      setError("Debe agregar al menos un item a la requisición");
+      return;
+    }
+    
     try {
       const nuevaRequisicion = await createRequisicion({
         usuario_id: usuarioId,
         notas: formData.notas,
-        items: [] // Los items se agregarán después
+        items: formData.items
       });
       
       resetForm();
@@ -211,7 +218,8 @@ export default function RequisicionesPanel() {
 
   const resetForm = () => {
     setFormData({
-      notas: ""
+      notas: "",
+      items: []
     });
     setMostrarFormulario(false);
   };
@@ -224,6 +232,38 @@ export default function RequisicionesPanel() {
       urgencia: "normal"
     });
     setMostrarFormularioItem(false);
+  };
+
+  const agregarItemAFormulario = () => {
+    // Validar que se haya seleccionado un insumo
+    if (!formItemData.insumo_id) {
+      setError("Debe seleccionar un insumo");
+      return;
+    }
+
+    // Verificar que no se haya agregado ya este insumo
+    const yaExiste = formData.items.some(item => item.insumo_id === formItemData.insumo_id);
+    if (yaExiste) {
+      setError("Este insumo ya está en la lista");
+      return;
+    }
+
+    // Agregar el item a la lista
+    setFormData({
+      ...formData,
+      items: [...formData.items, { ...formItemData }]
+    });
+
+    // Resetear el formulario de item
+    resetFormItem();
+    setError("");
+  };
+
+  const eliminarItemDeFormulario = (index) => {
+    setFormData({
+      ...formData,
+      items: formData.items.filter((_, i) => i !== index)
+    });
   };
 
   if (loading && requisiciones.length === 0) {
@@ -277,8 +317,136 @@ export default function RequisicionesPanel() {
               value={formData.notas}
               onChange={handleInputChange}
               rows="3"
+              placeholder="Descripción de la requisición (opcional)"
               className="w-full bg-negro border border-gray-700 rounded p-2 text-white"
             ></textarea>
+          </div>
+          
+          {/* Sección de items */}
+          <div className="mb-4">
+            <div className="flex justify-between items-center mb-2">
+              <label className="block text-white">Items de la Requisición *</label>
+              <button
+                type="button"
+                onClick={() => setMostrarFormularioItem(!mostrarFormularioItem)}
+                className="bg-vino text-white px-3 py-1 rounded text-sm"
+              >
+                {mostrarFormularioItem ? "Cancelar" : "Agregar Item"}
+              </button>
+            </div>
+            
+            {/* Formulario para agregar item dentro del formulario principal */}
+            {mostrarFormularioItem && (
+              <div className="bg-negro/30 p-3 rounded mb-3">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+                  <div>
+                    <label className="block text-white mb-1">Insumo *</label>
+                    <select
+                      name="insumo_id"
+                      value={formItemData.insumo_id}
+                      onChange={handleItemInputChange}
+                      required
+                      className="w-full bg-negro border border-gray-700 rounded p-2 text-white"
+                    >
+                      <option value="">Seleccionar insumo</option>
+                      {insumos.map((insumo) => (
+                        <option key={insumo.id} value={insumo.id}>
+                          {insumo.nombre}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-white mb-1">Cantidad *</label>
+                    <input
+                      type="number"
+                      name="cantidad"
+                      value={formItemData.cantidad}
+                      onChange={handleItemInputChange}
+                      min="1"
+                      step="0.01"
+                      required
+                      className="w-full bg-negro border border-gray-700 rounded p-2 text-white"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-white mb-1">Unidad *</label>
+                    <input
+                      type="text"
+                      name="unidad"
+                      value={formItemData.unidad}
+                      onChange={handleItemInputChange}
+                      required
+                      className="w-full bg-negro border border-gray-700 rounded p-2 text-white"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-white mb-1">Urgencia</label>
+                    <select
+                      name="urgencia"
+                      value={formItemData.urgencia}
+                      onChange={handleItemInputChange}
+                      className="w-full bg-negro border border-gray-700 rounded p-2 text-white"
+                    >
+                      <option value="baja">Baja</option>
+                      <option value="normal">Normal</option>
+                      <option value="alta">Alta</option>
+                      <option value="urgente">Urgente</option>
+                    </select>
+                  </div>
+                </div>
+                
+                <div className="flex justify-end">
+                  <button
+                    type="button"
+                    onClick={agregarItemAFormulario}
+                    className="bg-amarillo text-negro px-3 py-1 rounded font-bold text-sm"
+                  >
+                    Agregar a la Lista
+                  </button>
+                </div>
+              </div>
+            )}
+            
+            {/* Lista de items agregados */}
+            {formData.items.length === 0 ? (
+              <div className="bg-negro/30 p-4 rounded text-center text-gray-400">
+                No hay items agregados. Debe agregar al menos un item.
+              </div>
+            ) : (
+              <div className="bg-negro/30 p-3 rounded">
+                <div className="space-y-2">
+                  {formData.items.map((item, index) => {
+                    const insumo = insumos.find(i => i.id === parseInt(item.insumo_id));
+                    return (
+                      <div key={index} className="flex justify-between items-center bg-negro/50 p-2 rounded">
+                        <div className="flex-1">
+                          <div className="text-white font-semibold">
+                            {insumo?.nombre || "Insumo desconocido"}
+                          </div>
+                          <div className="text-sm text-gray-400">
+                            {item.cantidad} {item.unidad} - Urgencia: {item.urgencia}
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => eliminarItemDeFormulario(index)}
+                          className="bg-red-700 text-white p-1 rounded ml-2"
+                          title="Eliminar"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
           
           <div className="flex justify-end gap-2">
@@ -292,8 +460,9 @@ export default function RequisicionesPanel() {
             <button
               type="submit"
               className="bg-amarillo text-negro px-4 py-2 rounded font-bold"
+              disabled={formData.items.length === 0}
             >
-              Crear Requisición
+              Crear Requisición ({formData.items.length} items)
             </button>
           </div>
         </form>
