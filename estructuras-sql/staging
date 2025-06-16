@@ -1,0 +1,1585 @@
+--
+-- PostgreSQL database dump
+--
+
+-- Dumped from database version 16.6
+-- Dumped by pg_dump version 16.9
+
+-- Started on 2025-06-16 17:00:57 UTC
+
+SET statement_timeout = 0;
+SET lock_timeout = 0;
+SET idle_in_transaction_session_timeout = 0;
+SET client_encoding = 'UTF8';
+SET standard_conforming_strings = on;
+SELECT pg_catalog.set_config('search_path', '', false);
+SET check_function_bodies = false;
+SET xmloption = content;
+SET client_min_messages = warning;
+SET row_security = off;
+
+--
+-- TOC entry 6 (class 2615 OID 89740352)
+-- Name: _heroku; Type: SCHEMA; Schema: -; Owner: heroku_admin
+--
+
+CREATE SCHEMA _heroku;
+
+
+ALTER SCHEMA _heroku OWNER TO heroku_admin;
+
+--
+-- TOC entry 7 (class 2615 OID 2200)
+-- Name: public; Type: SCHEMA; Schema: -; Owner: u3tobu994lm3di
+--
+
+-- *not* creating schema, since initdb creates it
+
+
+ALTER SCHEMA public OWNER TO u3tobu994lm3di;
+
+--
+-- TOC entry 4495 (class 0 OID 0)
+-- Dependencies: 7
+-- Name: SCHEMA public; Type: COMMENT; Schema: -; Owner: u3tobu994lm3di
+--
+
+COMMENT ON SCHEMA public IS '';
+
+
+--
+-- TOC entry 2 (class 3079 OID 89740473)
+-- Name: pg_stat_statements; Type: EXTENSION; Schema: -; Owner: -
+--
+
+CREATE EXTENSION IF NOT EXISTS pg_stat_statements WITH SCHEMA public;
+
+
+--
+-- TOC entry 4497 (class 0 OID 0)
+-- Dependencies: 2
+-- Name: EXTENSION pg_stat_statements; Type: COMMENT; Schema: -; Owner: 
+--
+
+COMMENT ON EXTENSION pg_stat_statements IS 'track planning and execution statistics of all SQL statements executed';
+
+
+--
+-- TOC entry 249 (class 1255 OID 89740356)
+-- Name: create_ext(); Type: FUNCTION; Schema: _heroku; Owner: heroku_admin
+--
+
+CREATE FUNCTION _heroku.create_ext() RETURNS event_trigger
+    LANGUAGE plpgsql SECURITY DEFINER
+    AS $$
+
+DECLARE
+
+  schemaname TEXT;
+  databaseowner TEXT;
+
+  r RECORD;
+
+BEGIN
+
+  IF tg_tag = 'CREATE EXTENSION' and current_user != 'rds_superuser' THEN
+    FOR r IN SELECT * FROM pg_event_trigger_ddl_commands()
+    LOOP
+        CONTINUE WHEN r.command_tag != 'CREATE EXTENSION' OR r.object_type != 'extension';
+
+        schemaname = (
+            SELECT n.nspname
+            FROM pg_catalog.pg_extension AS e
+            INNER JOIN pg_catalog.pg_namespace AS n
+            ON e.extnamespace = n.oid
+            WHERE e.oid = r.objid
+        );
+
+        databaseowner = (
+            SELECT pg_catalog.pg_get_userbyid(d.datdba)
+            FROM pg_catalog.pg_database d
+            WHERE d.datname = current_database()
+        );
+        --RAISE NOTICE 'Record for event trigger %, objid: %,tag: %, current_user: %, schema: %, database_owenr: %', r.object_identity, r.objid, tg_tag, current_user, schemaname, databaseowner;
+        IF r.object_identity = 'address_standardizer_data_us' THEN
+            PERFORM _heroku.grant_table_if_exists(schemaname, 'SELECT, UPDATE, INSERT, DELETE', databaseowner, 'us_gaz');
+            PERFORM _heroku.grant_table_if_exists(schemaname, 'SELECT, UPDATE, INSERT, DELETE', databaseowner, 'us_lex');
+            PERFORM _heroku.grant_table_if_exists(schemaname, 'SELECT, UPDATE, INSERT, DELETE', databaseowner, 'us_rules');
+        ELSIF r.object_identity = 'amcheck' THEN
+            EXECUTE format('GRANT EXECUTE ON FUNCTION %I.bt_index_check TO %I;', schemaname, databaseowner);
+            EXECUTE format('GRANT EXECUTE ON FUNCTION %I.bt_index_parent_check TO %I;', schemaname, databaseowner);
+        ELSIF r.object_identity = 'dict_int' THEN
+            EXECUTE format('ALTER TEXT SEARCH DICTIONARY %I.intdict OWNER TO %I;', schemaname, databaseowner);
+        ELSIF r.object_identity = 'pg_partman' THEN
+            PERFORM _heroku.grant_table_if_exists(schemaname, 'SELECT, UPDATE, INSERT, DELETE', databaseowner, 'part_config');
+            PERFORM _heroku.grant_table_if_exists(schemaname, 'SELECT, UPDATE, INSERT, DELETE', databaseowner, 'part_config_sub');
+            PERFORM _heroku.grant_table_if_exists(schemaname, 'SELECT, UPDATE, INSERT, DELETE', databaseowner, 'custom_time_partitions');
+        ELSIF r.object_identity = 'pg_stat_statements' THEN
+            EXECUTE format('GRANT EXECUTE ON FUNCTION %I.pg_stat_statements_reset TO %I;', schemaname, databaseowner);
+        ELSIF r.object_identity = 'postgis' THEN
+            PERFORM _heroku.postgis_after_create();
+        ELSIF r.object_identity = 'postgis_raster' THEN
+            PERFORM _heroku.postgis_after_create();
+            PERFORM _heroku.grant_table_if_exists(schemaname, 'SELECT', databaseowner, 'raster_columns');
+            PERFORM _heroku.grant_table_if_exists(schemaname, 'SELECT', databaseowner, 'raster_overviews');
+        ELSIF r.object_identity = 'postgis_topology' THEN
+            PERFORM _heroku.postgis_after_create();
+            EXECUTE format('GRANT USAGE ON SCHEMA topology TO %I;', databaseowner);
+            EXECUTE format('GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA topology TO %I;', databaseowner);
+            PERFORM _heroku.grant_table_if_exists('topology', 'SELECT, UPDATE, INSERT, DELETE', databaseowner);
+            EXECUTE format('GRANT USAGE, SELECT, UPDATE ON ALL SEQUENCES IN SCHEMA topology TO %I;', databaseowner);
+        ELSIF r.object_identity = 'postgis_tiger_geocoder' THEN
+            PERFORM _heroku.postgis_after_create();
+            EXECUTE format('GRANT USAGE ON SCHEMA tiger TO %I;', databaseowner);
+            EXECUTE format('GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA tiger TO %I;', databaseowner);
+            PERFORM _heroku.grant_table_if_exists('tiger', 'SELECT, UPDATE, INSERT, DELETE', databaseowner);
+
+            EXECUTE format('GRANT USAGE ON SCHEMA tiger_data TO %I;', databaseowner);
+            EXECUTE format('GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA tiger_data TO %I;', databaseowner);
+            PERFORM _heroku.grant_table_if_exists('tiger_data', 'SELECT, UPDATE, INSERT, DELETE', databaseowner);
+        END IF;
+    END LOOP;
+  END IF;
+END;
+$$;
+
+
+ALTER FUNCTION _heroku.create_ext() OWNER TO heroku_admin;
+
+--
+-- TOC entry 250 (class 1255 OID 89740357)
+-- Name: drop_ext(); Type: FUNCTION; Schema: _heroku; Owner: heroku_admin
+--
+
+CREATE FUNCTION _heroku.drop_ext() RETURNS event_trigger
+    LANGUAGE plpgsql SECURITY DEFINER
+    AS $$
+
+DECLARE
+
+  schemaname TEXT;
+  databaseowner TEXT;
+
+  r RECORD;
+
+BEGIN
+
+  IF tg_tag = 'DROP EXTENSION' and current_user != 'rds_superuser' THEN
+    FOR r IN SELECT * FROM pg_event_trigger_dropped_objects()
+    LOOP
+      CONTINUE WHEN r.object_type != 'extension';
+
+      databaseowner = (
+            SELECT pg_catalog.pg_get_userbyid(d.datdba)
+            FROM pg_catalog.pg_database d
+            WHERE d.datname = current_database()
+      );
+
+      --RAISE NOTICE 'Record for event trigger %, objid: %,tag: %, current_user: %, database_owner: %, schemaname: %', r.object_identity, r.objid, tg_tag, current_user, databaseowner, r.schema_name;
+
+      IF r.object_identity = 'postgis_topology' THEN
+          EXECUTE format('DROP SCHEMA IF EXISTS topology');
+      END IF;
+    END LOOP;
+
+  END IF;
+END;
+$$;
+
+
+ALTER FUNCTION _heroku.drop_ext() OWNER TO heroku_admin;
+
+--
+-- TOC entry 251 (class 1255 OID 89740358)
+-- Name: extension_before_drop(); Type: FUNCTION; Schema: _heroku; Owner: heroku_admin
+--
+
+CREATE FUNCTION _heroku.extension_before_drop() RETURNS event_trigger
+    LANGUAGE plpgsql SECURITY DEFINER
+    AS $$
+
+DECLARE
+
+  query TEXT;
+
+BEGIN
+  query = (SELECT current_query());
+
+  -- RAISE NOTICE 'executing extension_before_drop: tg_event: %, tg_tag: %, current_user: %, session_user: %, query: %', tg_event, tg_tag, current_user, session_user, query;
+  IF tg_tag = 'DROP EXTENSION' and not pg_has_role(session_user, 'rds_superuser', 'MEMBER') THEN
+    -- DROP EXTENSION [ IF EXISTS ] name [, ...] [ CASCADE | RESTRICT ]
+    IF (regexp_match(query, 'DROP\s+EXTENSION\s+(IF\s+EXISTS)?.*(plpgsql)', 'i') IS NOT NULL) THEN
+      RAISE EXCEPTION 'The plpgsql extension is required for database management and cannot be dropped.';
+    END IF;
+  END IF;
+END;
+$$;
+
+
+ALTER FUNCTION _heroku.extension_before_drop() OWNER TO heroku_admin;
+
+--
+-- TOC entry 252 (class 1255 OID 89740359)
+-- Name: grant_table_if_exists(text, text, text, text); Type: FUNCTION; Schema: _heroku; Owner: heroku_admin
+--
+
+CREATE FUNCTION _heroku.grant_table_if_exists(alias_schemaname text, grants text, databaseowner text, alias_tablename text DEFAULT NULL::text) RETURNS void
+    LANGUAGE plpgsql SECURITY DEFINER
+    AS $$
+
+BEGIN
+
+  IF alias_tablename IS NULL THEN
+    EXECUTE format('GRANT %s ON ALL TABLES IN SCHEMA %I TO %I;', grants, alias_schemaname, databaseowner);
+  ELSE
+    IF EXISTS (SELECT 1 FROM pg_tables WHERE pg_tables.schemaname = alias_schemaname AND pg_tables.tablename = alias_tablename) THEN
+      EXECUTE format('GRANT %s ON TABLE %I.%I TO %I;', grants, alias_schemaname, alias_tablename, databaseowner);
+    END IF;
+  END IF;
+END;
+$$;
+
+
+ALTER FUNCTION _heroku.grant_table_if_exists(alias_schemaname text, grants text, databaseowner text, alias_tablename text) OWNER TO heroku_admin;
+
+--
+-- TOC entry 253 (class 1255 OID 89740360)
+-- Name: postgis_after_create(); Type: FUNCTION; Schema: _heroku; Owner: heroku_admin
+--
+
+CREATE FUNCTION _heroku.postgis_after_create() RETURNS void
+    LANGUAGE plpgsql SECURITY DEFINER
+    AS $$
+DECLARE
+    schemaname TEXT;
+    databaseowner TEXT;
+BEGIN
+    schemaname = (
+        SELECT n.nspname
+        FROM pg_catalog.pg_extension AS e
+        INNER JOIN pg_catalog.pg_namespace AS n ON e.extnamespace = n.oid
+        WHERE e.extname = 'postgis'
+    );
+    databaseowner = (
+        SELECT pg_catalog.pg_get_userbyid(d.datdba)
+        FROM pg_catalog.pg_database d
+        WHERE d.datname = current_database()
+    );
+
+    EXECUTE format('GRANT EXECUTE ON FUNCTION %I.st_tileenvelope TO %I;', schemaname, databaseowner);
+    EXECUTE format('GRANT SELECT, UPDATE, INSERT, DELETE ON TABLE %I.spatial_ref_sys TO %I;', schemaname, databaseowner);
+END;
+$$;
+
+
+ALTER FUNCTION _heroku.postgis_after_create() OWNER TO heroku_admin;
+
+--
+-- TOC entry 254 (class 1255 OID 89740361)
+-- Name: validate_extension(); Type: FUNCTION; Schema: _heroku; Owner: heroku_admin
+--
+
+CREATE FUNCTION _heroku.validate_extension() RETURNS event_trigger
+    LANGUAGE plpgsql SECURITY DEFINER
+    AS $$
+
+DECLARE
+
+  schemaname TEXT;
+  r RECORD;
+
+BEGIN
+
+  IF tg_tag = 'CREATE EXTENSION' and current_user != 'rds_superuser' THEN
+    FOR r IN SELECT * FROM pg_event_trigger_ddl_commands()
+    LOOP
+      CONTINUE WHEN r.command_tag != 'CREATE EXTENSION' OR r.object_type != 'extension';
+
+      schemaname = (
+        SELECT n.nspname
+        FROM pg_catalog.pg_extension AS e
+        INNER JOIN pg_catalog.pg_namespace AS n
+        ON e.extnamespace = n.oid
+        WHERE e.oid = r.objid
+      );
+
+      IF schemaname = '_heroku' THEN
+        RAISE EXCEPTION 'Creating extensions in the _heroku schema is not allowed';
+      END IF;
+    END LOOP;
+  END IF;
+END;
+$$;
+
+
+ALTER FUNCTION _heroku.validate_extension() OWNER TO heroku_admin;
+
+SET default_tablespace = '';
+
+SET default_table_access_method = heap;
+
+--
+-- TOC entry 219 (class 1259 OID 93099759)
+-- Name: categoria_producto_tipo_variante; Type: TABLE; Schema: public; Owner: u3tobu994lm3di
+--
+
+CREATE TABLE public.categoria_producto_tipo_variante (
+    id integer NOT NULL,
+    categoria_producto character varying(50) NOT NULL,
+    tipo_variante character varying(50) NOT NULL
+);
+
+
+ALTER TABLE public.categoria_producto_tipo_variante OWNER TO u3tobu994lm3di;
+
+--
+-- TOC entry 220 (class 1259 OID 93099763)
+-- Name: categoria_producto_tipo_variante_id_seq; Type: SEQUENCE; Schema: public; Owner: u3tobu994lm3di
+--
+
+CREATE SEQUENCE public.categoria_producto_tipo_variante_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.categoria_producto_tipo_variante_id_seq OWNER TO u3tobu994lm3di;
+
+--
+-- TOC entry 4499 (class 0 OID 0)
+-- Dependencies: 220
+-- Name: categoria_producto_tipo_variante_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: u3tobu994lm3di
+--
+
+ALTER SEQUENCE public.categoria_producto_tipo_variante_id_seq OWNED BY public.categoria_producto_tipo_variante.id;
+
+
+--
+-- TOC entry 221 (class 1259 OID 93099764)
+-- Name: categorias_variantes; Type: TABLE; Schema: public; Owner: u3tobu994lm3di
+--
+
+CREATE TABLE public.categorias_variantes (
+    id integer NOT NULL,
+    nombre character varying(255) NOT NULL,
+    tipo character varying(50) NOT NULL
+);
+
+
+ALTER TABLE public.categorias_variantes OWNER TO u3tobu994lm3di;
+
+--
+-- TOC entry 222 (class 1259 OID 93099769)
+-- Name: categorias_variantes_id_seq; Type: SEQUENCE; Schema: public; Owner: u3tobu994lm3di
+--
+
+CREATE SEQUENCE public.categorias_variantes_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.categorias_variantes_id_seq OWNER TO u3tobu994lm3di;
+
+--
+-- TOC entry 4500 (class 0 OID 0)
+-- Dependencies: 222
+-- Name: categorias_variantes_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: u3tobu994lm3di
+--
+
+ALTER SEQUENCE public.categorias_variantes_id_seq OWNED BY public.categorias_variantes.id;
+
+
+--
+-- TOC entry 223 (class 1259 OID 93099772)
+-- Name: codigos_promocionales; Type: TABLE; Schema: public; Owner: u3tobu994lm3di
+--
+
+CREATE TABLE public.codigos_promocionales (
+    id integer NOT NULL,
+    codigo character varying(50) NOT NULL,
+    porcentaje_descuento numeric(5,2) NOT NULL,
+    fecha_inicio date NOT NULL,
+    fecha_fin date NOT NULL,
+    activo boolean DEFAULT true,
+    usos_maximos integer DEFAULT '-1'::integer,
+    usos_actuales integer DEFAULT 0,
+    fecha_creacion timestamp without time zone DEFAULT CURRENT_TIMESTAMP
+);
+
+
+ALTER TABLE public.codigos_promocionales OWNER TO u3tobu994lm3di;
+
+--
+-- TOC entry 224 (class 1259 OID 93099781)
+-- Name: codigos_promocionales_id_seq; Type: SEQUENCE; Schema: public; Owner: u3tobu994lm3di
+--
+
+CREATE SEQUENCE public.codigos_promocionales_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.codigos_promocionales_id_seq OWNER TO u3tobu994lm3di;
+
+--
+-- TOC entry 4501 (class 0 OID 0)
+-- Dependencies: 224
+-- Name: codigos_promocionales_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: u3tobu994lm3di
+--
+
+ALTER SEQUENCE public.codigos_promocionales_id_seq OWNED BY public.codigos_promocionales.id;
+
+
+--
+-- TOC entry 225 (class 1259 OID 93099785)
+-- Name: detalles_orden; Type: TABLE; Schema: public; Owner: u3tobu994lm3di
+--
+
+CREATE TABLE public.detalles_orden (
+    id integer NOT NULL,
+    orden_id integer NOT NULL,
+    producto_id integer,
+    cantidad integer DEFAULT 1,
+    precio_unitario numeric(10,2) NOT NULL,
+    empleado_id integer NOT NULL,
+    sabor_id integer,
+    notas text,
+    tamano_id integer,
+    preparado boolean DEFAULT false,
+    tiempo_creacion timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    tiempo_preparacion timestamp without time zone,
+    ingrediente_id integer,
+    entregado boolean DEFAULT false,
+    tiempo_entrega timestamp without time zone,
+    sentencia_id integer,
+    es_sentencia_principal boolean DEFAULT false NOT NULL,
+    sentencia_detalle_orden_padre_id integer,
+    nombre_sentencia character varying(255),
+    descripcion_sentencia text
+);
+
+
+ALTER TABLE public.detalles_orden OWNER TO u3tobu994lm3di;
+
+--
+-- TOC entry 226 (class 1259 OID 93099796)
+-- Name: detalles_orden_id_seq; Type: SEQUENCE; Schema: public; Owner: u3tobu994lm3di
+--
+
+CREATE SEQUENCE public.detalles_orden_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.detalles_orden_id_seq OWNER TO u3tobu994lm3di;
+
+--
+-- TOC entry 4502 (class 0 OID 0)
+-- Dependencies: 226
+-- Name: detalles_orden_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: u3tobu994lm3di
+--
+
+ALTER SEQUENCE public.detalles_orden_id_seq OWNED BY public.detalles_orden.id;
+
+
+--
+-- TOC entry 227 (class 1259 OID 93099802)
+-- Name: empleados; Type: TABLE; Schema: public; Owner: u3tobu994lm3di
+--
+
+CREATE TABLE public.empleados (
+    id integer NOT NULL,
+    nombre character varying(255) NOT NULL,
+    usuario character varying(50) NOT NULL,
+    password text NOT NULL,
+    rol text NOT NULL,
+    fecha_ingreso date DEFAULT CURRENT_DATE,
+    activo boolean DEFAULT true,
+    CONSTRAINT empleados_rol_check CHECK ((rol = ANY (ARRAY['admin'::text, 'mesero'::text, 'cocinero'::text, 'financiero'::text, 'gerente'::text])))
+);
+
+
+ALTER TABLE public.empleados OWNER TO u3tobu994lm3di;
+
+--
+-- TOC entry 228 (class 1259 OID 93099810)
+-- Name: empleados_id_seq; Type: SEQUENCE; Schema: public; Owner: u3tobu994lm3di
+--
+
+CREATE SEQUENCE public.empleados_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.empleados_id_seq OWNER TO u3tobu994lm3di;
+
+--
+-- TOC entry 4503 (class 0 OID 0)
+-- Dependencies: 228
+-- Name: empleados_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: u3tobu994lm3di
+--
+
+ALTER SEQUENCE public.empleados_id_seq OWNED BY public.empleados.id;
+
+
+--
+-- TOC entry 229 (class 1259 OID 93099815)
+-- Name: grados; Type: TABLE; Schema: public; Owner: u3tobu994lm3di
+--
+
+CREATE TABLE public.grados (
+    id integer NOT NULL,
+    nombre text NOT NULL,
+    descuento numeric(5,2) NOT NULL
+);
+
+
+ALTER TABLE public.grados OWNER TO u3tobu994lm3di;
+
+--
+-- TOC entry 230 (class 1259 OID 93099820)
+-- Name: grados_id_seq; Type: SEQUENCE; Schema: public; Owner: u3tobu994lm3di
+--
+
+CREATE SEQUENCE public.grados_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.grados_id_seq OWNER TO u3tobu994lm3di;
+
+--
+-- TOC entry 4504 (class 0 OID 0)
+-- Dependencies: 230
+-- Name: grados_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: u3tobu994lm3di
+--
+
+ALTER SEQUENCE public.grados_id_seq OWNED BY public.grados.id;
+
+
+--
+-- TOC entry 231 (class 1259 OID 93099821)
+-- Name: ordenes; Type: TABLE; Schema: public; Owner: u3tobu994lm3di
+--
+
+CREATE TABLE public.ordenes (
+    orden_id integer NOT NULL,
+    preso_id integer,
+    nombre_cliente character varying(255),
+    total numeric(10,2) NOT NULL,
+    fecha timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    estado text DEFAULT 'abierta'::text,
+    empleado_id integer NOT NULL,
+    total_bruto numeric(10,2),
+    num_personas integer DEFAULT 1,
+    codigo_descuento_id integer,
+    CONSTRAINT ordenes_estado_check CHECK ((estado = ANY (ARRAY['abierta'::text, 'cerrada'::text])))
+);
+
+
+ALTER TABLE public.ordenes OWNER TO u3tobu994lm3di;
+
+--
+-- TOC entry 232 (class 1259 OID 93099830)
+-- Name: ordenes_orden_id_seq; Type: SEQUENCE; Schema: public; Owner: u3tobu994lm3di
+--
+
+CREATE SEQUENCE public.ordenes_orden_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.ordenes_orden_id_seq OWNER TO u3tobu994lm3di;
+
+--
+-- TOC entry 4505 (class 0 OID 0)
+-- Dependencies: 232
+-- Name: ordenes_orden_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: u3tobu994lm3di
+--
+
+ALTER SEQUENCE public.ordenes_orden_id_seq OWNED BY public.ordenes.orden_id;
+
+
+--
+-- TOC entry 233 (class 1259 OID 93099832)
+-- Name: pagos; Type: TABLE; Schema: public; Owner: u3tobu994lm3di
+--
+
+CREATE TABLE public.pagos (
+    id integer NOT NULL,
+    orden_id integer,
+    metodo text NOT NULL,
+    monto numeric(10,2) NOT NULL,
+    fecha timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    empleado_id integer,
+    propina numeric(10,2) DEFAULT 0,
+    porcentaje_propina numeric(5,2),
+    CONSTRAINT pagos_metodo_check CHECK ((metodo = ANY (ARRAY['efectivo'::text, 'tarjeta'::text, 'transferencia'::text, 'otro'::text])))
+);
+
+
+ALTER TABLE public.pagos OWNER TO u3tobu994lm3di;
+
+--
+-- TOC entry 234 (class 1259 OID 93099841)
+-- Name: pagos_id_seq; Type: SEQUENCE; Schema: public; Owner: u3tobu994lm3di
+--
+
+CREATE SEQUENCE public.pagos_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.pagos_id_seq OWNER TO u3tobu994lm3di;
+
+--
+-- TOC entry 4506 (class 0 OID 0)
+-- Dependencies: 234
+-- Name: pagos_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: u3tobu994lm3di
+--
+
+ALTER SEQUENCE public.pagos_id_seq OWNED BY public.pagos.id;
+
+
+--
+-- TOC entry 235 (class 1259 OID 93099849)
+-- Name: preso_grado; Type: TABLE; Schema: public; Owner: u3tobu994lm3di
+--
+
+CREATE TABLE public.preso_grado (
+    id integer NOT NULL,
+    preso_id integer,
+    grado_id integer,
+    fecha_otorgado date DEFAULT CURRENT_DATE
+);
+
+
+ALTER TABLE public.preso_grado OWNER TO u3tobu994lm3di;
+
+--
+-- TOC entry 236 (class 1259 OID 93099854)
+-- Name: preso_grado_id_seq; Type: SEQUENCE; Schema: public; Owner: u3tobu994lm3di
+--
+
+CREATE SEQUENCE public.preso_grado_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.preso_grado_id_seq OWNER TO u3tobu994lm3di;
+
+--
+-- TOC entry 4507 (class 0 OID 0)
+-- Dependencies: 236
+-- Name: preso_grado_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: u3tobu994lm3di
+--
+
+ALTER SEQUENCE public.preso_grado_id_seq OWNED BY public.preso_grado.id;
+
+
+--
+-- TOC entry 237 (class 1259 OID 93099857)
+-- Name: presos; Type: TABLE; Schema: public; Owner: u3tobu994lm3di
+--
+
+CREATE TABLE public.presos (
+    id integer NOT NULL,
+    reg_name text NOT NULL,
+    res_tel text NOT NULL,
+    igname text,
+    bday text NOT NULL,
+    mkt boolean NOT NULL,
+    cellmate integer NOT NULL,
+    referidos integer DEFAULT 0,
+    fecha_registro date DEFAULT CURRENT_DATE
+);
+
+
+ALTER TABLE public.presos OWNER TO u3tobu994lm3di;
+
+--
+-- TOC entry 238 (class 1259 OID 93099866)
+-- Name: presos_id_seq; Type: SEQUENCE; Schema: public; Owner: u3tobu994lm3di
+--
+
+CREATE SEQUENCE public.presos_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.presos_id_seq OWNER TO u3tobu994lm3di;
+
+--
+-- TOC entry 4508 (class 0 OID 0)
+-- Dependencies: 238
+-- Name: presos_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: u3tobu994lm3di
+--
+
+ALTER SEQUENCE public.presos_id_seq OWNED BY public.presos.id;
+
+
+--
+-- TOC entry 239 (class 1259 OID 93099867)
+-- Name: producto_sabor; Type: TABLE; Schema: public; Owner: u3tobu994lm3di
+--
+
+CREATE TABLE public.producto_sabor (
+    id integer NOT NULL,
+    producto_id integer,
+    sabor_id integer
+);
+
+
+ALTER TABLE public.producto_sabor OWNER TO u3tobu994lm3di;
+
+--
+-- TOC entry 240 (class 1259 OID 93099870)
+-- Name: producto_sabor_id_seq; Type: SEQUENCE; Schema: public; Owner: u3tobu994lm3di
+--
+
+CREATE SEQUENCE public.producto_sabor_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.producto_sabor_id_seq OWNER TO u3tobu994lm3di;
+
+--
+-- TOC entry 4509 (class 0 OID 0)
+-- Dependencies: 240
+-- Name: producto_sabor_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: u3tobu994lm3di
+--
+
+ALTER SEQUENCE public.producto_sabor_id_seq OWNED BY public.producto_sabor.id;
+
+
+--
+-- TOC entry 241 (class 1259 OID 93099871)
+-- Name: productos; Type: TABLE; Schema: public; Owner: u3tobu994lm3di
+--
+
+CREATE TABLE public.productos (
+    id integer NOT NULL,
+    nombre character varying(255) NOT NULL,
+    precio numeric(10,2) NOT NULL,
+    categoria character varying(50),
+    costo numeric(10,2)
+);
+
+
+ALTER TABLE public.productos OWNER TO u3tobu994lm3di;
+
+--
+-- TOC entry 242 (class 1259 OID 93099874)
+-- Name: productos_id_seq; Type: SEQUENCE; Schema: public; Owner: u3tobu994lm3di
+--
+
+CREATE SEQUENCE public.productos_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.productos_id_seq OWNER TO u3tobu994lm3di;
+
+--
+-- TOC entry 4510 (class 0 OID 0)
+-- Dependencies: 242
+-- Name: productos_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: u3tobu994lm3di
+--
+
+ALTER SEQUENCE public.productos_id_seq OWNED BY public.productos.id;
+
+
+--
+-- TOC entry 243 (class 1259 OID 93099875)
+-- Name: productos_sentencias; Type: TABLE; Schema: public; Owner: u3tobu994lm3di
+--
+
+CREATE TABLE public.productos_sentencias (
+    id integer NOT NULL,
+    sentencia_id integer NOT NULL,
+    producto_id integer NOT NULL,
+    cantidad integer DEFAULT 1,
+    sabor_id integer,
+    tamano_id integer,
+    ingrediente_id integer,
+    es_opcional boolean DEFAULT false,
+    grupo_opcion integer,
+    precio_unitario numeric(10,2) DEFAULT 0
+);
+
+
+ALTER TABLE public.productos_sentencias OWNER TO u3tobu994lm3di;
+
+--
+-- TOC entry 244 (class 1259 OID 93099881)
+-- Name: productos_sentencias_id_seq; Type: SEQUENCE; Schema: public; Owner: u3tobu994lm3di
+--
+
+CREATE SEQUENCE public.productos_sentencias_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.productos_sentencias_id_seq OWNER TO u3tobu994lm3di;
+
+--
+-- TOC entry 4511 (class 0 OID 0)
+-- Dependencies: 244
+-- Name: productos_sentencias_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: u3tobu994lm3di
+--
+
+ALTER SEQUENCE public.productos_sentencias_id_seq OWNED BY public.productos_sentencias.id;
+
+
+--
+-- TOC entry 245 (class 1259 OID 93099884)
+-- Name: sabores; Type: TABLE; Schema: public; Owner: u3tobu994lm3di
+--
+
+CREATE TABLE public.sabores (
+    id integer NOT NULL,
+    nombre character varying(255) NOT NULL,
+    descripcion text,
+    categoria_id integer,
+    disponible boolean DEFAULT true,
+    precio_adicional numeric(10,2) DEFAULT 0
+);
+
+
+ALTER TABLE public.sabores OWNER TO u3tobu994lm3di;
+
+--
+-- TOC entry 246 (class 1259 OID 93099891)
+-- Name: sabores_id_seq; Type: SEQUENCE; Schema: public; Owner: u3tobu994lm3di
+--
+
+CREATE SEQUENCE public.sabores_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.sabores_id_seq OWNER TO u3tobu994lm3di;
+
+--
+-- TOC entry 4512 (class 0 OID 0)
+-- Dependencies: 246
+-- Name: sabores_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: u3tobu994lm3di
+--
+
+ALTER SEQUENCE public.sabores_id_seq OWNED BY public.sabores.id;
+
+
+--
+-- TOC entry 247 (class 1259 OID 93099892)
+-- Name: sentencias; Type: TABLE; Schema: public; Owner: u3tobu994lm3di
+--
+
+CREATE TABLE public.sentencias (
+    id integer NOT NULL,
+    nombre character varying(255) NOT NULL,
+    descripcion text,
+    precio numeric(10,2) NOT NULL,
+    activa boolean DEFAULT true
+);
+
+
+ALTER TABLE public.sentencias OWNER TO u3tobu994lm3di;
+
+--
+-- TOC entry 248 (class 1259 OID 93099898)
+-- Name: sentencias_id_seq; Type: SEQUENCE; Schema: public; Owner: u3tobu994lm3di
+--
+
+CREATE SEQUENCE public.sentencias_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.sentencias_id_seq OWNER TO u3tobu994lm3di;
+
+--
+-- TOC entry 4513 (class 0 OID 0)
+-- Dependencies: 248
+-- Name: sentencias_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: u3tobu994lm3di
+--
+
+ALTER SEQUENCE public.sentencias_id_seq OWNED BY public.sentencias.id;
+
+
+--
+-- TOC entry 4233 (class 2604 OID 93099901)
+-- Name: categoria_producto_tipo_variante id; Type: DEFAULT; Schema: public; Owner: u3tobu994lm3di
+--
+
+ALTER TABLE ONLY public.categoria_producto_tipo_variante ALTER COLUMN id SET DEFAULT nextval('public.categoria_producto_tipo_variante_id_seq'::regclass);
+
+
+--
+-- TOC entry 4234 (class 2604 OID 93099902)
+-- Name: categorias_variantes id; Type: DEFAULT; Schema: public; Owner: u3tobu994lm3di
+--
+
+ALTER TABLE ONLY public.categorias_variantes ALTER COLUMN id SET DEFAULT nextval('public.categorias_variantes_id_seq'::regclass);
+
+
+--
+-- TOC entry 4235 (class 2604 OID 93099903)
+-- Name: codigos_promocionales id; Type: DEFAULT; Schema: public; Owner: u3tobu994lm3di
+--
+
+ALTER TABLE ONLY public.codigos_promocionales ALTER COLUMN id SET DEFAULT nextval('public.codigos_promocionales_id_seq'::regclass);
+
+
+--
+-- TOC entry 4240 (class 2604 OID 93099904)
+-- Name: detalles_orden id; Type: DEFAULT; Schema: public; Owner: u3tobu994lm3di
+--
+
+ALTER TABLE ONLY public.detalles_orden ALTER COLUMN id SET DEFAULT nextval('public.detalles_orden_id_seq'::regclass);
+
+
+--
+-- TOC entry 4246 (class 2604 OID 93099905)
+-- Name: empleados id; Type: DEFAULT; Schema: public; Owner: u3tobu994lm3di
+--
+
+ALTER TABLE ONLY public.empleados ALTER COLUMN id SET DEFAULT nextval('public.empleados_id_seq'::regclass);
+
+
+--
+-- TOC entry 4249 (class 2604 OID 93099906)
+-- Name: grados id; Type: DEFAULT; Schema: public; Owner: u3tobu994lm3di
+--
+
+ALTER TABLE ONLY public.grados ALTER COLUMN id SET DEFAULT nextval('public.grados_id_seq'::regclass);
+
+
+--
+-- TOC entry 4250 (class 2604 OID 93099907)
+-- Name: ordenes orden_id; Type: DEFAULT; Schema: public; Owner: u3tobu994lm3di
+--
+
+ALTER TABLE ONLY public.ordenes ALTER COLUMN orden_id SET DEFAULT nextval('public.ordenes_orden_id_seq'::regclass);
+
+
+--
+-- TOC entry 4254 (class 2604 OID 93099908)
+-- Name: pagos id; Type: DEFAULT; Schema: public; Owner: u3tobu994lm3di
+--
+
+ALTER TABLE ONLY public.pagos ALTER COLUMN id SET DEFAULT nextval('public.pagos_id_seq'::regclass);
+
+
+--
+-- TOC entry 4257 (class 2604 OID 93099909)
+-- Name: preso_grado id; Type: DEFAULT; Schema: public; Owner: u3tobu994lm3di
+--
+
+ALTER TABLE ONLY public.preso_grado ALTER COLUMN id SET DEFAULT nextval('public.preso_grado_id_seq'::regclass);
+
+
+--
+-- TOC entry 4259 (class 2604 OID 93099910)
+-- Name: presos id; Type: DEFAULT; Schema: public; Owner: u3tobu994lm3di
+--
+
+ALTER TABLE ONLY public.presos ALTER COLUMN id SET DEFAULT nextval('public.presos_id_seq'::regclass);
+
+
+--
+-- TOC entry 4262 (class 2604 OID 93099911)
+-- Name: producto_sabor id; Type: DEFAULT; Schema: public; Owner: u3tobu994lm3di
+--
+
+ALTER TABLE ONLY public.producto_sabor ALTER COLUMN id SET DEFAULT nextval('public.producto_sabor_id_seq'::regclass);
+
+
+--
+-- TOC entry 4263 (class 2604 OID 93099912)
+-- Name: productos id; Type: DEFAULT; Schema: public; Owner: u3tobu994lm3di
+--
+
+ALTER TABLE ONLY public.productos ALTER COLUMN id SET DEFAULT nextval('public.productos_id_seq'::regclass);
+
+
+--
+-- TOC entry 4264 (class 2604 OID 93099913)
+-- Name: productos_sentencias id; Type: DEFAULT; Schema: public; Owner: u3tobu994lm3di
+--
+
+ALTER TABLE ONLY public.productos_sentencias ALTER COLUMN id SET DEFAULT nextval('public.productos_sentencias_id_seq'::regclass);
+
+
+--
+-- TOC entry 4268 (class 2604 OID 93099914)
+-- Name: sabores id; Type: DEFAULT; Schema: public; Owner: u3tobu994lm3di
+--
+
+ALTER TABLE ONLY public.sabores ALTER COLUMN id SET DEFAULT nextval('public.sabores_id_seq'::regclass);
+
+
+--
+-- TOC entry 4271 (class 2604 OID 93099915)
+-- Name: sentencias id; Type: DEFAULT; Schema: public; Owner: u3tobu994lm3di
+--
+
+ALTER TABLE ONLY public.sentencias ALTER COLUMN id SET DEFAULT nextval('public.sentencias_id_seq'::regclass);
+
+
+--
+-- TOC entry 4277 (class 2606 OID 93099923)
+-- Name: categoria_producto_tipo_variante categoria_producto_tipo_varia_categoria_producto_tipo_varia_key; Type: CONSTRAINT; Schema: public; Owner: u3tobu994lm3di
+--
+
+ALTER TABLE ONLY public.categoria_producto_tipo_variante
+    ADD CONSTRAINT categoria_producto_tipo_varia_categoria_producto_tipo_varia_key UNIQUE (categoria_producto, tipo_variante);
+
+
+--
+-- TOC entry 4279 (class 2606 OID 93099925)
+-- Name: categoria_producto_tipo_variante categoria_producto_tipo_variante_pkey; Type: CONSTRAINT; Schema: public; Owner: u3tobu994lm3di
+--
+
+ALTER TABLE ONLY public.categoria_producto_tipo_variante
+    ADD CONSTRAINT categoria_producto_tipo_variante_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 4281 (class 2606 OID 93099927)
+-- Name: categorias_variantes categorias_variantes_pkey; Type: CONSTRAINT; Schema: public; Owner: u3tobu994lm3di
+--
+
+ALTER TABLE ONLY public.categorias_variantes
+    ADD CONSTRAINT categorias_variantes_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 4283 (class 2606 OID 93099929)
+-- Name: codigos_promocionales codigos_promocionales_codigo_key; Type: CONSTRAINT; Schema: public; Owner: u3tobu994lm3di
+--
+
+ALTER TABLE ONLY public.codigos_promocionales
+    ADD CONSTRAINT codigos_promocionales_codigo_key UNIQUE (codigo);
+
+
+--
+-- TOC entry 4285 (class 2606 OID 93099931)
+-- Name: codigos_promocionales codigos_promocionales_pkey; Type: CONSTRAINT; Schema: public; Owner: u3tobu994lm3di
+--
+
+ALTER TABLE ONLY public.codigos_promocionales
+    ADD CONSTRAINT codigos_promocionales_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 4288 (class 2606 OID 93099933)
+-- Name: detalles_orden detalles_orden_pkey; Type: CONSTRAINT; Schema: public; Owner: u3tobu994lm3di
+--
+
+ALTER TABLE ONLY public.detalles_orden
+    ADD CONSTRAINT detalles_orden_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 4290 (class 2606 OID 93099935)
+-- Name: empleados empleados_pkey; Type: CONSTRAINT; Schema: public; Owner: u3tobu994lm3di
+--
+
+ALTER TABLE ONLY public.empleados
+    ADD CONSTRAINT empleados_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 4292 (class 2606 OID 93099937)
+-- Name: empleados empleados_usuario_key; Type: CONSTRAINT; Schema: public; Owner: u3tobu994lm3di
+--
+
+ALTER TABLE ONLY public.empleados
+    ADD CONSTRAINT empleados_usuario_key UNIQUE (usuario);
+
+
+--
+-- TOC entry 4294 (class 2606 OID 93099939)
+-- Name: grados grados_nombre_key; Type: CONSTRAINT; Schema: public; Owner: u3tobu994lm3di
+--
+
+ALTER TABLE ONLY public.grados
+    ADD CONSTRAINT grados_nombre_key UNIQUE (nombre);
+
+
+--
+-- TOC entry 4296 (class 2606 OID 93099941)
+-- Name: grados grados_pkey; Type: CONSTRAINT; Schema: public; Owner: u3tobu994lm3di
+--
+
+ALTER TABLE ONLY public.grados
+    ADD CONSTRAINT grados_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 4299 (class 2606 OID 93099943)
+-- Name: ordenes ordenes_pkey; Type: CONSTRAINT; Schema: public; Owner: u3tobu994lm3di
+--
+
+ALTER TABLE ONLY public.ordenes
+    ADD CONSTRAINT ordenes_pkey PRIMARY KEY (orden_id);
+
+
+--
+-- TOC entry 4301 (class 2606 OID 93099945)
+-- Name: pagos pagos_pkey; Type: CONSTRAINT; Schema: public; Owner: u3tobu994lm3di
+--
+
+ALTER TABLE ONLY public.pagos
+    ADD CONSTRAINT pagos_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 4303 (class 2606 OID 93099947)
+-- Name: preso_grado preso_grado_pkey; Type: CONSTRAINT; Schema: public; Owner: u3tobu994lm3di
+--
+
+ALTER TABLE ONLY public.preso_grado
+    ADD CONSTRAINT preso_grado_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 4305 (class 2606 OID 93099949)
+-- Name: presos presos_pkey; Type: CONSTRAINT; Schema: public; Owner: u3tobu994lm3di
+--
+
+ALTER TABLE ONLY public.presos
+    ADD CONSTRAINT presos_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 4307 (class 2606 OID 93099951)
+-- Name: producto_sabor producto_sabor_pkey; Type: CONSTRAINT; Schema: public; Owner: u3tobu994lm3di
+--
+
+ALTER TABLE ONLY public.producto_sabor
+    ADD CONSTRAINT producto_sabor_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 4309 (class 2606 OID 93099953)
+-- Name: producto_sabor producto_sabor_producto_id_sabor_id_key; Type: CONSTRAINT; Schema: public; Owner: u3tobu994lm3di
+--
+
+ALTER TABLE ONLY public.producto_sabor
+    ADD CONSTRAINT producto_sabor_producto_id_sabor_id_key UNIQUE (producto_id, sabor_id);
+
+
+--
+-- TOC entry 4311 (class 2606 OID 93099955)
+-- Name: productos productos_pkey; Type: CONSTRAINT; Schema: public; Owner: u3tobu994lm3di
+--
+
+ALTER TABLE ONLY public.productos
+    ADD CONSTRAINT productos_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 4314 (class 2606 OID 93099957)
+-- Name: productos_sentencias productos_sentencias_pkey; Type: CONSTRAINT; Schema: public; Owner: u3tobu994lm3di
+--
+
+ALTER TABLE ONLY public.productos_sentencias
+    ADD CONSTRAINT productos_sentencias_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 4316 (class 2606 OID 93099959)
+-- Name: productos_sentencias productos_sentencias_sentencia_id_producto_id_sabor_id_tama_key; Type: CONSTRAINT; Schema: public; Owner: u3tobu994lm3di
+--
+
+ALTER TABLE ONLY public.productos_sentencias
+    ADD CONSTRAINT productos_sentencias_sentencia_id_producto_id_sabor_id_tama_key UNIQUE (sentencia_id, producto_id, sabor_id, tamano_id, ingrediente_id);
+
+
+--
+-- TOC entry 4318 (class 2606 OID 93099961)
+-- Name: sabores sabores_pkey; Type: CONSTRAINT; Schema: public; Owner: u3tobu994lm3di
+--
+
+ALTER TABLE ONLY public.sabores
+    ADD CONSTRAINT sabores_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 4321 (class 2606 OID 93099965)
+-- Name: sentencias sentencias_pkey; Type: CONSTRAINT; Schema: public; Owner: u3tobu994lm3di
+--
+
+ALTER TABLE ONLY public.sentencias
+    ADD CONSTRAINT sentencias_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 4286 (class 1259 OID 93099966)
+-- Name: idx_codigos_promocionales_codigo; Type: INDEX; Schema: public; Owner: u3tobu994lm3di
+--
+
+CREATE INDEX idx_codigos_promocionales_codigo ON public.codigos_promocionales USING btree (codigo);
+
+
+--
+-- TOC entry 4297 (class 1259 OID 93099967)
+-- Name: idx_ordenes_codigo_descuento_id; Type: INDEX; Schema: public; Owner: u3tobu994lm3di
+--
+
+CREATE INDEX idx_ordenes_codigo_descuento_id ON public.ordenes USING btree (codigo_descuento_id);
+
+
+--
+-- TOC entry 4312 (class 1259 OID 93099968)
+-- Name: idx_productos_sentencias_sentencia_id; Type: INDEX; Schema: public; Owner: u3tobu994lm3di
+--
+
+CREATE INDEX idx_productos_sentencias_sentencia_id ON public.productos_sentencias USING btree (sentencia_id);
+
+
+--
+-- TOC entry 4319 (class 1259 OID 93099969)
+-- Name: idx_sentencias_activa; Type: INDEX; Schema: public; Owner: u3tobu994lm3di
+--
+
+CREATE INDEX idx_sentencias_activa ON public.sentencias USING btree (activa);
+
+
+--
+-- TOC entry 4322 (class 2606 OID 93099970)
+-- Name: detalles_orden detalles_orden_empleado_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: u3tobu994lm3di
+--
+
+ALTER TABLE ONLY public.detalles_orden
+    ADD CONSTRAINT detalles_orden_empleado_id_fkey FOREIGN KEY (empleado_id) REFERENCES public.empleados(id) ON DELETE CASCADE;
+
+
+--
+-- TOC entry 4323 (class 2606 OID 93099975)
+-- Name: detalles_orden detalles_orden_ingrediente_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: u3tobu994lm3di
+--
+
+ALTER TABLE ONLY public.detalles_orden
+    ADD CONSTRAINT detalles_orden_ingrediente_id_fkey FOREIGN KEY (ingrediente_id) REFERENCES public.sabores(id) ON DELETE SET NULL;
+
+
+--
+-- TOC entry 4324 (class 2606 OID 93099981)
+-- Name: detalles_orden detalles_orden_orden_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: u3tobu994lm3di
+--
+
+ALTER TABLE ONLY public.detalles_orden
+    ADD CONSTRAINT detalles_orden_orden_id_fkey FOREIGN KEY (orden_id) REFERENCES public.ordenes(orden_id) ON DELETE CASCADE;
+
+
+--
+-- TOC entry 4325 (class 2606 OID 93099987)
+-- Name: detalles_orden detalles_orden_producto_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: u3tobu994lm3di
+--
+
+ALTER TABLE ONLY public.detalles_orden
+    ADD CONSTRAINT detalles_orden_producto_id_fkey FOREIGN KEY (producto_id) REFERENCES public.productos(id) ON DELETE CASCADE;
+
+
+--
+-- TOC entry 4326 (class 2606 OID 93099995)
+-- Name: detalles_orden detalles_orden_sabor_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: u3tobu994lm3di
+--
+
+ALTER TABLE ONLY public.detalles_orden
+    ADD CONSTRAINT detalles_orden_sabor_id_fkey FOREIGN KEY (sabor_id) REFERENCES public.sabores(id) ON DELETE SET NULL;
+
+
+--
+-- TOC entry 4327 (class 2606 OID 93100002)
+-- Name: detalles_orden detalles_orden_tamano_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: u3tobu994lm3di
+--
+
+ALTER TABLE ONLY public.detalles_orden
+    ADD CONSTRAINT detalles_orden_tamano_id_fkey FOREIGN KEY (tamano_id) REFERENCES public.sabores(id) ON DELETE SET NULL;
+
+
+--
+-- TOC entry 4328 (class 2606 OID 93100007)
+-- Name: detalles_orden fk_detalles_orden_sentencia; Type: FK CONSTRAINT; Schema: public; Owner: u3tobu994lm3di
+--
+
+ALTER TABLE ONLY public.detalles_orden
+    ADD CONSTRAINT fk_detalles_orden_sentencia FOREIGN KEY (sentencia_id) REFERENCES public.sentencias(id) ON DELETE SET NULL;
+
+
+--
+-- TOC entry 4329 (class 2606 OID 93100013)
+-- Name: detalles_orden fk_detalles_orden_sentencia_padre; Type: FK CONSTRAINT; Schema: public; Owner: u3tobu994lm3di
+--
+
+ALTER TABLE ONLY public.detalles_orden
+    ADD CONSTRAINT fk_detalles_orden_sentencia_padre FOREIGN KEY (sentencia_detalle_orden_padre_id) REFERENCES public.detalles_orden(id) ON DELETE CASCADE;
+
+
+--
+-- TOC entry 4330 (class 2606 OID 93100019)
+-- Name: ordenes ordenes_codigo_descuento_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: u3tobu994lm3di
+--
+
+ALTER TABLE ONLY public.ordenes
+    ADD CONSTRAINT ordenes_codigo_descuento_id_fkey FOREIGN KEY (codigo_descuento_id) REFERENCES public.codigos_promocionales(id) ON DELETE SET NULL;
+
+
+--
+-- TOC entry 4331 (class 2606 OID 93100025)
+-- Name: ordenes ordenes_empleado_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: u3tobu994lm3di
+--
+
+ALTER TABLE ONLY public.ordenes
+    ADD CONSTRAINT ordenes_empleado_id_fkey FOREIGN KEY (empleado_id) REFERENCES public.empleados(id) ON DELETE CASCADE;
+
+
+--
+-- TOC entry 4332 (class 2606 OID 93100030)
+-- Name: ordenes ordenes_preso_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: u3tobu994lm3di
+--
+
+ALTER TABLE ONLY public.ordenes
+    ADD CONSTRAINT ordenes_preso_id_fkey FOREIGN KEY (preso_id) REFERENCES public.presos(id) ON DELETE SET NULL;
+
+
+--
+-- TOC entry 4333 (class 2606 OID 93100035)
+-- Name: pagos pagos_empleado_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: u3tobu994lm3di
+--
+
+ALTER TABLE ONLY public.pagos
+    ADD CONSTRAINT pagos_empleado_id_fkey FOREIGN KEY (empleado_id) REFERENCES public.empleados(id);
+
+
+--
+-- TOC entry 4334 (class 2606 OID 93100040)
+-- Name: pagos pagos_orden_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: u3tobu994lm3di
+--
+
+ALTER TABLE ONLY public.pagos
+    ADD CONSTRAINT pagos_orden_id_fkey FOREIGN KEY (orden_id) REFERENCES public.ordenes(orden_id) ON DELETE CASCADE;
+
+
+--
+-- TOC entry 4335 (class 2606 OID 93100045)
+-- Name: preso_grado preso_grado_grado_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: u3tobu994lm3di
+--
+
+ALTER TABLE ONLY public.preso_grado
+    ADD CONSTRAINT preso_grado_grado_id_fkey FOREIGN KEY (grado_id) REFERENCES public.grados(id) ON DELETE CASCADE;
+
+
+--
+-- TOC entry 4336 (class 2606 OID 93100050)
+-- Name: preso_grado preso_grado_preso_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: u3tobu994lm3di
+--
+
+ALTER TABLE ONLY public.preso_grado
+    ADD CONSTRAINT preso_grado_preso_id_fkey FOREIGN KEY (preso_id) REFERENCES public.presos(id) ON DELETE CASCADE;
+
+
+--
+-- TOC entry 4337 (class 2606 OID 93100055)
+-- Name: producto_sabor producto_sabor_producto_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: u3tobu994lm3di
+--
+
+ALTER TABLE ONLY public.producto_sabor
+    ADD CONSTRAINT producto_sabor_producto_id_fkey FOREIGN KEY (producto_id) REFERENCES public.productos(id) ON DELETE CASCADE;
+
+
+--
+-- TOC entry 4338 (class 2606 OID 93100060)
+-- Name: producto_sabor producto_sabor_sabor_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: u3tobu994lm3di
+--
+
+ALTER TABLE ONLY public.producto_sabor
+    ADD CONSTRAINT producto_sabor_sabor_id_fkey FOREIGN KEY (sabor_id) REFERENCES public.sabores(id) ON DELETE CASCADE;
+
+
+--
+-- TOC entry 4339 (class 2606 OID 93100065)
+-- Name: productos_sentencias productos_sentencias_ingrediente_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: u3tobu994lm3di
+--
+
+ALTER TABLE ONLY public.productos_sentencias
+    ADD CONSTRAINT productos_sentencias_ingrediente_id_fkey FOREIGN KEY (ingrediente_id) REFERENCES public.sabores(id) ON DELETE SET NULL;
+
+
+--
+-- TOC entry 4340 (class 2606 OID 93100070)
+-- Name: productos_sentencias productos_sentencias_producto_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: u3tobu994lm3di
+--
+
+ALTER TABLE ONLY public.productos_sentencias
+    ADD CONSTRAINT productos_sentencias_producto_id_fkey FOREIGN KEY (producto_id) REFERENCES public.productos(id) ON DELETE CASCADE;
+
+
+--
+-- TOC entry 4341 (class 2606 OID 93100075)
+-- Name: productos_sentencias productos_sentencias_sabor_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: u3tobu994lm3di
+--
+
+ALTER TABLE ONLY public.productos_sentencias
+    ADD CONSTRAINT productos_sentencias_sabor_id_fkey FOREIGN KEY (sabor_id) REFERENCES public.sabores(id) ON DELETE SET NULL;
+
+
+--
+-- TOC entry 4342 (class 2606 OID 93100080)
+-- Name: productos_sentencias productos_sentencias_sentencia_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: u3tobu994lm3di
+--
+
+ALTER TABLE ONLY public.productos_sentencias
+    ADD CONSTRAINT productos_sentencias_sentencia_id_fkey FOREIGN KEY (sentencia_id) REFERENCES public.sentencias(id) ON DELETE CASCADE;
+
+
+--
+-- TOC entry 4343 (class 2606 OID 93100086)
+-- Name: productos_sentencias productos_sentencias_tamano_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: u3tobu994lm3di
+--
+
+ALTER TABLE ONLY public.productos_sentencias
+    ADD CONSTRAINT productos_sentencias_tamano_id_fkey FOREIGN KEY (tamano_id) REFERENCES public.sabores(id) ON DELETE SET NULL;
+
+
+--
+-- TOC entry 4344 (class 2606 OID 93100091)
+-- Name: sabores sabores_categoria_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: u3tobu994lm3di
+--
+
+ALTER TABLE ONLY public.sabores
+    ADD CONSTRAINT sabores_categoria_id_fkey FOREIGN KEY (categoria_id) REFERENCES public.categorias_variantes(id) ON DELETE CASCADE;
+
+
+--
+-- TOC entry 4496 (class 0 OID 0)
+-- Dependencies: 7
+-- Name: SCHEMA public; Type: ACL; Schema: -; Owner: u3tobu994lm3di
+--
+
+REVOKE USAGE ON SCHEMA public FROM PUBLIC;
+GRANT CREATE ON SCHEMA public TO PUBLIC;
+
+
+--
+-- TOC entry 4498 (class 0 OID 0)
+-- Dependencies: 268
+-- Name: FUNCTION pg_stat_statements_reset(userid oid, dbid oid, queryid bigint); Type: ACL; Schema: public; Owner: rdsadmin
+--
+
+GRANT ALL ON FUNCTION public.pg_stat_statements_reset(userid oid, dbid oid, queryid bigint) TO u3tobu994lm3di;
+
+
+--
+-- TOC entry 4229 (class 3466 OID 89740364)
+-- Name: extension_before_drop; Type: EVENT TRIGGER; Schema: -; Owner: heroku_admin
+--
+
+CREATE EVENT TRIGGER extension_before_drop ON ddl_command_start
+   EXECUTE FUNCTION _heroku.extension_before_drop();
+
+
+ALTER EVENT TRIGGER extension_before_drop OWNER TO heroku_admin;
+
+--
+-- TOC entry 4230 (class 3466 OID 89740366)
+-- Name: log_create_ext; Type: EVENT TRIGGER; Schema: -; Owner: heroku_admin
+--
+
+CREATE EVENT TRIGGER log_create_ext ON ddl_command_end
+   EXECUTE FUNCTION _heroku.create_ext();
+
+
+ALTER EVENT TRIGGER log_create_ext OWNER TO heroku_admin;
+
+--
+-- TOC entry 4231 (class 3466 OID 89740377)
+-- Name: log_drop_ext; Type: EVENT TRIGGER; Schema: -; Owner: heroku_admin
+--
+
+CREATE EVENT TRIGGER log_drop_ext ON sql_drop
+   EXECUTE FUNCTION _heroku.drop_ext();
+
+
+ALTER EVENT TRIGGER log_drop_ext OWNER TO heroku_admin;
+
+--
+-- TOC entry 4232 (class 3466 OID 89740378)
+-- Name: validate_extension; Type: EVENT TRIGGER; Schema: -; Owner: heroku_admin
+--
+
+CREATE EVENT TRIGGER validate_extension ON ddl_command_end
+   EXECUTE FUNCTION _heroku.validate_extension();
+
+
+ALTER EVENT TRIGGER validate_extension OWNER TO heroku_admin;
+
+-- Completed on 2025-06-16 17:01:06 UTC
+
+--
+-- PostgreSQL database dump complete
+--
+

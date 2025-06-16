@@ -29,9 +29,10 @@ docker-compose logs backend # View backend logs
 ```
 
 ### Database Commands
-- PostgreSQL runs on port 5432 (user: root, password: root, db: regente)
-- pgAdmin available at localhost:5050 (admin@admin.com / admin)
-- Database schema is in `estructuras-sql/estructura.sql`
+- **Local Development (Docker)**: PostgreSQL runs on port 5432 (user: root, password: root, db: regente)
+- **pgAdmin**: Available at localhost:5050 (admin@admin.com / admin)
+- **Database schema**: Located in `estructuras-sql/estructura.sql`
+- **Staging/Production**: Heroku PostgreSQL with SSL enabled
 
 ## Architecture Overview
 
@@ -109,11 +110,11 @@ regente2.0/
 - **Cascading deletes** for order details when orders are deleted
 
 ### Environment Configuration
-- **Development**: Static output, local PostgreSQL, no SSL
-- **Staging**: Server output, Heroku PostgreSQL with SSL
-- **Production**: Server output, Vercel + Heroku with SSL
+- **Development**: Static output, local PostgreSQL Docker, no SSL
+- **Staging**: Server output, Heroku Staging (backend + database) + Vercel Staging (frontend), with SSL
+- **Production**: Server output, Heroku Production (backend + database) + Vercel Production (frontend), with SSL
 - **CORS origins** configured per environment in backend
-- **Database SSL** enabled automatically for production/staging
+- **Database SSL** enabled automatically for staging/production
 
 ### Compras (Purchasing) Module
 **Complete supply chain management system**:
@@ -214,6 +215,35 @@ regente2.0/
 - **Variant system**: Dynamic UI based on product category configuration
 - **Combo system**: Two-phase processing (main combo + individual components)
 
+### Git Workflow & Branch Strategy
+
+**Branch Structure**:
+- `main`: Production branch (synced manually when ready)
+- `development`: Main development branch
+- `feature/[feature-name]`: Individual feature branches
+
+**Development Process**:
+1. **Start new feature**: `git checkout development` → `git checkout -b feature/nueva-funcionalidad`
+2. **Complete feature**: 
+   - `git add .`
+   - `git commit -m "Implementa nueva funcionalidad"`
+   - `git checkout development`
+   - `git merge feature/nueva-funcionalidad`
+3. **Deploy to production**: 
+   - `git checkout main`
+   - `git merge development`
+   - `git push origin main` (triggers automatic deployments)
+
+**Service Providers**:
+- **GitHub**: Source control (`https://github.com/Dexinator/Regente2.0.git`)
+- **Docker**: Local development environment (PostgreSQL + pgAdmin)
+- **Heroku**: Backend + Database hosting
+  - **Staging**: `regente-staging` app for testing
+  - **Production**: Production backend + database
+- **Vercel**: Frontend deployment (Astro application)
+  - **Staging**: Frontend staging environment
+  - **Production**: Production frontend deployment
+
 ### Development Notes
 - Backend uses ES modules (`type: "module"` in package.json)
 - Frontend builds differently for development (static) vs production (server)
@@ -224,6 +254,7 @@ regente2.0/
 - **Kitchen improvements**: Focus on chronological ordering and error correction features
 - **SSR Compatibility**: Use `typeof window !== 'undefined'` checks for localStorage access
 - **Purchasing module**: Complete workflow from requisition to daily purchase planning
+- **Feature workflow**: Always create feature branches from `development`, merge back when complete
 
 ### Recent Improvements (Latest Updates)
 
