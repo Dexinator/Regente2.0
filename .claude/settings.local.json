@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run query:*)",
+      "Bash(PGPASSWORD=root psql -h localhost -U root -d regente -c \"SELECT id, nombre, precio, categoria_id, disponible FROM productos LIMIT 5;\")",
+      "Bash(docker exec:*)",
+      "Bash(grep:*)",
+      "Bash(ls:*)",
+      "Bash(docker logs:*)"
+    ],
+    "deny": []
+  }
+}
