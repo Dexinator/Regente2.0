@@ -2,10 +2,10 @@
 -- PostgreSQL database dump
 --
 
--- Dumped from database version 16.6
+-- Dumped from database version 16.8
 -- Dumped by pg_dump version 16.9
 
--- Started on 2025-06-16 17:00:57 UTC
+-- Started on 2025-07-01 17:46:05 UTC
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -39,7 +39,7 @@ ALTER SCHEMA _heroku OWNER TO heroku_admin;
 ALTER SCHEMA public OWNER TO u3tobu994lm3di;
 
 --
--- TOC entry 4495 (class 0 OID 0)
+-- TOC entry 4601 (class 0 OID 0)
 -- Dependencies: 7
 -- Name: SCHEMA public; Type: COMMENT; Schema: -; Owner: u3tobu994lm3di
 --
@@ -56,7 +56,7 @@ CREATE EXTENSION IF NOT EXISTS pg_stat_statements WITH SCHEMA public;
 
 
 --
--- TOC entry 4497 (class 0 OID 0)
+-- TOC entry 4603 (class 0 OID 0)
 -- Dependencies: 2
 -- Name: EXTENSION pg_stat_statements; Type: COMMENT; Schema: -; Owner: 
 --
@@ -65,7 +65,7 @@ COMMENT ON EXTENSION pg_stat_statements IS 'track planning and execution statist
 
 
 --
--- TOC entry 249 (class 1255 OID 89740356)
+-- TOC entry 264 (class 1255 OID 89740356)
 -- Name: create_ext(); Type: FUNCTION; Schema: _heroku; Owner: heroku_admin
 --
 
@@ -147,7 +147,7 @@ $$;
 ALTER FUNCTION _heroku.create_ext() OWNER TO heroku_admin;
 
 --
--- TOC entry 250 (class 1255 OID 89740357)
+-- TOC entry 265 (class 1255 OID 89740357)
 -- Name: drop_ext(); Type: FUNCTION; Schema: _heroku; Owner: heroku_admin
 --
 
@@ -190,7 +190,7 @@ $$;
 ALTER FUNCTION _heroku.drop_ext() OWNER TO heroku_admin;
 
 --
--- TOC entry 251 (class 1255 OID 89740358)
+-- TOC entry 266 (class 1255 OID 89740358)
 -- Name: extension_before_drop(); Type: FUNCTION; Schema: _heroku; Owner: heroku_admin
 --
 
@@ -219,7 +219,7 @@ $$;
 ALTER FUNCTION _heroku.extension_before_drop() OWNER TO heroku_admin;
 
 --
--- TOC entry 252 (class 1255 OID 89740359)
+-- TOC entry 267 (class 1255 OID 89740359)
 -- Name: grant_table_if_exists(text, text, text, text); Type: FUNCTION; Schema: _heroku; Owner: heroku_admin
 --
 
@@ -243,7 +243,7 @@ $$;
 ALTER FUNCTION _heroku.grant_table_if_exists(alias_schemaname text, grants text, databaseowner text, alias_tablename text) OWNER TO heroku_admin;
 
 --
--- TOC entry 253 (class 1255 OID 89740360)
+-- TOC entry 268 (class 1255 OID 89740360)
 -- Name: postgis_after_create(); Type: FUNCTION; Schema: _heroku; Owner: heroku_admin
 --
 
@@ -275,7 +275,7 @@ $$;
 ALTER FUNCTION _heroku.postgis_after_create() OWNER TO heroku_admin;
 
 --
--- TOC entry 254 (class 1255 OID 89740361)
+-- TOC entry 269 (class 1255 OID 89740361)
 -- Name: validate_extension(); Type: FUNCTION; Schema: _heroku; Owner: heroku_admin
 --
 
@@ -314,9 +314,152 @@ $$;
 
 ALTER FUNCTION _heroku.validate_extension() OWNER TO heroku_admin;
 
+--
+-- TOC entry 274 (class 1255 OID 106470262)
+-- Name: actualizar_estado_requisicion(); Type: FUNCTION; Schema: public; Owner: u3tobu994lm3di
+--
+
+CREATE FUNCTION public.actualizar_estado_requisicion() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+  BEGIN
+      -- Actualizar el estado del item de requisición
+      UPDATE items_requisicion
+      SET completado = TRUE
+      WHERE id = NEW.requisicion_item_id;
+
+      -- Verificar si todos los items de la requisición están completados
+      IF NOT EXISTS (
+          SELECT 1 FROM items_requisicion
+          WHERE requisicion_id = (
+              SELECT requisicion_id FROM items_requisicion WHERE id = NEW.requisicion_item_id
+          )
+          AND completado = FALSE
+      ) THEN
+          -- Si todos están completados, actualizar la requisición
+          UPDATE requisiciones
+          SET completada = TRUE, fecha_completada = CURRENT_TIMESTAMP
+          WHERE id = (
+              SELECT requisicion_id FROM items_requisicion WHERE id = NEW.requisicion_item_id
+          );
+      END IF;
+
+      RETURN NEW;
+  END;
+  $$;
+
+
+ALTER FUNCTION public.actualizar_estado_requisicion() OWNER TO u3tobu994lm3di;
+
 SET default_tablespace = '';
 
 SET default_table_access_method = heap;
+
+--
+-- TOC entry 260 (class 1259 OID 106470345)
+-- Name: compras; Type: TABLE; Schema: public; Owner: u3tobu994lm3di
+--
+
+CREATE TABLE public.compras (
+    id integer NOT NULL,
+    proveedor_id integer,
+    usuario_id integer,
+    fecha_compra timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    total numeric(10,2) NOT NULL,
+    metodo_pago character varying(20),
+    solicito_factura boolean DEFAULT false,
+    numero_factura character varying(50),
+    notas text,
+    CONSTRAINT compras_metodo_pago_check CHECK (((metodo_pago)::text = ANY ((ARRAY['efectivo'::character varying, 'tarjeta'::character varying, 'transferencia'::character varying])::text[])))
+);
+
+
+ALTER TABLE public.compras OWNER TO u3tobu994lm3di;
+
+--
+-- TOC entry 252 (class 1259 OID 106470277)
+-- Name: insumos; Type: TABLE; Schema: public; Owner: u3tobu994lm3di
+--
+
+CREATE TABLE public.insumos (
+    id integer NOT NULL,
+    nombre character varying(100) NOT NULL,
+    descripcion text,
+    categoria character varying(50),
+    unidad_medida_default character varying(20) DEFAULT 'unidad'::character varying NOT NULL,
+    fecha_alta date DEFAULT CURRENT_DATE,
+    activo boolean DEFAULT true,
+    marca character varying
+);
+
+
+ALTER TABLE public.insumos OWNER TO u3tobu994lm3di;
+
+--
+-- TOC entry 262 (class 1259 OID 106470367)
+-- Name: items_compra; Type: TABLE; Schema: public; Owner: u3tobu994lm3di
+--
+
+CREATE TABLE public.items_compra (
+    id integer NOT NULL,
+    compra_id integer,
+    insumo_id integer,
+    requisicion_item_id integer,
+    precio_unitario numeric(10,2) NOT NULL,
+    cantidad numeric(10,2) NOT NULL,
+    unidad character varying(20) NOT NULL,
+    subtotal numeric(10,2) GENERATED ALWAYS AS ((precio_unitario * cantidad)) STORED
+);
+
+
+ALTER TABLE public.items_compra OWNER TO u3tobu994lm3di;
+
+--
+-- TOC entry 250 (class 1259 OID 106470264)
+-- Name: proveedores; Type: TABLE; Schema: public; Owner: u3tobu994lm3di
+--
+
+CREATE TABLE public.proveedores (
+    id integer NOT NULL,
+    nombre character varying(100) NOT NULL,
+    rfc character varying(13) NOT NULL,
+    direccion text,
+    telefono character varying(20),
+    email character varying(100),
+    contacto_nombre character varying(100),
+    fecha_alta date DEFAULT CURRENT_DATE,
+    activo boolean DEFAULT true
+);
+
+
+ALTER TABLE public.proveedores OWNER TO u3tobu994lm3di;
+
+--
+-- TOC entry 263 (class 1259 OID 106470389)
+-- Name: analisis_precios_insumos; Type: VIEW; Schema: public; Owner: u3tobu994lm3di
+--
+
+CREATE VIEW public.analisis_precios_insumos AS
+ SELECT i.id AS insumo_id,
+    i.nombre AS insumo_nombre,
+    i.categoria,
+    p.id AS proveedor_id,
+    p.nombre AS proveedor_nombre,
+    ic.unidad,
+    avg(ic.precio_unitario) AS precio_promedio,
+    min(ic.precio_unitario) AS precio_minimo,
+    max(ic.precio_unitario) AS precio_maximo,
+    count(ic.id) AS num_compras,
+    max(c.fecha_compra) AS ultima_compra
+   FROM (((public.insumos i
+     JOIN public.items_compra ic ON ((i.id = ic.insumo_id)))
+     JOIN public.compras c ON ((ic.compra_id = c.id)))
+     JOIN public.proveedores p ON ((c.proveedor_id = p.id)))
+  GROUP BY i.id, i.nombre, i.categoria, p.id, p.nombre, ic.unidad
+  ORDER BY i.nombre, p.nombre;
+
+
+ALTER VIEW public.analisis_precios_insumos OWNER TO u3tobu994lm3di;
 
 --
 -- TOC entry 219 (class 1259 OID 93099759)
@@ -349,7 +492,7 @@ CREATE SEQUENCE public.categoria_producto_tipo_variante_id_seq
 ALTER SEQUENCE public.categoria_producto_tipo_variante_id_seq OWNER TO u3tobu994lm3di;
 
 --
--- TOC entry 4499 (class 0 OID 0)
+-- TOC entry 4605 (class 0 OID 0)
 -- Dependencies: 220
 -- Name: categoria_producto_tipo_variante_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: u3tobu994lm3di
 --
@@ -388,7 +531,7 @@ CREATE SEQUENCE public.categorias_variantes_id_seq
 ALTER SEQUENCE public.categorias_variantes_id_seq OWNER TO u3tobu994lm3di;
 
 --
--- TOC entry 4500 (class 0 OID 0)
+-- TOC entry 4606 (class 0 OID 0)
 -- Dependencies: 222
 -- Name: categorias_variantes_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: u3tobu994lm3di
 --
@@ -433,12 +576,37 @@ CREATE SEQUENCE public.codigos_promocionales_id_seq
 ALTER SEQUENCE public.codigos_promocionales_id_seq OWNER TO u3tobu994lm3di;
 
 --
--- TOC entry 4501 (class 0 OID 0)
+-- TOC entry 4607 (class 0 OID 0)
 -- Dependencies: 224
 -- Name: codigos_promocionales_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: u3tobu994lm3di
 --
 
 ALTER SEQUENCE public.codigos_promocionales_id_seq OWNED BY public.codigos_promocionales.id;
+
+
+--
+-- TOC entry 259 (class 1259 OID 106470344)
+-- Name: compras_id_seq; Type: SEQUENCE; Schema: public; Owner: u3tobu994lm3di
+--
+
+CREATE SEQUENCE public.compras_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.compras_id_seq OWNER TO u3tobu994lm3di;
+
+--
+-- TOC entry 4608 (class 0 OID 0)
+-- Dependencies: 259
+-- Name: compras_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: u3tobu994lm3di
+--
+
+ALTER SEQUENCE public.compras_id_seq OWNED BY public.compras.id;
 
 
 --
@@ -489,7 +657,7 @@ CREATE SEQUENCE public.detalles_orden_id_seq
 ALTER SEQUENCE public.detalles_orden_id_seq OWNER TO u3tobu994lm3di;
 
 --
--- TOC entry 4502 (class 0 OID 0)
+-- TOC entry 4609 (class 0 OID 0)
 -- Dependencies: 226
 -- Name: detalles_orden_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: u3tobu994lm3di
 --
@@ -533,7 +701,7 @@ CREATE SEQUENCE public.empleados_id_seq
 ALTER SEQUENCE public.empleados_id_seq OWNER TO u3tobu994lm3di;
 
 --
--- TOC entry 4503 (class 0 OID 0)
+-- TOC entry 4610 (class 0 OID 0)
 -- Dependencies: 228
 -- Name: empleados_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: u3tobu994lm3di
 --
@@ -572,12 +740,145 @@ CREATE SEQUENCE public.grados_id_seq
 ALTER SEQUENCE public.grados_id_seq OWNER TO u3tobu994lm3di;
 
 --
--- TOC entry 4504 (class 0 OID 0)
+-- TOC entry 4611 (class 0 OID 0)
 -- Dependencies: 230
 -- Name: grados_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: u3tobu994lm3di
 --
 
 ALTER SEQUENCE public.grados_id_seq OWNED BY public.grados.id;
+
+
+--
+-- TOC entry 254 (class 1259 OID 106470291)
+-- Name: insumo_proveedor; Type: TABLE; Schema: public; Owner: u3tobu994lm3di
+--
+
+CREATE TABLE public.insumo_proveedor (
+    id integer NOT NULL,
+    insumo_id integer,
+    proveedor_id integer,
+    precio_referencia numeric(10,2)
+);
+
+
+ALTER TABLE public.insumo_proveedor OWNER TO u3tobu994lm3di;
+
+--
+-- TOC entry 253 (class 1259 OID 106470290)
+-- Name: insumo_proveedor_id_seq; Type: SEQUENCE; Schema: public; Owner: u3tobu994lm3di
+--
+
+CREATE SEQUENCE public.insumo_proveedor_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.insumo_proveedor_id_seq OWNER TO u3tobu994lm3di;
+
+--
+-- TOC entry 4612 (class 0 OID 0)
+-- Dependencies: 253
+-- Name: insumo_proveedor_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: u3tobu994lm3di
+--
+
+ALTER SEQUENCE public.insumo_proveedor_id_seq OWNED BY public.insumo_proveedor.id;
+
+
+--
+-- TOC entry 251 (class 1259 OID 106470276)
+-- Name: insumos_id_seq; Type: SEQUENCE; Schema: public; Owner: u3tobu994lm3di
+--
+
+CREATE SEQUENCE public.insumos_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.insumos_id_seq OWNER TO u3tobu994lm3di;
+
+--
+-- TOC entry 4613 (class 0 OID 0)
+-- Dependencies: 251
+-- Name: insumos_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: u3tobu994lm3di
+--
+
+ALTER SEQUENCE public.insumos_id_seq OWNED BY public.insumos.id;
+
+
+--
+-- TOC entry 261 (class 1259 OID 106470366)
+-- Name: items_compra_id_seq; Type: SEQUENCE; Schema: public; Owner: u3tobu994lm3di
+--
+
+CREATE SEQUENCE public.items_compra_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.items_compra_id_seq OWNER TO u3tobu994lm3di;
+
+--
+-- TOC entry 4614 (class 0 OID 0)
+-- Dependencies: 261
+-- Name: items_compra_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: u3tobu994lm3di
+--
+
+ALTER SEQUENCE public.items_compra_id_seq OWNED BY public.items_compra.id;
+
+
+--
+-- TOC entry 258 (class 1259 OID 106470326)
+-- Name: items_requisicion; Type: TABLE; Schema: public; Owner: u3tobu994lm3di
+--
+
+CREATE TABLE public.items_requisicion (
+    id integer NOT NULL,
+    requisicion_id integer,
+    insumo_id integer,
+    cantidad numeric(10,2) NOT NULL,
+    unidad character varying(20) NOT NULL,
+    urgencia character varying(20) DEFAULT 'normal'::character varying,
+    completado boolean DEFAULT false
+);
+
+
+ALTER TABLE public.items_requisicion OWNER TO u3tobu994lm3di;
+
+--
+-- TOC entry 257 (class 1259 OID 106470325)
+-- Name: items_requisicion_id_seq; Type: SEQUENCE; Schema: public; Owner: u3tobu994lm3di
+--
+
+CREATE SEQUENCE public.items_requisicion_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.items_requisicion_id_seq OWNER TO u3tobu994lm3di;
+
+--
+-- TOC entry 4615 (class 0 OID 0)
+-- Dependencies: 257
+-- Name: items_requisicion_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: u3tobu994lm3di
+--
+
+ALTER SEQUENCE public.items_requisicion_id_seq OWNED BY public.items_requisicion.id;
 
 
 --
@@ -619,7 +920,7 @@ CREATE SEQUENCE public.ordenes_orden_id_seq
 ALTER SEQUENCE public.ordenes_orden_id_seq OWNER TO u3tobu994lm3di;
 
 --
--- TOC entry 4505 (class 0 OID 0)
+-- TOC entry 4616 (class 0 OID 0)
 -- Dependencies: 232
 -- Name: ordenes_orden_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: u3tobu994lm3di
 --
@@ -664,7 +965,7 @@ CREATE SEQUENCE public.pagos_id_seq
 ALTER SEQUENCE public.pagos_id_seq OWNER TO u3tobu994lm3di;
 
 --
--- TOC entry 4506 (class 0 OID 0)
+-- TOC entry 4617 (class 0 OID 0)
 -- Dependencies: 234
 -- Name: pagos_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: u3tobu994lm3di
 --
@@ -704,7 +1005,7 @@ CREATE SEQUENCE public.preso_grado_id_seq
 ALTER SEQUENCE public.preso_grado_id_seq OWNER TO u3tobu994lm3di;
 
 --
--- TOC entry 4507 (class 0 OID 0)
+-- TOC entry 4618 (class 0 OID 0)
 -- Dependencies: 236
 -- Name: preso_grado_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: u3tobu994lm3di
 --
@@ -749,7 +1050,7 @@ CREATE SEQUENCE public.presos_id_seq
 ALTER SEQUENCE public.presos_id_seq OWNER TO u3tobu994lm3di;
 
 --
--- TOC entry 4508 (class 0 OID 0)
+-- TOC entry 4619 (class 0 OID 0)
 -- Dependencies: 238
 -- Name: presos_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: u3tobu994lm3di
 --
@@ -788,7 +1089,7 @@ CREATE SEQUENCE public.producto_sabor_id_seq
 ALTER SEQUENCE public.producto_sabor_id_seq OWNER TO u3tobu994lm3di;
 
 --
--- TOC entry 4509 (class 0 OID 0)
+-- TOC entry 4620 (class 0 OID 0)
 -- Dependencies: 240
 -- Name: producto_sabor_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: u3tobu994lm3di
 --
@@ -829,7 +1130,7 @@ CREATE SEQUENCE public.productos_id_seq
 ALTER SEQUENCE public.productos_id_seq OWNER TO u3tobu994lm3di;
 
 --
--- TOC entry 4510 (class 0 OID 0)
+-- TOC entry 4621 (class 0 OID 0)
 -- Dependencies: 242
 -- Name: productos_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: u3tobu994lm3di
 --
@@ -875,12 +1176,79 @@ CREATE SEQUENCE public.productos_sentencias_id_seq
 ALTER SEQUENCE public.productos_sentencias_id_seq OWNER TO u3tobu994lm3di;
 
 --
--- TOC entry 4511 (class 0 OID 0)
+-- TOC entry 4622 (class 0 OID 0)
 -- Dependencies: 244
 -- Name: productos_sentencias_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: u3tobu994lm3di
 --
 
 ALTER SEQUENCE public.productos_sentencias_id_seq OWNED BY public.productos_sentencias.id;
+
+
+--
+-- TOC entry 249 (class 1259 OID 106470263)
+-- Name: proveedores_id_seq; Type: SEQUENCE; Schema: public; Owner: u3tobu994lm3di
+--
+
+CREATE SEQUENCE public.proveedores_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.proveedores_id_seq OWNER TO u3tobu994lm3di;
+
+--
+-- TOC entry 4623 (class 0 OID 0)
+-- Dependencies: 249
+-- Name: proveedores_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: u3tobu994lm3di
+--
+
+ALTER SEQUENCE public.proveedores_id_seq OWNED BY public.proveedores.id;
+
+
+--
+-- TOC entry 256 (class 1259 OID 106470310)
+-- Name: requisiciones; Type: TABLE; Schema: public; Owner: u3tobu994lm3di
+--
+
+CREATE TABLE public.requisiciones (
+    id integer NOT NULL,
+    usuario_id integer,
+    fecha_solicitud timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    fecha_completada timestamp without time zone,
+    completada boolean DEFAULT false,
+    notas text
+);
+
+
+ALTER TABLE public.requisiciones OWNER TO u3tobu994lm3di;
+
+--
+-- TOC entry 255 (class 1259 OID 106470309)
+-- Name: requisiciones_id_seq; Type: SEQUENCE; Schema: public; Owner: u3tobu994lm3di
+--
+
+CREATE SEQUENCE public.requisiciones_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.requisiciones_id_seq OWNER TO u3tobu994lm3di;
+
+--
+-- TOC entry 4624 (class 0 OID 0)
+-- Dependencies: 255
+-- Name: requisiciones_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: u3tobu994lm3di
+--
+
+ALTER SEQUENCE public.requisiciones_id_seq OWNED BY public.requisiciones.id;
 
 
 --
@@ -917,7 +1285,7 @@ CREATE SEQUENCE public.sabores_id_seq
 ALTER SEQUENCE public.sabores_id_seq OWNER TO u3tobu994lm3di;
 
 --
--- TOC entry 4512 (class 0 OID 0)
+-- TOC entry 4625 (class 0 OID 0)
 -- Dependencies: 246
 -- Name: sabores_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: u3tobu994lm3di
 --
@@ -958,7 +1326,7 @@ CREATE SEQUENCE public.sentencias_id_seq
 ALTER SEQUENCE public.sentencias_id_seq OWNER TO u3tobu994lm3di;
 
 --
--- TOC entry 4513 (class 0 OID 0)
+-- TOC entry 4626 (class 0 OID 0)
 -- Dependencies: 248
 -- Name: sentencias_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: u3tobu994lm3di
 --
@@ -967,7 +1335,7 @@ ALTER SEQUENCE public.sentencias_id_seq OWNED BY public.sentencias.id;
 
 
 --
--- TOC entry 4233 (class 2604 OID 93099901)
+-- TOC entry 4273 (class 2604 OID 93099901)
 -- Name: categoria_producto_tipo_variante id; Type: DEFAULT; Schema: public; Owner: u3tobu994lm3di
 --
 
@@ -975,7 +1343,7 @@ ALTER TABLE ONLY public.categoria_producto_tipo_variante ALTER COLUMN id SET DEF
 
 
 --
--- TOC entry 4234 (class 2604 OID 93099902)
+-- TOC entry 4274 (class 2604 OID 93099902)
 -- Name: categorias_variantes id; Type: DEFAULT; Schema: public; Owner: u3tobu994lm3di
 --
 
@@ -983,7 +1351,7 @@ ALTER TABLE ONLY public.categorias_variantes ALTER COLUMN id SET DEFAULT nextval
 
 
 --
--- TOC entry 4235 (class 2604 OID 93099903)
+-- TOC entry 4275 (class 2604 OID 93099903)
 -- Name: codigos_promocionales id; Type: DEFAULT; Schema: public; Owner: u3tobu994lm3di
 --
 
@@ -991,7 +1359,15 @@ ALTER TABLE ONLY public.codigos_promocionales ALTER COLUMN id SET DEFAULT nextva
 
 
 --
--- TOC entry 4240 (class 2604 OID 93099904)
+-- TOC entry 4327 (class 2604 OID 106470348)
+-- Name: compras id; Type: DEFAULT; Schema: public; Owner: u3tobu994lm3di
+--
+
+ALTER TABLE ONLY public.compras ALTER COLUMN id SET DEFAULT nextval('public.compras_id_seq'::regclass);
+
+
+--
+-- TOC entry 4280 (class 2604 OID 93099904)
 -- Name: detalles_orden id; Type: DEFAULT; Schema: public; Owner: u3tobu994lm3di
 --
 
@@ -999,7 +1375,7 @@ ALTER TABLE ONLY public.detalles_orden ALTER COLUMN id SET DEFAULT nextval('publ
 
 
 --
--- TOC entry 4246 (class 2604 OID 93099905)
+-- TOC entry 4286 (class 2604 OID 93099905)
 -- Name: empleados id; Type: DEFAULT; Schema: public; Owner: u3tobu994lm3di
 --
 
@@ -1007,7 +1383,7 @@ ALTER TABLE ONLY public.empleados ALTER COLUMN id SET DEFAULT nextval('public.em
 
 
 --
--- TOC entry 4249 (class 2604 OID 93099906)
+-- TOC entry 4289 (class 2604 OID 93099906)
 -- Name: grados id; Type: DEFAULT; Schema: public; Owner: u3tobu994lm3di
 --
 
@@ -1015,7 +1391,39 @@ ALTER TABLE ONLY public.grados ALTER COLUMN id SET DEFAULT nextval('public.grado
 
 
 --
--- TOC entry 4250 (class 2604 OID 93099907)
+-- TOC entry 4320 (class 2604 OID 106470294)
+-- Name: insumo_proveedor id; Type: DEFAULT; Schema: public; Owner: u3tobu994lm3di
+--
+
+ALTER TABLE ONLY public.insumo_proveedor ALTER COLUMN id SET DEFAULT nextval('public.insumo_proveedor_id_seq'::regclass);
+
+
+--
+-- TOC entry 4316 (class 2604 OID 106470280)
+-- Name: insumos id; Type: DEFAULT; Schema: public; Owner: u3tobu994lm3di
+--
+
+ALTER TABLE ONLY public.insumos ALTER COLUMN id SET DEFAULT nextval('public.insumos_id_seq'::regclass);
+
+
+--
+-- TOC entry 4330 (class 2604 OID 106470370)
+-- Name: items_compra id; Type: DEFAULT; Schema: public; Owner: u3tobu994lm3di
+--
+
+ALTER TABLE ONLY public.items_compra ALTER COLUMN id SET DEFAULT nextval('public.items_compra_id_seq'::regclass);
+
+
+--
+-- TOC entry 4324 (class 2604 OID 106470329)
+-- Name: items_requisicion id; Type: DEFAULT; Schema: public; Owner: u3tobu994lm3di
+--
+
+ALTER TABLE ONLY public.items_requisicion ALTER COLUMN id SET DEFAULT nextval('public.items_requisicion_id_seq'::regclass);
+
+
+--
+-- TOC entry 4290 (class 2604 OID 93099907)
 -- Name: ordenes orden_id; Type: DEFAULT; Schema: public; Owner: u3tobu994lm3di
 --
 
@@ -1023,7 +1431,7 @@ ALTER TABLE ONLY public.ordenes ALTER COLUMN orden_id SET DEFAULT nextval('publi
 
 
 --
--- TOC entry 4254 (class 2604 OID 93099908)
+-- TOC entry 4294 (class 2604 OID 93099908)
 -- Name: pagos id; Type: DEFAULT; Schema: public; Owner: u3tobu994lm3di
 --
 
@@ -1031,7 +1439,7 @@ ALTER TABLE ONLY public.pagos ALTER COLUMN id SET DEFAULT nextval('public.pagos_
 
 
 --
--- TOC entry 4257 (class 2604 OID 93099909)
+-- TOC entry 4297 (class 2604 OID 93099909)
 -- Name: preso_grado id; Type: DEFAULT; Schema: public; Owner: u3tobu994lm3di
 --
 
@@ -1039,7 +1447,7 @@ ALTER TABLE ONLY public.preso_grado ALTER COLUMN id SET DEFAULT nextval('public.
 
 
 --
--- TOC entry 4259 (class 2604 OID 93099910)
+-- TOC entry 4299 (class 2604 OID 93099910)
 -- Name: presos id; Type: DEFAULT; Schema: public; Owner: u3tobu994lm3di
 --
 
@@ -1047,7 +1455,7 @@ ALTER TABLE ONLY public.presos ALTER COLUMN id SET DEFAULT nextval('public.preso
 
 
 --
--- TOC entry 4262 (class 2604 OID 93099911)
+-- TOC entry 4302 (class 2604 OID 93099911)
 -- Name: producto_sabor id; Type: DEFAULT; Schema: public; Owner: u3tobu994lm3di
 --
 
@@ -1055,7 +1463,7 @@ ALTER TABLE ONLY public.producto_sabor ALTER COLUMN id SET DEFAULT nextval('publ
 
 
 --
--- TOC entry 4263 (class 2604 OID 93099912)
+-- TOC entry 4303 (class 2604 OID 93099912)
 -- Name: productos id; Type: DEFAULT; Schema: public; Owner: u3tobu994lm3di
 --
 
@@ -1063,7 +1471,7 @@ ALTER TABLE ONLY public.productos ALTER COLUMN id SET DEFAULT nextval('public.pr
 
 
 --
--- TOC entry 4264 (class 2604 OID 93099913)
+-- TOC entry 4304 (class 2604 OID 93099913)
 -- Name: productos_sentencias id; Type: DEFAULT; Schema: public; Owner: u3tobu994lm3di
 --
 
@@ -1071,7 +1479,23 @@ ALTER TABLE ONLY public.productos_sentencias ALTER COLUMN id SET DEFAULT nextval
 
 
 --
--- TOC entry 4268 (class 2604 OID 93099914)
+-- TOC entry 4313 (class 2604 OID 106470267)
+-- Name: proveedores id; Type: DEFAULT; Schema: public; Owner: u3tobu994lm3di
+--
+
+ALTER TABLE ONLY public.proveedores ALTER COLUMN id SET DEFAULT nextval('public.proveedores_id_seq'::regclass);
+
+
+--
+-- TOC entry 4321 (class 2604 OID 106470313)
+-- Name: requisiciones id; Type: DEFAULT; Schema: public; Owner: u3tobu994lm3di
+--
+
+ALTER TABLE ONLY public.requisiciones ALTER COLUMN id SET DEFAULT nextval('public.requisiciones_id_seq'::regclass);
+
+
+--
+-- TOC entry 4308 (class 2604 OID 93099914)
 -- Name: sabores id; Type: DEFAULT; Schema: public; Owner: u3tobu994lm3di
 --
 
@@ -1079,7 +1503,7 @@ ALTER TABLE ONLY public.sabores ALTER COLUMN id SET DEFAULT nextval('public.sabo
 
 
 --
--- TOC entry 4271 (class 2604 OID 93099915)
+-- TOC entry 4311 (class 2604 OID 93099915)
 -- Name: sentencias id; Type: DEFAULT; Schema: public; Owner: u3tobu994lm3di
 --
 
@@ -1087,7 +1511,7 @@ ALTER TABLE ONLY public.sentencias ALTER COLUMN id SET DEFAULT nextval('public.s
 
 
 --
--- TOC entry 4277 (class 2606 OID 93099923)
+-- TOC entry 4337 (class 2606 OID 93099923)
 -- Name: categoria_producto_tipo_variante categoria_producto_tipo_varia_categoria_producto_tipo_varia_key; Type: CONSTRAINT; Schema: public; Owner: u3tobu994lm3di
 --
 
@@ -1096,7 +1520,7 @@ ALTER TABLE ONLY public.categoria_producto_tipo_variante
 
 
 --
--- TOC entry 4279 (class 2606 OID 93099925)
+-- TOC entry 4339 (class 2606 OID 93099925)
 -- Name: categoria_producto_tipo_variante categoria_producto_tipo_variante_pkey; Type: CONSTRAINT; Schema: public; Owner: u3tobu994lm3di
 --
 
@@ -1105,7 +1529,7 @@ ALTER TABLE ONLY public.categoria_producto_tipo_variante
 
 
 --
--- TOC entry 4281 (class 2606 OID 93099927)
+-- TOC entry 4341 (class 2606 OID 93099927)
 -- Name: categorias_variantes categorias_variantes_pkey; Type: CONSTRAINT; Schema: public; Owner: u3tobu994lm3di
 --
 
@@ -1114,7 +1538,7 @@ ALTER TABLE ONLY public.categorias_variantes
 
 
 --
--- TOC entry 4283 (class 2606 OID 93099929)
+-- TOC entry 4343 (class 2606 OID 93099929)
 -- Name: codigos_promocionales codigos_promocionales_codigo_key; Type: CONSTRAINT; Schema: public; Owner: u3tobu994lm3di
 --
 
@@ -1123,7 +1547,7 @@ ALTER TABLE ONLY public.codigos_promocionales
 
 
 --
--- TOC entry 4285 (class 2606 OID 93099931)
+-- TOC entry 4345 (class 2606 OID 93099931)
 -- Name: codigos_promocionales codigos_promocionales_pkey; Type: CONSTRAINT; Schema: public; Owner: u3tobu994lm3di
 --
 
@@ -1132,7 +1556,16 @@ ALTER TABLE ONLY public.codigos_promocionales
 
 
 --
--- TOC entry 4288 (class 2606 OID 93099933)
+-- TOC entry 4407 (class 2606 OID 106470355)
+-- Name: compras compras_pkey; Type: CONSTRAINT; Schema: public; Owner: u3tobu994lm3di
+--
+
+ALTER TABLE ONLY public.compras
+    ADD CONSTRAINT compras_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 4348 (class 2606 OID 93099933)
 -- Name: detalles_orden detalles_orden_pkey; Type: CONSTRAINT; Schema: public; Owner: u3tobu994lm3di
 --
 
@@ -1141,7 +1574,7 @@ ALTER TABLE ONLY public.detalles_orden
 
 
 --
--- TOC entry 4290 (class 2606 OID 93099935)
+-- TOC entry 4350 (class 2606 OID 93099935)
 -- Name: empleados empleados_pkey; Type: CONSTRAINT; Schema: public; Owner: u3tobu994lm3di
 --
 
@@ -1150,7 +1583,7 @@ ALTER TABLE ONLY public.empleados
 
 
 --
--- TOC entry 4292 (class 2606 OID 93099937)
+-- TOC entry 4352 (class 2606 OID 93099937)
 -- Name: empleados empleados_usuario_key; Type: CONSTRAINT; Schema: public; Owner: u3tobu994lm3di
 --
 
@@ -1159,7 +1592,7 @@ ALTER TABLE ONLY public.empleados
 
 
 --
--- TOC entry 4294 (class 2606 OID 93099939)
+-- TOC entry 4354 (class 2606 OID 93099939)
 -- Name: grados grados_nombre_key; Type: CONSTRAINT; Schema: public; Owner: u3tobu994lm3di
 --
 
@@ -1168,7 +1601,7 @@ ALTER TABLE ONLY public.grados
 
 
 --
--- TOC entry 4296 (class 2606 OID 93099941)
+-- TOC entry 4356 (class 2606 OID 93099941)
 -- Name: grados grados_pkey; Type: CONSTRAINT; Schema: public; Owner: u3tobu994lm3di
 --
 
@@ -1177,7 +1610,61 @@ ALTER TABLE ONLY public.grados
 
 
 --
--- TOC entry 4299 (class 2606 OID 93099943)
+-- TOC entry 4395 (class 2606 OID 106470298)
+-- Name: insumo_proveedor insumo_proveedor_insumo_id_proveedor_id_key; Type: CONSTRAINT; Schema: public; Owner: u3tobu994lm3di
+--
+
+ALTER TABLE ONLY public.insumo_proveedor
+    ADD CONSTRAINT insumo_proveedor_insumo_id_proveedor_id_key UNIQUE (insumo_id, proveedor_id);
+
+
+--
+-- TOC entry 4397 (class 2606 OID 106470296)
+-- Name: insumo_proveedor insumo_proveedor_pkey; Type: CONSTRAINT; Schema: public; Owner: u3tobu994lm3di
+--
+
+ALTER TABLE ONLY public.insumo_proveedor
+    ADD CONSTRAINT insumo_proveedor_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 4391 (class 2606 OID 106470289)
+-- Name: insumos insumos_nombre_key; Type: CONSTRAINT; Schema: public; Owner: u3tobu994lm3di
+--
+
+ALTER TABLE ONLY public.insumos
+    ADD CONSTRAINT insumos_nombre_key UNIQUE (nombre);
+
+
+--
+-- TOC entry 4393 (class 2606 OID 106470287)
+-- Name: insumos insumos_pkey; Type: CONSTRAINT; Schema: public; Owner: u3tobu994lm3di
+--
+
+ALTER TABLE ONLY public.insumos
+    ADD CONSTRAINT insumos_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 4415 (class 2606 OID 106470373)
+-- Name: items_compra items_compra_pkey; Type: CONSTRAINT; Schema: public; Owner: u3tobu994lm3di
+--
+
+ALTER TABLE ONLY public.items_compra
+    ADD CONSTRAINT items_compra_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 4405 (class 2606 OID 106470333)
+-- Name: items_requisicion items_requisicion_pkey; Type: CONSTRAINT; Schema: public; Owner: u3tobu994lm3di
+--
+
+ALTER TABLE ONLY public.items_requisicion
+    ADD CONSTRAINT items_requisicion_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 4359 (class 2606 OID 93099943)
 -- Name: ordenes ordenes_pkey; Type: CONSTRAINT; Schema: public; Owner: u3tobu994lm3di
 --
 
@@ -1186,7 +1673,7 @@ ALTER TABLE ONLY public.ordenes
 
 
 --
--- TOC entry 4301 (class 2606 OID 93099945)
+-- TOC entry 4361 (class 2606 OID 93099945)
 -- Name: pagos pagos_pkey; Type: CONSTRAINT; Schema: public; Owner: u3tobu994lm3di
 --
 
@@ -1195,7 +1682,7 @@ ALTER TABLE ONLY public.pagos
 
 
 --
--- TOC entry 4303 (class 2606 OID 93099947)
+-- TOC entry 4363 (class 2606 OID 93099947)
 -- Name: preso_grado preso_grado_pkey; Type: CONSTRAINT; Schema: public; Owner: u3tobu994lm3di
 --
 
@@ -1204,7 +1691,7 @@ ALTER TABLE ONLY public.preso_grado
 
 
 --
--- TOC entry 4305 (class 2606 OID 93099949)
+-- TOC entry 4365 (class 2606 OID 93099949)
 -- Name: presos presos_pkey; Type: CONSTRAINT; Schema: public; Owner: u3tobu994lm3di
 --
 
@@ -1213,7 +1700,7 @@ ALTER TABLE ONLY public.presos
 
 
 --
--- TOC entry 4307 (class 2606 OID 93099951)
+-- TOC entry 4367 (class 2606 OID 93099951)
 -- Name: producto_sabor producto_sabor_pkey; Type: CONSTRAINT; Schema: public; Owner: u3tobu994lm3di
 --
 
@@ -1222,7 +1709,7 @@ ALTER TABLE ONLY public.producto_sabor
 
 
 --
--- TOC entry 4309 (class 2606 OID 93099953)
+-- TOC entry 4369 (class 2606 OID 93099953)
 -- Name: producto_sabor producto_sabor_producto_id_sabor_id_key; Type: CONSTRAINT; Schema: public; Owner: u3tobu994lm3di
 --
 
@@ -1231,7 +1718,7 @@ ALTER TABLE ONLY public.producto_sabor
 
 
 --
--- TOC entry 4311 (class 2606 OID 93099955)
+-- TOC entry 4371 (class 2606 OID 93099955)
 -- Name: productos productos_pkey; Type: CONSTRAINT; Schema: public; Owner: u3tobu994lm3di
 --
 
@@ -1240,7 +1727,7 @@ ALTER TABLE ONLY public.productos
 
 
 --
--- TOC entry 4314 (class 2606 OID 93099957)
+-- TOC entry 4374 (class 2606 OID 93099957)
 -- Name: productos_sentencias productos_sentencias_pkey; Type: CONSTRAINT; Schema: public; Owner: u3tobu994lm3di
 --
 
@@ -1249,7 +1736,7 @@ ALTER TABLE ONLY public.productos_sentencias
 
 
 --
--- TOC entry 4316 (class 2606 OID 93099959)
+-- TOC entry 4376 (class 2606 OID 93099959)
 -- Name: productos_sentencias productos_sentencias_sentencia_id_producto_id_sabor_id_tama_key; Type: CONSTRAINT; Schema: public; Owner: u3tobu994lm3di
 --
 
@@ -1258,7 +1745,34 @@ ALTER TABLE ONLY public.productos_sentencias
 
 
 --
--- TOC entry 4318 (class 2606 OID 93099961)
+-- TOC entry 4385 (class 2606 OID 106470273)
+-- Name: proveedores proveedores_pkey; Type: CONSTRAINT; Schema: public; Owner: u3tobu994lm3di
+--
+
+ALTER TABLE ONLY public.proveedores
+    ADD CONSTRAINT proveedores_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 4387 (class 2606 OID 106470275)
+-- Name: proveedores proveedores_rfc_key; Type: CONSTRAINT; Schema: public; Owner: u3tobu994lm3di
+--
+
+ALTER TABLE ONLY public.proveedores
+    ADD CONSTRAINT proveedores_rfc_key UNIQUE (rfc);
+
+
+--
+-- TOC entry 4401 (class 2606 OID 106470319)
+-- Name: requisiciones requisiciones_pkey; Type: CONSTRAINT; Schema: public; Owner: u3tobu994lm3di
+--
+
+ALTER TABLE ONLY public.requisiciones
+    ADD CONSTRAINT requisiciones_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 4378 (class 2606 OID 93099961)
 -- Name: sabores sabores_pkey; Type: CONSTRAINT; Schema: public; Owner: u3tobu994lm3di
 --
 
@@ -1267,7 +1781,7 @@ ALTER TABLE ONLY public.sabores
 
 
 --
--- TOC entry 4321 (class 2606 OID 93099965)
+-- TOC entry 4381 (class 2606 OID 93099965)
 -- Name: sentencias sentencias_pkey; Type: CONSTRAINT; Schema: public; Owner: u3tobu994lm3di
 --
 
@@ -1276,7 +1790,7 @@ ALTER TABLE ONLY public.sentencias
 
 
 --
--- TOC entry 4286 (class 1259 OID 93099966)
+-- TOC entry 4346 (class 1259 OID 93099966)
 -- Name: idx_codigos_promocionales_codigo; Type: INDEX; Schema: public; Owner: u3tobu994lm3di
 --
 
@@ -1284,7 +1798,87 @@ CREATE INDEX idx_codigos_promocionales_codigo ON public.codigos_promocionales US
 
 
 --
--- TOC entry 4297 (class 1259 OID 93099967)
+-- TOC entry 4408 (class 1259 OID 106470404)
+-- Name: idx_compras_fecha; Type: INDEX; Schema: public; Owner: u3tobu994lm3di
+--
+
+CREATE INDEX idx_compras_fecha ON public.compras USING btree (fecha_compra);
+
+
+--
+-- TOC entry 4409 (class 1259 OID 106470402)
+-- Name: idx_compras_proveedor; Type: INDEX; Schema: public; Owner: u3tobu994lm3di
+--
+
+CREATE INDEX idx_compras_proveedor ON public.compras USING btree (proveedor_id);
+
+
+--
+-- TOC entry 4410 (class 1259 OID 106470403)
+-- Name: idx_compras_usuario; Type: INDEX; Schema: public; Owner: u3tobu994lm3di
+--
+
+CREATE INDEX idx_compras_usuario ON public.compras USING btree (usuario_id);
+
+
+--
+-- TOC entry 4388 (class 1259 OID 106470397)
+-- Name: idx_insumos_categoria; Type: INDEX; Schema: public; Owner: u3tobu994lm3di
+--
+
+CREATE INDEX idx_insumos_categoria ON public.insumos USING btree (categoria);
+
+
+--
+-- TOC entry 4389 (class 1259 OID 106470396)
+-- Name: idx_insumos_nombre; Type: INDEX; Schema: public; Owner: u3tobu994lm3di
+--
+
+CREATE INDEX idx_insumos_nombre ON public.insumos USING btree (nombre);
+
+
+--
+-- TOC entry 4411 (class 1259 OID 106470405)
+-- Name: idx_items_compra_compra; Type: INDEX; Schema: public; Owner: u3tobu994lm3di
+--
+
+CREATE INDEX idx_items_compra_compra ON public.items_compra USING btree (compra_id);
+
+
+--
+-- TOC entry 4412 (class 1259 OID 106470406)
+-- Name: idx_items_compra_insumo; Type: INDEX; Schema: public; Owner: u3tobu994lm3di
+--
+
+CREATE INDEX idx_items_compra_insumo ON public.items_compra USING btree (insumo_id);
+
+
+--
+-- TOC entry 4413 (class 1259 OID 106470407)
+-- Name: idx_items_compra_req_item; Type: INDEX; Schema: public; Owner: u3tobu994lm3di
+--
+
+CREATE INDEX idx_items_compra_req_item ON public.items_compra USING btree (requisicion_item_id);
+
+
+--
+-- TOC entry 4402 (class 1259 OID 106470401)
+-- Name: idx_items_req_insumo; Type: INDEX; Schema: public; Owner: u3tobu994lm3di
+--
+
+CREATE INDEX idx_items_req_insumo ON public.items_requisicion USING btree (insumo_id);
+
+
+--
+-- TOC entry 4403 (class 1259 OID 106470400)
+-- Name: idx_items_req_requisicion; Type: INDEX; Schema: public; Owner: u3tobu994lm3di
+--
+
+CREATE INDEX idx_items_req_requisicion ON public.items_requisicion USING btree (requisicion_id);
+
+
+--
+-- TOC entry 4357 (class 1259 OID 93099967)
 -- Name: idx_ordenes_codigo_descuento_id; Type: INDEX; Schema: public; Owner: u3tobu994lm3di
 --
 
@@ -1292,7 +1886,7 @@ CREATE INDEX idx_ordenes_codigo_descuento_id ON public.ordenes USING btree (codi
 
 
 --
--- TOC entry 4312 (class 1259 OID 93099968)
+-- TOC entry 4372 (class 1259 OID 93099968)
 -- Name: idx_productos_sentencias_sentencia_id; Type: INDEX; Schema: public; Owner: u3tobu994lm3di
 --
 
@@ -1300,7 +1894,39 @@ CREATE INDEX idx_productos_sentencias_sentencia_id ON public.productos_sentencia
 
 
 --
--- TOC entry 4319 (class 1259 OID 93099969)
+-- TOC entry 4382 (class 1259 OID 106470394)
+-- Name: idx_proveedores_nombre; Type: INDEX; Schema: public; Owner: u3tobu994lm3di
+--
+
+CREATE INDEX idx_proveedores_nombre ON public.proveedores USING btree (nombre);
+
+
+--
+-- TOC entry 4383 (class 1259 OID 106470395)
+-- Name: idx_proveedores_rfc; Type: INDEX; Schema: public; Owner: u3tobu994lm3di
+--
+
+CREATE INDEX idx_proveedores_rfc ON public.proveedores USING btree (rfc);
+
+
+--
+-- TOC entry 4398 (class 1259 OID 106470399)
+-- Name: idx_requisiciones_completada; Type: INDEX; Schema: public; Owner: u3tobu994lm3di
+--
+
+CREATE INDEX idx_requisiciones_completada ON public.requisiciones USING btree (completada);
+
+
+--
+-- TOC entry 4399 (class 1259 OID 106470398)
+-- Name: idx_requisiciones_usuario; Type: INDEX; Schema: public; Owner: u3tobu994lm3di
+--
+
+CREATE INDEX idx_requisiciones_usuario ON public.requisiciones USING btree (usuario_id);
+
+
+--
+-- TOC entry 4379 (class 1259 OID 93099969)
 -- Name: idx_sentencias_activa; Type: INDEX; Schema: public; Owner: u3tobu994lm3di
 --
 
@@ -1308,7 +1934,33 @@ CREATE INDEX idx_sentencias_activa ON public.sentencias USING btree (activa);
 
 
 --
--- TOC entry 4322 (class 2606 OID 93099970)
+-- TOC entry 4449 (class 2620 OID 106470408)
+-- Name: items_compra trigger_actualizar_requisicion; Type: TRIGGER; Schema: public; Owner: u3tobu994lm3di
+--
+
+CREATE TRIGGER trigger_actualizar_requisicion AFTER INSERT ON public.items_compra FOR EACH ROW WHEN ((new.requisicion_item_id IS NOT NULL)) EXECUTE FUNCTION public.actualizar_estado_requisicion();
+
+
+--
+-- TOC entry 4444 (class 2606 OID 106470356)
+-- Name: compras compras_proveedor_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: u3tobu994lm3di
+--
+
+ALTER TABLE ONLY public.compras
+    ADD CONSTRAINT compras_proveedor_id_fkey FOREIGN KEY (proveedor_id) REFERENCES public.proveedores(id);
+
+
+--
+-- TOC entry 4445 (class 2606 OID 106470361)
+-- Name: compras compras_usuario_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: u3tobu994lm3di
+--
+
+ALTER TABLE ONLY public.compras
+    ADD CONSTRAINT compras_usuario_id_fkey FOREIGN KEY (usuario_id) REFERENCES public.empleados(id);
+
+
+--
+-- TOC entry 4416 (class 2606 OID 93099970)
 -- Name: detalles_orden detalles_orden_empleado_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: u3tobu994lm3di
 --
 
@@ -1317,7 +1969,7 @@ ALTER TABLE ONLY public.detalles_orden
 
 
 --
--- TOC entry 4323 (class 2606 OID 93099975)
+-- TOC entry 4417 (class 2606 OID 93099975)
 -- Name: detalles_orden detalles_orden_ingrediente_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: u3tobu994lm3di
 --
 
@@ -1326,7 +1978,7 @@ ALTER TABLE ONLY public.detalles_orden
 
 
 --
--- TOC entry 4324 (class 2606 OID 93099981)
+-- TOC entry 4418 (class 2606 OID 93099981)
 -- Name: detalles_orden detalles_orden_orden_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: u3tobu994lm3di
 --
 
@@ -1335,7 +1987,7 @@ ALTER TABLE ONLY public.detalles_orden
 
 
 --
--- TOC entry 4325 (class 2606 OID 93099987)
+-- TOC entry 4419 (class 2606 OID 93099987)
 -- Name: detalles_orden detalles_orden_producto_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: u3tobu994lm3di
 --
 
@@ -1344,7 +1996,7 @@ ALTER TABLE ONLY public.detalles_orden
 
 
 --
--- TOC entry 4326 (class 2606 OID 93099995)
+-- TOC entry 4420 (class 2606 OID 93099995)
 -- Name: detalles_orden detalles_orden_sabor_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: u3tobu994lm3di
 --
 
@@ -1353,7 +2005,7 @@ ALTER TABLE ONLY public.detalles_orden
 
 
 --
--- TOC entry 4327 (class 2606 OID 93100002)
+-- TOC entry 4421 (class 2606 OID 93100002)
 -- Name: detalles_orden detalles_orden_tamano_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: u3tobu994lm3di
 --
 
@@ -1362,7 +2014,7 @@ ALTER TABLE ONLY public.detalles_orden
 
 
 --
--- TOC entry 4328 (class 2606 OID 93100007)
+-- TOC entry 4422 (class 2606 OID 93100007)
 -- Name: detalles_orden fk_detalles_orden_sentencia; Type: FK CONSTRAINT; Schema: public; Owner: u3tobu994lm3di
 --
 
@@ -1371,7 +2023,7 @@ ALTER TABLE ONLY public.detalles_orden
 
 
 --
--- TOC entry 4329 (class 2606 OID 93100013)
+-- TOC entry 4423 (class 2606 OID 93100013)
 -- Name: detalles_orden fk_detalles_orden_sentencia_padre; Type: FK CONSTRAINT; Schema: public; Owner: u3tobu994lm3di
 --
 
@@ -1380,7 +2032,70 @@ ALTER TABLE ONLY public.detalles_orden
 
 
 --
--- TOC entry 4330 (class 2606 OID 93100019)
+-- TOC entry 4439 (class 2606 OID 106470299)
+-- Name: insumo_proveedor insumo_proveedor_insumo_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: u3tobu994lm3di
+--
+
+ALTER TABLE ONLY public.insumo_proveedor
+    ADD CONSTRAINT insumo_proveedor_insumo_id_fkey FOREIGN KEY (insumo_id) REFERENCES public.insumos(id);
+
+
+--
+-- TOC entry 4440 (class 2606 OID 106470304)
+-- Name: insumo_proveedor insumo_proveedor_proveedor_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: u3tobu994lm3di
+--
+
+ALTER TABLE ONLY public.insumo_proveedor
+    ADD CONSTRAINT insumo_proveedor_proveedor_id_fkey FOREIGN KEY (proveedor_id) REFERENCES public.proveedores(id);
+
+
+--
+-- TOC entry 4446 (class 2606 OID 106470374)
+-- Name: items_compra items_compra_compra_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: u3tobu994lm3di
+--
+
+ALTER TABLE ONLY public.items_compra
+    ADD CONSTRAINT items_compra_compra_id_fkey FOREIGN KEY (compra_id) REFERENCES public.compras(id) ON DELETE CASCADE;
+
+
+--
+-- TOC entry 4447 (class 2606 OID 106470379)
+-- Name: items_compra items_compra_insumo_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: u3tobu994lm3di
+--
+
+ALTER TABLE ONLY public.items_compra
+    ADD CONSTRAINT items_compra_insumo_id_fkey FOREIGN KEY (insumo_id) REFERENCES public.insumos(id);
+
+
+--
+-- TOC entry 4448 (class 2606 OID 106470384)
+-- Name: items_compra items_compra_requisicion_item_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: u3tobu994lm3di
+--
+
+ALTER TABLE ONLY public.items_compra
+    ADD CONSTRAINT items_compra_requisicion_item_id_fkey FOREIGN KEY (requisicion_item_id) REFERENCES public.items_requisicion(id);
+
+
+--
+-- TOC entry 4442 (class 2606 OID 106470339)
+-- Name: items_requisicion items_requisicion_insumo_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: u3tobu994lm3di
+--
+
+ALTER TABLE ONLY public.items_requisicion
+    ADD CONSTRAINT items_requisicion_insumo_id_fkey FOREIGN KEY (insumo_id) REFERENCES public.insumos(id);
+
+
+--
+-- TOC entry 4443 (class 2606 OID 106470334)
+-- Name: items_requisicion items_requisicion_requisicion_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: u3tobu994lm3di
+--
+
+ALTER TABLE ONLY public.items_requisicion
+    ADD CONSTRAINT items_requisicion_requisicion_id_fkey FOREIGN KEY (requisicion_id) REFERENCES public.requisiciones(id) ON DELETE CASCADE;
+
+
+--
+-- TOC entry 4424 (class 2606 OID 93100019)
 -- Name: ordenes ordenes_codigo_descuento_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: u3tobu994lm3di
 --
 
@@ -1389,7 +2104,7 @@ ALTER TABLE ONLY public.ordenes
 
 
 --
--- TOC entry 4331 (class 2606 OID 93100025)
+-- TOC entry 4425 (class 2606 OID 93100025)
 -- Name: ordenes ordenes_empleado_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: u3tobu994lm3di
 --
 
@@ -1398,7 +2113,7 @@ ALTER TABLE ONLY public.ordenes
 
 
 --
--- TOC entry 4332 (class 2606 OID 93100030)
+-- TOC entry 4426 (class 2606 OID 93100030)
 -- Name: ordenes ordenes_preso_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: u3tobu994lm3di
 --
 
@@ -1407,7 +2122,7 @@ ALTER TABLE ONLY public.ordenes
 
 
 --
--- TOC entry 4333 (class 2606 OID 93100035)
+-- TOC entry 4427 (class 2606 OID 93100035)
 -- Name: pagos pagos_empleado_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: u3tobu994lm3di
 --
 
@@ -1416,7 +2131,7 @@ ALTER TABLE ONLY public.pagos
 
 
 --
--- TOC entry 4334 (class 2606 OID 93100040)
+-- TOC entry 4428 (class 2606 OID 93100040)
 -- Name: pagos pagos_orden_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: u3tobu994lm3di
 --
 
@@ -1425,7 +2140,7 @@ ALTER TABLE ONLY public.pagos
 
 
 --
--- TOC entry 4335 (class 2606 OID 93100045)
+-- TOC entry 4429 (class 2606 OID 93100045)
 -- Name: preso_grado preso_grado_grado_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: u3tobu994lm3di
 --
 
@@ -1434,7 +2149,7 @@ ALTER TABLE ONLY public.preso_grado
 
 
 --
--- TOC entry 4336 (class 2606 OID 93100050)
+-- TOC entry 4430 (class 2606 OID 93100050)
 -- Name: preso_grado preso_grado_preso_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: u3tobu994lm3di
 --
 
@@ -1443,7 +2158,7 @@ ALTER TABLE ONLY public.preso_grado
 
 
 --
--- TOC entry 4337 (class 2606 OID 93100055)
+-- TOC entry 4431 (class 2606 OID 93100055)
 -- Name: producto_sabor producto_sabor_producto_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: u3tobu994lm3di
 --
 
@@ -1452,7 +2167,7 @@ ALTER TABLE ONLY public.producto_sabor
 
 
 --
--- TOC entry 4338 (class 2606 OID 93100060)
+-- TOC entry 4432 (class 2606 OID 93100060)
 -- Name: producto_sabor producto_sabor_sabor_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: u3tobu994lm3di
 --
 
@@ -1461,7 +2176,7 @@ ALTER TABLE ONLY public.producto_sabor
 
 
 --
--- TOC entry 4339 (class 2606 OID 93100065)
+-- TOC entry 4433 (class 2606 OID 93100065)
 -- Name: productos_sentencias productos_sentencias_ingrediente_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: u3tobu994lm3di
 --
 
@@ -1470,7 +2185,7 @@ ALTER TABLE ONLY public.productos_sentencias
 
 
 --
--- TOC entry 4340 (class 2606 OID 93100070)
+-- TOC entry 4434 (class 2606 OID 93100070)
 -- Name: productos_sentencias productos_sentencias_producto_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: u3tobu994lm3di
 --
 
@@ -1479,7 +2194,7 @@ ALTER TABLE ONLY public.productos_sentencias
 
 
 --
--- TOC entry 4341 (class 2606 OID 93100075)
+-- TOC entry 4435 (class 2606 OID 93100075)
 -- Name: productos_sentencias productos_sentencias_sabor_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: u3tobu994lm3di
 --
 
@@ -1488,7 +2203,7 @@ ALTER TABLE ONLY public.productos_sentencias
 
 
 --
--- TOC entry 4342 (class 2606 OID 93100080)
+-- TOC entry 4436 (class 2606 OID 93100080)
 -- Name: productos_sentencias productos_sentencias_sentencia_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: u3tobu994lm3di
 --
 
@@ -1497,7 +2212,7 @@ ALTER TABLE ONLY public.productos_sentencias
 
 
 --
--- TOC entry 4343 (class 2606 OID 93100086)
+-- TOC entry 4437 (class 2606 OID 93100086)
 -- Name: productos_sentencias productos_sentencias_tamano_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: u3tobu994lm3di
 --
 
@@ -1506,7 +2221,16 @@ ALTER TABLE ONLY public.productos_sentencias
 
 
 --
--- TOC entry 4344 (class 2606 OID 93100091)
+-- TOC entry 4441 (class 2606 OID 106470320)
+-- Name: requisiciones requisiciones_usuario_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: u3tobu994lm3di
+--
+
+ALTER TABLE ONLY public.requisiciones
+    ADD CONSTRAINT requisiciones_usuario_id_fkey FOREIGN KEY (usuario_id) REFERENCES public.empleados(id);
+
+
+--
+-- TOC entry 4438 (class 2606 OID 93100091)
 -- Name: sabores sabores_categoria_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: u3tobu994lm3di
 --
 
@@ -1515,7 +2239,7 @@ ALTER TABLE ONLY public.sabores
 
 
 --
--- TOC entry 4496 (class 0 OID 0)
+-- TOC entry 4602 (class 0 OID 0)
 -- Dependencies: 7
 -- Name: SCHEMA public; Type: ACL; Schema: -; Owner: u3tobu994lm3di
 --
@@ -1525,8 +2249,8 @@ GRANT CREATE ON SCHEMA public TO PUBLIC;
 
 
 --
--- TOC entry 4498 (class 0 OID 0)
--- Dependencies: 268
+-- TOC entry 4604 (class 0 OID 0)
+-- Dependencies: 284
 -- Name: FUNCTION pg_stat_statements_reset(userid oid, dbid oid, queryid bigint); Type: ACL; Schema: public; Owner: rdsadmin
 --
 
@@ -1534,7 +2258,7 @@ GRANT ALL ON FUNCTION public.pg_stat_statements_reset(userid oid, dbid oid, quer
 
 
 --
--- TOC entry 4229 (class 3466 OID 89740364)
+-- TOC entry 4269 (class 3466 OID 89740364)
 -- Name: extension_before_drop; Type: EVENT TRIGGER; Schema: -; Owner: heroku_admin
 --
 
@@ -1545,7 +2269,7 @@ CREATE EVENT TRIGGER extension_before_drop ON ddl_command_start
 ALTER EVENT TRIGGER extension_before_drop OWNER TO heroku_admin;
 
 --
--- TOC entry 4230 (class 3466 OID 89740366)
+-- TOC entry 4270 (class 3466 OID 89740366)
 -- Name: log_create_ext; Type: EVENT TRIGGER; Schema: -; Owner: heroku_admin
 --
 
@@ -1556,7 +2280,7 @@ CREATE EVENT TRIGGER log_create_ext ON ddl_command_end
 ALTER EVENT TRIGGER log_create_ext OWNER TO heroku_admin;
 
 --
--- TOC entry 4231 (class 3466 OID 89740377)
+-- TOC entry 4271 (class 3466 OID 89740377)
 -- Name: log_drop_ext; Type: EVENT TRIGGER; Schema: -; Owner: heroku_admin
 --
 
@@ -1567,7 +2291,7 @@ CREATE EVENT TRIGGER log_drop_ext ON sql_drop
 ALTER EVENT TRIGGER log_drop_ext OWNER TO heroku_admin;
 
 --
--- TOC entry 4232 (class 3466 OID 89740378)
+-- TOC entry 4272 (class 3466 OID 89740378)
 -- Name: validate_extension; Type: EVENT TRIGGER; Schema: -; Owner: heroku_admin
 --
 
@@ -1577,7 +2301,7 @@ CREATE EVENT TRIGGER validate_extension ON ddl_command_end
 
 ALTER EVENT TRIGGER validate_extension OWNER TO heroku_admin;
 
--- Completed on 2025-06-16 17:01:06 UTC
+-- Completed on 2025-07-01 17:46:15 UTC
 
 --
 -- PostgreSQL database dump complete

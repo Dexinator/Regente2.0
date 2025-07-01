@@ -5,7 +5,7 @@
 -- Dumped from database version 16.9 (Debian 16.9-1.pgdg120+1)
 -- Dumped by pg_dump version 16.9
 
--- Started on 2025-06-16 14:00:55 UTC
+-- Started on 2025-07-01 17:46:40 UTC
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -29,7 +29,7 @@ SET row_security = off;
 ALTER SCHEMA public OWNER TO root;
 
 --
--- TOC entry 3639 (class 0 OID 0)
+-- TOC entry 3656 (class 0 OID 0)
 -- Dependencies: 5
 -- Name: SCHEMA public; Type: COMMENT; Schema: -; Owner: root
 --
@@ -38,7 +38,7 @@ COMMENT ON SCHEMA public IS '';
 
 
 --
--- TOC entry 271 (class 1255 OID 33204)
+-- TOC entry 274 (class 1255 OID 33204)
 -- Name: actualizar_estado_requisicion(); Type: FUNCTION; Schema: public; Owner: root
 --
 
@@ -73,6 +73,29 @@ $$;
 
 
 ALTER FUNCTION public.actualizar_estado_requisicion() OWNER TO root;
+
+--
+-- TOC entry 262 (class 1255 OID 41269)
+-- Name: actualizar_inventario(); Type: FUNCTION; Schema: public; Owner: root
+--
+
+CREATE FUNCTION public.actualizar_inventario() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+  BEGIN
+      -- Cuando se registra una compra, sumar al inventario
+      INSERT INTO inventario (insumo_id, cantidad_actual, unidad)
+      VALUES (NEW.insumo_id, NEW.cantidad, NEW.unidad)
+      ON CONFLICT (insumo_id, unidad)
+      DO UPDATE SET
+          cantidad_actual = inventario.cantidad_actual + NEW.cantidad,
+          ultima_actualizacion = CURRENT_TIMESTAMP;
+      RETURN NEW;
+  END;
+  $$;
+
+
+ALTER FUNCTION public.actualizar_inventario() OWNER TO root;
 
 SET default_tablespace = '';
 
@@ -111,7 +134,8 @@ CREATE TABLE public.insumos (
     categoria character varying(50),
     unidad_medida_default character varying(20) DEFAULT 'unidad'::character varying NOT NULL,
     fecha_alta date DEFAULT CURRENT_DATE,
-    activo boolean DEFAULT true
+    activo boolean DEFAULT true,
+    marca character varying(100)
 );
 
 
@@ -150,7 +174,8 @@ CREATE TABLE public.proveedores (
     email character varying(100),
     contacto_nombre character varying(100),
     fecha_alta date DEFAULT CURRENT_DATE,
-    activo boolean DEFAULT true
+    activo boolean DEFAULT true,
+    dias_compra json
 );
 
 
@@ -214,7 +239,7 @@ CREATE SEQUENCE public.categoria_producto_tipo_variante_id_seq
 ALTER SEQUENCE public.categoria_producto_tipo_variante_id_seq OWNER TO root;
 
 --
--- TOC entry 3641 (class 0 OID 0)
+-- TOC entry 3658 (class 0 OID 0)
 -- Dependencies: 216
 -- Name: categoria_producto_tipo_variante_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: root
 --
@@ -253,7 +278,7 @@ CREATE SEQUENCE public.categorias_variantes_id_seq
 ALTER SEQUENCE public.categorias_variantes_id_seq OWNER TO root;
 
 --
--- TOC entry 3642 (class 0 OID 0)
+-- TOC entry 3659 (class 0 OID 0)
 -- Dependencies: 218
 -- Name: categorias_variantes_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: root
 --
@@ -298,7 +323,7 @@ CREATE SEQUENCE public.codigos_promocionales_id_seq
 ALTER SEQUENCE public.codigos_promocionales_id_seq OWNER TO root;
 
 --
--- TOC entry 3643 (class 0 OID 0)
+-- TOC entry 3660 (class 0 OID 0)
 -- Dependencies: 220
 -- Name: codigos_promocionales_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: root
 --
@@ -323,7 +348,7 @@ CREATE SEQUENCE public.compras_id_seq
 ALTER SEQUENCE public.compras_id_seq OWNER TO root;
 
 --
--- TOC entry 3644 (class 0 OID 0)
+-- TOC entry 3661 (class 0 OID 0)
 -- Dependencies: 255
 -- Name: compras_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: root
 --
@@ -379,7 +404,7 @@ CREATE SEQUENCE public.detalles_orden_id_seq
 ALTER SEQUENCE public.detalles_orden_id_seq OWNER TO root;
 
 --
--- TOC entry 3645 (class 0 OID 0)
+-- TOC entry 3662 (class 0 OID 0)
 -- Dependencies: 222
 -- Name: detalles_orden_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: root
 --
@@ -423,7 +448,7 @@ CREATE SEQUENCE public.empleados_id_seq
 ALTER SEQUENCE public.empleados_id_seq OWNER TO root;
 
 --
--- TOC entry 3646 (class 0 OID 0)
+-- TOC entry 3663 (class 0 OID 0)
 -- Dependencies: 224
 -- Name: empleados_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: root
 --
@@ -462,7 +487,7 @@ CREATE SEQUENCE public.grados_id_seq
 ALTER SEQUENCE public.grados_id_seq OWNER TO root;
 
 --
--- TOC entry 3647 (class 0 OID 0)
+-- TOC entry 3664 (class 0 OID 0)
 -- Dependencies: 226
 -- Name: grados_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: root
 --
@@ -502,7 +527,7 @@ CREATE SEQUENCE public.insumo_proveedor_id_seq
 ALTER SEQUENCE public.insumo_proveedor_id_seq OWNER TO root;
 
 --
--- TOC entry 3648 (class 0 OID 0)
+-- TOC entry 3665 (class 0 OID 0)
 -- Dependencies: 249
 -- Name: insumo_proveedor_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: root
 --
@@ -527,12 +552,55 @@ CREATE SEQUENCE public.insumos_id_seq
 ALTER SEQUENCE public.insumos_id_seq OWNER TO root;
 
 --
--- TOC entry 3649 (class 0 OID 0)
+-- TOC entry 3666 (class 0 OID 0)
 -- Dependencies: 247
 -- Name: insumos_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: root
 --
 
 ALTER SEQUENCE public.insumos_id_seq OWNED BY public.insumos.id;
+
+
+--
+-- TOC entry 261 (class 1259 OID 41252)
+-- Name: inventario; Type: TABLE; Schema: public; Owner: root
+--
+
+CREATE TABLE public.inventario (
+    id integer NOT NULL,
+    insumo_id integer,
+    cantidad_actual numeric(10,2) DEFAULT 0 NOT NULL,
+    unidad character varying(20) NOT NULL,
+    stock_minimo numeric(10,2) DEFAULT 0,
+    stock_maximo numeric(10,2) DEFAULT 0,
+    ultima_actualizacion timestamp without time zone DEFAULT CURRENT_TIMESTAMP
+);
+
+
+ALTER TABLE public.inventario OWNER TO root;
+
+--
+-- TOC entry 260 (class 1259 OID 41251)
+-- Name: inventario_id_seq; Type: SEQUENCE; Schema: public; Owner: root
+--
+
+CREATE SEQUENCE public.inventario_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.inventario_id_seq OWNER TO root;
+
+--
+-- TOC entry 3667 (class 0 OID 0)
+-- Dependencies: 260
+-- Name: inventario_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: root
+--
+
+ALTER SEQUENCE public.inventario_id_seq OWNED BY public.inventario.id;
 
 
 --
@@ -552,7 +620,7 @@ CREATE SEQUENCE public.items_compra_id_seq
 ALTER SEQUENCE public.items_compra_id_seq OWNER TO root;
 
 --
--- TOC entry 3650 (class 0 OID 0)
+-- TOC entry 3668 (class 0 OID 0)
 -- Dependencies: 257
 -- Name: items_compra_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: root
 --
@@ -595,7 +663,7 @@ CREATE SEQUENCE public.items_requisicion_id_seq
 ALTER SEQUENCE public.items_requisicion_id_seq OWNER TO root;
 
 --
--- TOC entry 3651 (class 0 OID 0)
+-- TOC entry 3669 (class 0 OID 0)
 -- Dependencies: 253
 -- Name: items_requisicion_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: root
 --
@@ -642,7 +710,7 @@ CREATE SEQUENCE public.ordenes_orden_id_seq
 ALTER SEQUENCE public.ordenes_orden_id_seq OWNER TO root;
 
 --
--- TOC entry 3652 (class 0 OID 0)
+-- TOC entry 3670 (class 0 OID 0)
 -- Dependencies: 228
 -- Name: ordenes_orden_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: root
 --
@@ -687,7 +755,7 @@ CREATE SEQUENCE public.pagos_id_seq
 ALTER SEQUENCE public.pagos_id_seq OWNER TO root;
 
 --
--- TOC entry 3653 (class 0 OID 0)
+-- TOC entry 3671 (class 0 OID 0)
 -- Dependencies: 230
 -- Name: pagos_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: root
 --
@@ -727,7 +795,7 @@ CREATE SEQUENCE public.preso_grado_id_seq
 ALTER SEQUENCE public.preso_grado_id_seq OWNER TO root;
 
 --
--- TOC entry 3654 (class 0 OID 0)
+-- TOC entry 3672 (class 0 OID 0)
 -- Dependencies: 232
 -- Name: preso_grado_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: root
 --
@@ -772,7 +840,7 @@ CREATE SEQUENCE public.presos_id_seq
 ALTER SEQUENCE public.presos_id_seq OWNER TO root;
 
 --
--- TOC entry 3655 (class 0 OID 0)
+-- TOC entry 3673 (class 0 OID 0)
 -- Dependencies: 234
 -- Name: presos_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: root
 --
@@ -811,7 +879,7 @@ CREATE SEQUENCE public.producto_sabor_id_seq
 ALTER SEQUENCE public.producto_sabor_id_seq OWNER TO root;
 
 --
--- TOC entry 3656 (class 0 OID 0)
+-- TOC entry 3674 (class 0 OID 0)
 -- Dependencies: 236
 -- Name: producto_sabor_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: root
 --
@@ -852,7 +920,7 @@ CREATE SEQUENCE public.productos_id_seq
 ALTER SEQUENCE public.productos_id_seq OWNER TO root;
 
 --
--- TOC entry 3657 (class 0 OID 0)
+-- TOC entry 3675 (class 0 OID 0)
 -- Dependencies: 238
 -- Name: productos_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: root
 --
@@ -898,7 +966,7 @@ CREATE SEQUENCE public.productos_sentencias_id_seq
 ALTER SEQUENCE public.productos_sentencias_id_seq OWNER TO root;
 
 --
--- TOC entry 3658 (class 0 OID 0)
+-- TOC entry 3676 (class 0 OID 0)
 -- Dependencies: 243
 -- Name: productos_sentencias_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: root
 --
@@ -923,7 +991,7 @@ CREATE SEQUENCE public.proveedores_id_seq
 ALTER SEQUENCE public.proveedores_id_seq OWNER TO root;
 
 --
--- TOC entry 3659 (class 0 OID 0)
+-- TOC entry 3677 (class 0 OID 0)
 -- Dependencies: 245
 -- Name: proveedores_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: root
 --
@@ -965,7 +1033,7 @@ CREATE SEQUENCE public.requisiciones_id_seq
 ALTER SEQUENCE public.requisiciones_id_seq OWNER TO root;
 
 --
--- TOC entry 3660 (class 0 OID 0)
+-- TOC entry 3678 (class 0 OID 0)
 -- Dependencies: 251
 -- Name: requisiciones_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: root
 --
@@ -1007,7 +1075,7 @@ CREATE SEQUENCE public.sabores_id_seq
 ALTER SEQUENCE public.sabores_id_seq OWNER TO root;
 
 --
--- TOC entry 3661 (class 0 OID 0)
+-- TOC entry 3679 (class 0 OID 0)
 -- Dependencies: 240
 -- Name: sabores_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: root
 --
@@ -1048,7 +1116,7 @@ CREATE SEQUENCE public.sentencias_id_seq
 ALTER SEQUENCE public.sentencias_id_seq OWNER TO root;
 
 --
--- TOC entry 3662 (class 0 OID 0)
+-- TOC entry 3680 (class 0 OID 0)
 -- Dependencies: 241
 -- Name: sentencias_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: root
 --
@@ -1057,7 +1125,7 @@ ALTER SEQUENCE public.sentencias_id_seq OWNED BY public.sentencias.id;
 
 
 --
--- TOC entry 3313 (class 2604 OID 17108)
+-- TOC entry 3319 (class 2604 OID 17108)
 -- Name: categoria_producto_tipo_variante id; Type: DEFAULT; Schema: public; Owner: root
 --
 
@@ -1065,7 +1133,7 @@ ALTER TABLE ONLY public.categoria_producto_tipo_variante ALTER COLUMN id SET DEF
 
 
 --
--- TOC entry 3314 (class 2604 OID 17109)
+-- TOC entry 3320 (class 2604 OID 17109)
 -- Name: categorias_variantes id; Type: DEFAULT; Schema: public; Owner: root
 --
 
@@ -1073,7 +1141,7 @@ ALTER TABLE ONLY public.categorias_variantes ALTER COLUMN id SET DEFAULT nextval
 
 
 --
--- TOC entry 3315 (class 2604 OID 17110)
+-- TOC entry 3321 (class 2604 OID 17110)
 -- Name: codigos_promocionales id; Type: DEFAULT; Schema: public; Owner: root
 --
 
@@ -1081,7 +1149,7 @@ ALTER TABLE ONLY public.codigos_promocionales ALTER COLUMN id SET DEFAULT nextva
 
 
 --
--- TOC entry 3367 (class 2604 OID 33152)
+-- TOC entry 3373 (class 2604 OID 33152)
 -- Name: compras id; Type: DEFAULT; Schema: public; Owner: root
 --
 
@@ -1089,7 +1157,7 @@ ALTER TABLE ONLY public.compras ALTER COLUMN id SET DEFAULT nextval('public.comp
 
 
 --
--- TOC entry 3320 (class 2604 OID 17111)
+-- TOC entry 3326 (class 2604 OID 17111)
 -- Name: detalles_orden id; Type: DEFAULT; Schema: public; Owner: root
 --
 
@@ -1097,7 +1165,7 @@ ALTER TABLE ONLY public.detalles_orden ALTER COLUMN id SET DEFAULT nextval('publ
 
 
 --
--- TOC entry 3326 (class 2604 OID 17112)
+-- TOC entry 3332 (class 2604 OID 17112)
 -- Name: empleados id; Type: DEFAULT; Schema: public; Owner: root
 --
 
@@ -1105,7 +1173,7 @@ ALTER TABLE ONLY public.empleados ALTER COLUMN id SET DEFAULT nextval('public.em
 
 
 --
--- TOC entry 3329 (class 2604 OID 17113)
+-- TOC entry 3335 (class 2604 OID 17113)
 -- Name: grados id; Type: DEFAULT; Schema: public; Owner: root
 --
 
@@ -1113,7 +1181,7 @@ ALTER TABLE ONLY public.grados ALTER COLUMN id SET DEFAULT nextval('public.grado
 
 
 --
--- TOC entry 3360 (class 2604 OID 33094)
+-- TOC entry 3366 (class 2604 OID 33094)
 -- Name: insumo_proveedor id; Type: DEFAULT; Schema: public; Owner: root
 --
 
@@ -1121,7 +1189,7 @@ ALTER TABLE ONLY public.insumo_proveedor ALTER COLUMN id SET DEFAULT nextval('pu
 
 
 --
--- TOC entry 3356 (class 2604 OID 33078)
+-- TOC entry 3362 (class 2604 OID 33078)
 -- Name: insumos id; Type: DEFAULT; Schema: public; Owner: root
 --
 
@@ -1129,7 +1197,15 @@ ALTER TABLE ONLY public.insumos ALTER COLUMN id SET DEFAULT nextval('public.insu
 
 
 --
--- TOC entry 3370 (class 2604 OID 33177)
+-- TOC entry 3378 (class 2604 OID 41255)
+-- Name: inventario id; Type: DEFAULT; Schema: public; Owner: root
+--
+
+ALTER TABLE ONLY public.inventario ALTER COLUMN id SET DEFAULT nextval('public.inventario_id_seq'::regclass);
+
+
+--
+-- TOC entry 3376 (class 2604 OID 33177)
 -- Name: items_compra id; Type: DEFAULT; Schema: public; Owner: root
 --
 
@@ -1137,7 +1213,7 @@ ALTER TABLE ONLY public.items_compra ALTER COLUMN id SET DEFAULT nextval('public
 
 
 --
--- TOC entry 3364 (class 2604 OID 33131)
+-- TOC entry 3370 (class 2604 OID 33131)
 -- Name: items_requisicion id; Type: DEFAULT; Schema: public; Owner: root
 --
 
@@ -1145,7 +1221,7 @@ ALTER TABLE ONLY public.items_requisicion ALTER COLUMN id SET DEFAULT nextval('p
 
 
 --
--- TOC entry 3330 (class 2604 OID 17114)
+-- TOC entry 3336 (class 2604 OID 17114)
 -- Name: ordenes orden_id; Type: DEFAULT; Schema: public; Owner: root
 --
 
@@ -1153,7 +1229,7 @@ ALTER TABLE ONLY public.ordenes ALTER COLUMN orden_id SET DEFAULT nextval('publi
 
 
 --
--- TOC entry 3334 (class 2604 OID 17115)
+-- TOC entry 3340 (class 2604 OID 17115)
 -- Name: pagos id; Type: DEFAULT; Schema: public; Owner: root
 --
 
@@ -1161,7 +1237,7 @@ ALTER TABLE ONLY public.pagos ALTER COLUMN id SET DEFAULT nextval('public.pagos_
 
 
 --
--- TOC entry 3337 (class 2604 OID 17116)
+-- TOC entry 3343 (class 2604 OID 17116)
 -- Name: preso_grado id; Type: DEFAULT; Schema: public; Owner: root
 --
 
@@ -1169,7 +1245,7 @@ ALTER TABLE ONLY public.preso_grado ALTER COLUMN id SET DEFAULT nextval('public.
 
 
 --
--- TOC entry 3339 (class 2604 OID 17117)
+-- TOC entry 3345 (class 2604 OID 17117)
 -- Name: presos id; Type: DEFAULT; Schema: public; Owner: root
 --
 
@@ -1177,7 +1253,7 @@ ALTER TABLE ONLY public.presos ALTER COLUMN id SET DEFAULT nextval('public.preso
 
 
 --
--- TOC entry 3342 (class 2604 OID 17118)
+-- TOC entry 3348 (class 2604 OID 17118)
 -- Name: producto_sabor id; Type: DEFAULT; Schema: public; Owner: root
 --
 
@@ -1185,7 +1261,7 @@ ALTER TABLE ONLY public.producto_sabor ALTER COLUMN id SET DEFAULT nextval('publ
 
 
 --
--- TOC entry 3343 (class 2604 OID 17119)
+-- TOC entry 3349 (class 2604 OID 17119)
 -- Name: productos id; Type: DEFAULT; Schema: public; Owner: root
 --
 
@@ -1193,7 +1269,7 @@ ALTER TABLE ONLY public.productos ALTER COLUMN id SET DEFAULT nextval('public.pr
 
 
 --
--- TOC entry 3349 (class 2604 OID 17253)
+-- TOC entry 3355 (class 2604 OID 17253)
 -- Name: productos_sentencias id; Type: DEFAULT; Schema: public; Owner: root
 --
 
@@ -1201,7 +1277,7 @@ ALTER TABLE ONLY public.productos_sentencias ALTER COLUMN id SET DEFAULT nextval
 
 
 --
--- TOC entry 3353 (class 2604 OID 33063)
+-- TOC entry 3359 (class 2604 OID 33063)
 -- Name: proveedores id; Type: DEFAULT; Schema: public; Owner: root
 --
 
@@ -1209,7 +1285,7 @@ ALTER TABLE ONLY public.proveedores ALTER COLUMN id SET DEFAULT nextval('public.
 
 
 --
--- TOC entry 3361 (class 2604 OID 33113)
+-- TOC entry 3367 (class 2604 OID 33113)
 -- Name: requisiciones id; Type: DEFAULT; Schema: public; Owner: root
 --
 
@@ -1217,7 +1293,7 @@ ALTER TABLE ONLY public.requisiciones ALTER COLUMN id SET DEFAULT nextval('publi
 
 
 --
--- TOC entry 3344 (class 2604 OID 17120)
+-- TOC entry 3350 (class 2604 OID 17120)
 -- Name: sabores id; Type: DEFAULT; Schema: public; Owner: root
 --
 
@@ -1225,7 +1301,7 @@ ALTER TABLE ONLY public.sabores ALTER COLUMN id SET DEFAULT nextval('public.sabo
 
 
 --
--- TOC entry 3347 (class 2604 OID 17243)
+-- TOC entry 3353 (class 2604 OID 17243)
 -- Name: sentencias id; Type: DEFAULT; Schema: public; Owner: root
 --
 
@@ -1233,7 +1309,7 @@ ALTER TABLE ONLY public.sentencias ALTER COLUMN id SET DEFAULT nextval('public.s
 
 
 --
--- TOC entry 3377 (class 2606 OID 17122)
+-- TOC entry 3388 (class 2606 OID 17122)
 -- Name: categoria_producto_tipo_variante categoria_producto_tipo_varia_categoria_producto_tipo_varia_key; Type: CONSTRAINT; Schema: public; Owner: root
 --
 
@@ -1242,7 +1318,7 @@ ALTER TABLE ONLY public.categoria_producto_tipo_variante
 
 
 --
--- TOC entry 3379 (class 2606 OID 17124)
+-- TOC entry 3390 (class 2606 OID 17124)
 -- Name: categoria_producto_tipo_variante categoria_producto_tipo_variante_pkey; Type: CONSTRAINT; Schema: public; Owner: root
 --
 
@@ -1251,7 +1327,7 @@ ALTER TABLE ONLY public.categoria_producto_tipo_variante
 
 
 --
--- TOC entry 3381 (class 2606 OID 17126)
+-- TOC entry 3392 (class 2606 OID 17126)
 -- Name: categorias_variantes categorias_variantes_pkey; Type: CONSTRAINT; Schema: public; Owner: root
 --
 
@@ -1260,7 +1336,7 @@ ALTER TABLE ONLY public.categorias_variantes
 
 
 --
--- TOC entry 3383 (class 2606 OID 17128)
+-- TOC entry 3394 (class 2606 OID 17128)
 -- Name: codigos_promocionales codigos_promocionales_codigo_key; Type: CONSTRAINT; Schema: public; Owner: root
 --
 
@@ -1269,7 +1345,7 @@ ALTER TABLE ONLY public.codigos_promocionales
 
 
 --
--- TOC entry 3385 (class 2606 OID 17130)
+-- TOC entry 3396 (class 2606 OID 17130)
 -- Name: codigos_promocionales codigos_promocionales_pkey; Type: CONSTRAINT; Schema: public; Owner: root
 --
 
@@ -1278,7 +1354,7 @@ ALTER TABLE ONLY public.codigos_promocionales
 
 
 --
--- TOC entry 3447 (class 2606 OID 33159)
+-- TOC entry 3458 (class 2606 OID 33159)
 -- Name: compras compras_pkey; Type: CONSTRAINT; Schema: public; Owner: root
 --
 
@@ -1287,7 +1363,7 @@ ALTER TABLE ONLY public.compras
 
 
 --
--- TOC entry 3388 (class 2606 OID 17132)
+-- TOC entry 3399 (class 2606 OID 17132)
 -- Name: detalles_orden detalles_orden_pkey; Type: CONSTRAINT; Schema: public; Owner: root
 --
 
@@ -1296,7 +1372,7 @@ ALTER TABLE ONLY public.detalles_orden
 
 
 --
--- TOC entry 3390 (class 2606 OID 17134)
+-- TOC entry 3401 (class 2606 OID 17134)
 -- Name: empleados empleados_pkey; Type: CONSTRAINT; Schema: public; Owner: root
 --
 
@@ -1305,7 +1381,7 @@ ALTER TABLE ONLY public.empleados
 
 
 --
--- TOC entry 3392 (class 2606 OID 17136)
+-- TOC entry 3403 (class 2606 OID 17136)
 -- Name: empleados empleados_usuario_key; Type: CONSTRAINT; Schema: public; Owner: root
 --
 
@@ -1314,7 +1390,7 @@ ALTER TABLE ONLY public.empleados
 
 
 --
--- TOC entry 3394 (class 2606 OID 17138)
+-- TOC entry 3405 (class 2606 OID 17138)
 -- Name: grados grados_nombre_key; Type: CONSTRAINT; Schema: public; Owner: root
 --
 
@@ -1323,7 +1399,7 @@ ALTER TABLE ONLY public.grados
 
 
 --
--- TOC entry 3396 (class 2606 OID 17140)
+-- TOC entry 3407 (class 2606 OID 17140)
 -- Name: grados grados_pkey; Type: CONSTRAINT; Schema: public; Owner: root
 --
 
@@ -1332,7 +1408,7 @@ ALTER TABLE ONLY public.grados
 
 
 --
--- TOC entry 3435 (class 2606 OID 33098)
+-- TOC entry 3446 (class 2606 OID 33098)
 -- Name: insumo_proveedor insumo_proveedor_insumo_id_proveedor_id_key; Type: CONSTRAINT; Schema: public; Owner: root
 --
 
@@ -1341,7 +1417,7 @@ ALTER TABLE ONLY public.insumo_proveedor
 
 
 --
--- TOC entry 3437 (class 2606 OID 33096)
+-- TOC entry 3448 (class 2606 OID 33096)
 -- Name: insumo_proveedor insumo_proveedor_pkey; Type: CONSTRAINT; Schema: public; Owner: root
 --
 
@@ -1350,7 +1426,7 @@ ALTER TABLE ONLY public.insumo_proveedor
 
 
 --
--- TOC entry 3431 (class 2606 OID 33087)
+-- TOC entry 3442 (class 2606 OID 33087)
 -- Name: insumos insumos_nombre_key; Type: CONSTRAINT; Schema: public; Owner: root
 --
 
@@ -1359,7 +1435,7 @@ ALTER TABLE ONLY public.insumos
 
 
 --
--- TOC entry 3433 (class 2606 OID 33085)
+-- TOC entry 3444 (class 2606 OID 33085)
 -- Name: insumos insumos_pkey; Type: CONSTRAINT; Schema: public; Owner: root
 --
 
@@ -1368,7 +1444,25 @@ ALTER TABLE ONLY public.insumos
 
 
 --
--- TOC entry 3455 (class 2606 OID 33180)
+-- TOC entry 3468 (class 2606 OID 41263)
+-- Name: inventario inventario_insumo_id_unidad_key; Type: CONSTRAINT; Schema: public; Owner: root
+--
+
+ALTER TABLE ONLY public.inventario
+    ADD CONSTRAINT inventario_insumo_id_unidad_key UNIQUE (insumo_id, unidad);
+
+
+--
+-- TOC entry 3470 (class 2606 OID 41261)
+-- Name: inventario inventario_pkey; Type: CONSTRAINT; Schema: public; Owner: root
+--
+
+ALTER TABLE ONLY public.inventario
+    ADD CONSTRAINT inventario_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 3466 (class 2606 OID 33180)
 -- Name: items_compra items_compra_pkey; Type: CONSTRAINT; Schema: public; Owner: root
 --
 
@@ -1377,7 +1471,7 @@ ALTER TABLE ONLY public.items_compra
 
 
 --
--- TOC entry 3445 (class 2606 OID 33135)
+-- TOC entry 3456 (class 2606 OID 33135)
 -- Name: items_requisicion items_requisicion_pkey; Type: CONSTRAINT; Schema: public; Owner: root
 --
 
@@ -1386,7 +1480,7 @@ ALTER TABLE ONLY public.items_requisicion
 
 
 --
--- TOC entry 3399 (class 2606 OID 17142)
+-- TOC entry 3410 (class 2606 OID 17142)
 -- Name: ordenes ordenes_pkey; Type: CONSTRAINT; Schema: public; Owner: root
 --
 
@@ -1395,7 +1489,7 @@ ALTER TABLE ONLY public.ordenes
 
 
 --
--- TOC entry 3401 (class 2606 OID 17144)
+-- TOC entry 3412 (class 2606 OID 17144)
 -- Name: pagos pagos_pkey; Type: CONSTRAINT; Schema: public; Owner: root
 --
 
@@ -1404,7 +1498,7 @@ ALTER TABLE ONLY public.pagos
 
 
 --
--- TOC entry 3403 (class 2606 OID 17146)
+-- TOC entry 3414 (class 2606 OID 17146)
 -- Name: preso_grado preso_grado_pkey; Type: CONSTRAINT; Schema: public; Owner: root
 --
 
@@ -1413,7 +1507,7 @@ ALTER TABLE ONLY public.preso_grado
 
 
 --
--- TOC entry 3405 (class 2606 OID 17148)
+-- TOC entry 3416 (class 2606 OID 17148)
 -- Name: presos presos_pkey; Type: CONSTRAINT; Schema: public; Owner: root
 --
 
@@ -1422,7 +1516,7 @@ ALTER TABLE ONLY public.presos
 
 
 --
--- TOC entry 3407 (class 2606 OID 17150)
+-- TOC entry 3418 (class 2606 OID 17150)
 -- Name: producto_sabor producto_sabor_pkey; Type: CONSTRAINT; Schema: public; Owner: root
 --
 
@@ -1431,7 +1525,7 @@ ALTER TABLE ONLY public.producto_sabor
 
 
 --
--- TOC entry 3409 (class 2606 OID 17152)
+-- TOC entry 3420 (class 2606 OID 17152)
 -- Name: producto_sabor producto_sabor_producto_id_sabor_id_key; Type: CONSTRAINT; Schema: public; Owner: root
 --
 
@@ -1440,7 +1534,7 @@ ALTER TABLE ONLY public.producto_sabor
 
 
 --
--- TOC entry 3411 (class 2606 OID 17154)
+-- TOC entry 3422 (class 2606 OID 17154)
 -- Name: productos productos_pkey; Type: CONSTRAINT; Schema: public; Owner: root
 --
 
@@ -1449,7 +1543,7 @@ ALTER TABLE ONLY public.productos
 
 
 --
--- TOC entry 3419 (class 2606 OID 17258)
+-- TOC entry 3430 (class 2606 OID 17258)
 -- Name: productos_sentencias productos_sentencias_pkey; Type: CONSTRAINT; Schema: public; Owner: root
 --
 
@@ -1458,7 +1552,7 @@ ALTER TABLE ONLY public.productos_sentencias
 
 
 --
--- TOC entry 3421 (class 2606 OID 17260)
+-- TOC entry 3432 (class 2606 OID 17260)
 -- Name: productos_sentencias productos_sentencias_sentencia_id_producto_id_sabor_id_tama_key; Type: CONSTRAINT; Schema: public; Owner: root
 --
 
@@ -1467,7 +1561,7 @@ ALTER TABLE ONLY public.productos_sentencias
 
 
 --
--- TOC entry 3425 (class 2606 OID 33069)
+-- TOC entry 3436 (class 2606 OID 33069)
 -- Name: proveedores proveedores_pkey; Type: CONSTRAINT; Schema: public; Owner: root
 --
 
@@ -1476,7 +1570,7 @@ ALTER TABLE ONLY public.proveedores
 
 
 --
--- TOC entry 3427 (class 2606 OID 33071)
+-- TOC entry 3438 (class 2606 OID 33071)
 -- Name: proveedores proveedores_rfc_key; Type: CONSTRAINT; Schema: public; Owner: root
 --
 
@@ -1485,7 +1579,7 @@ ALTER TABLE ONLY public.proveedores
 
 
 --
--- TOC entry 3441 (class 2606 OID 33119)
+-- TOC entry 3452 (class 2606 OID 33119)
 -- Name: requisiciones requisiciones_pkey; Type: CONSTRAINT; Schema: public; Owner: root
 --
 
@@ -1494,7 +1588,7 @@ ALTER TABLE ONLY public.requisiciones
 
 
 --
--- TOC entry 3413 (class 2606 OID 17156)
+-- TOC entry 3424 (class 2606 OID 17156)
 -- Name: sabores sabores_pkey; Type: CONSTRAINT; Schema: public; Owner: root
 --
 
@@ -1503,7 +1597,7 @@ ALTER TABLE ONLY public.sabores
 
 
 --
--- TOC entry 3416 (class 2606 OID 17248)
+-- TOC entry 3427 (class 2606 OID 17248)
 -- Name: sentencias sentencias_pkey; Type: CONSTRAINT; Schema: public; Owner: root
 --
 
@@ -1512,7 +1606,7 @@ ALTER TABLE ONLY public.sentencias
 
 
 --
--- TOC entry 3386 (class 1259 OID 17157)
+-- TOC entry 3397 (class 1259 OID 17157)
 -- Name: idx_codigos_promocionales_codigo; Type: INDEX; Schema: public; Owner: root
 --
 
@@ -1520,7 +1614,7 @@ CREATE INDEX idx_codigos_promocionales_codigo ON public.codigos_promocionales US
 
 
 --
--- TOC entry 3448 (class 1259 OID 33172)
+-- TOC entry 3459 (class 1259 OID 33172)
 -- Name: idx_compras_fecha; Type: INDEX; Schema: public; Owner: root
 --
 
@@ -1528,7 +1622,7 @@ CREATE INDEX idx_compras_fecha ON public.compras USING btree (fecha_compra);
 
 
 --
--- TOC entry 3449 (class 1259 OID 33170)
+-- TOC entry 3460 (class 1259 OID 33170)
 -- Name: idx_compras_proveedor; Type: INDEX; Schema: public; Owner: root
 --
 
@@ -1536,7 +1630,7 @@ CREATE INDEX idx_compras_proveedor ON public.compras USING btree (proveedor_id);
 
 
 --
--- TOC entry 3450 (class 1259 OID 33171)
+-- TOC entry 3461 (class 1259 OID 33171)
 -- Name: idx_compras_usuario; Type: INDEX; Schema: public; Owner: root
 --
 
@@ -1544,7 +1638,7 @@ CREATE INDEX idx_compras_usuario ON public.compras USING btree (usuario_id);
 
 
 --
--- TOC entry 3428 (class 1259 OID 33089)
+-- TOC entry 3439 (class 1259 OID 33089)
 -- Name: idx_insumos_categoria; Type: INDEX; Schema: public; Owner: root
 --
 
@@ -1552,7 +1646,7 @@ CREATE INDEX idx_insumos_categoria ON public.insumos USING btree (categoria);
 
 
 --
--- TOC entry 3429 (class 1259 OID 33088)
+-- TOC entry 3440 (class 1259 OID 33088)
 -- Name: idx_insumos_nombre; Type: INDEX; Schema: public; Owner: root
 --
 
@@ -1560,7 +1654,7 @@ CREATE INDEX idx_insumos_nombre ON public.insumos USING btree (nombre);
 
 
 --
--- TOC entry 3451 (class 1259 OID 33196)
+-- TOC entry 3462 (class 1259 OID 33196)
 -- Name: idx_items_compra_compra; Type: INDEX; Schema: public; Owner: root
 --
 
@@ -1568,7 +1662,7 @@ CREATE INDEX idx_items_compra_compra ON public.items_compra USING btree (compra_
 
 
 --
--- TOC entry 3452 (class 1259 OID 33197)
+-- TOC entry 3463 (class 1259 OID 33197)
 -- Name: idx_items_compra_insumo; Type: INDEX; Schema: public; Owner: root
 --
 
@@ -1576,7 +1670,7 @@ CREATE INDEX idx_items_compra_insumo ON public.items_compra USING btree (insumo_
 
 
 --
--- TOC entry 3453 (class 1259 OID 33198)
+-- TOC entry 3464 (class 1259 OID 33198)
 -- Name: idx_items_compra_req_item; Type: INDEX; Schema: public; Owner: root
 --
 
@@ -1584,7 +1678,7 @@ CREATE INDEX idx_items_compra_req_item ON public.items_compra USING btree (requi
 
 
 --
--- TOC entry 3442 (class 1259 OID 33147)
+-- TOC entry 3453 (class 1259 OID 33147)
 -- Name: idx_items_req_insumo; Type: INDEX; Schema: public; Owner: root
 --
 
@@ -1592,7 +1686,7 @@ CREATE INDEX idx_items_req_insumo ON public.items_requisicion USING btree (insum
 
 
 --
--- TOC entry 3443 (class 1259 OID 33146)
+-- TOC entry 3454 (class 1259 OID 33146)
 -- Name: idx_items_req_requisicion; Type: INDEX; Schema: public; Owner: root
 --
 
@@ -1600,7 +1694,7 @@ CREATE INDEX idx_items_req_requisicion ON public.items_requisicion USING btree (
 
 
 --
--- TOC entry 3397 (class 1259 OID 17158)
+-- TOC entry 3408 (class 1259 OID 17158)
 -- Name: idx_ordenes_codigo_descuento_id; Type: INDEX; Schema: public; Owner: root
 --
 
@@ -1608,7 +1702,7 @@ CREATE INDEX idx_ordenes_codigo_descuento_id ON public.ordenes USING btree (codi
 
 
 --
--- TOC entry 3417 (class 1259 OID 17287)
+-- TOC entry 3428 (class 1259 OID 17287)
 -- Name: idx_productos_sentencias_sentencia_id; Type: INDEX; Schema: public; Owner: root
 --
 
@@ -1616,7 +1710,7 @@ CREATE INDEX idx_productos_sentencias_sentencia_id ON public.productos_sentencia
 
 
 --
--- TOC entry 3422 (class 1259 OID 33072)
+-- TOC entry 3433 (class 1259 OID 33072)
 -- Name: idx_proveedores_nombre; Type: INDEX; Schema: public; Owner: root
 --
 
@@ -1624,7 +1718,7 @@ CREATE INDEX idx_proveedores_nombre ON public.proveedores USING btree (nombre);
 
 
 --
--- TOC entry 3423 (class 1259 OID 33073)
+-- TOC entry 3434 (class 1259 OID 33073)
 -- Name: idx_proveedores_rfc; Type: INDEX; Schema: public; Owner: root
 --
 
@@ -1632,7 +1726,7 @@ CREATE INDEX idx_proveedores_rfc ON public.proveedores USING btree (rfc);
 
 
 --
--- TOC entry 3438 (class 1259 OID 33126)
+-- TOC entry 3449 (class 1259 OID 33126)
 -- Name: idx_requisiciones_completada; Type: INDEX; Schema: public; Owner: root
 --
 
@@ -1640,7 +1734,7 @@ CREATE INDEX idx_requisiciones_completada ON public.requisiciones USING btree (c
 
 
 --
--- TOC entry 3439 (class 1259 OID 33125)
+-- TOC entry 3450 (class 1259 OID 33125)
 -- Name: idx_requisiciones_usuario; Type: INDEX; Schema: public; Owner: root
 --
 
@@ -1648,7 +1742,7 @@ CREATE INDEX idx_requisiciones_usuario ON public.requisiciones USING btree (usua
 
 
 --
--- TOC entry 3414 (class 1259 OID 17286)
+-- TOC entry 3425 (class 1259 OID 17286)
 -- Name: idx_sentencias_activa; Type: INDEX; Schema: public; Owner: root
 --
 
@@ -1656,7 +1750,15 @@ CREATE INDEX idx_sentencias_activa ON public.sentencias USING btree (activa);
 
 
 --
--- TOC entry 3489 (class 2620 OID 33205)
+-- TOC entry 3505 (class 2620 OID 41270)
+-- Name: items_compra trigger_actualizar_inventario; Type: TRIGGER; Schema: public; Owner: root
+--
+
+CREATE TRIGGER trigger_actualizar_inventario AFTER INSERT ON public.items_compra FOR EACH ROW EXECUTE FUNCTION public.actualizar_inventario();
+
+
+--
+-- TOC entry 3506 (class 2620 OID 33205)
 -- Name: items_compra trigger_actualizar_requisicion; Type: TRIGGER; Schema: public; Owner: root
 --
 
@@ -1664,7 +1766,7 @@ CREATE TRIGGER trigger_actualizar_requisicion AFTER INSERT ON public.items_compr
 
 
 --
--- TOC entry 3484 (class 2606 OID 33160)
+-- TOC entry 3499 (class 2606 OID 33160)
 -- Name: compras compras_proveedor_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: root
 --
 
@@ -1673,7 +1775,7 @@ ALTER TABLE ONLY public.compras
 
 
 --
--- TOC entry 3485 (class 2606 OID 33165)
+-- TOC entry 3500 (class 2606 OID 33165)
 -- Name: compras compras_usuario_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: root
 --
 
@@ -1682,7 +1784,7 @@ ALTER TABLE ONLY public.compras
 
 
 --
--- TOC entry 3456 (class 2606 OID 17159)
+-- TOC entry 3471 (class 2606 OID 17159)
 -- Name: detalles_orden detalles_orden_empleado_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: root
 --
 
@@ -1691,7 +1793,7 @@ ALTER TABLE ONLY public.detalles_orden
 
 
 --
--- TOC entry 3457 (class 2606 OID 17164)
+-- TOC entry 3472 (class 2606 OID 17164)
 -- Name: detalles_orden detalles_orden_ingrediente_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: root
 --
 
@@ -1700,7 +1802,7 @@ ALTER TABLE ONLY public.detalles_orden
 
 
 --
--- TOC entry 3458 (class 2606 OID 17169)
+-- TOC entry 3473 (class 2606 OID 17169)
 -- Name: detalles_orden detalles_orden_orden_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: root
 --
 
@@ -1709,7 +1811,7 @@ ALTER TABLE ONLY public.detalles_orden
 
 
 --
--- TOC entry 3459 (class 2606 OID 17174)
+-- TOC entry 3474 (class 2606 OID 17174)
 -- Name: detalles_orden detalles_orden_producto_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: root
 --
 
@@ -1718,7 +1820,7 @@ ALTER TABLE ONLY public.detalles_orden
 
 
 --
--- TOC entry 3460 (class 2606 OID 17179)
+-- TOC entry 3475 (class 2606 OID 17179)
 -- Name: detalles_orden detalles_orden_sabor_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: root
 --
 
@@ -1727,7 +1829,7 @@ ALTER TABLE ONLY public.detalles_orden
 
 
 --
--- TOC entry 3461 (class 2606 OID 17184)
+-- TOC entry 3476 (class 2606 OID 17184)
 -- Name: detalles_orden detalles_orden_tamano_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: root
 --
 
@@ -1736,7 +1838,7 @@ ALTER TABLE ONLY public.detalles_orden
 
 
 --
--- TOC entry 3462 (class 2606 OID 24868)
+-- TOC entry 3477 (class 2606 OID 24868)
 -- Name: detalles_orden fk_detalles_orden_sentencia; Type: FK CONSTRAINT; Schema: public; Owner: root
 --
 
@@ -1745,7 +1847,7 @@ ALTER TABLE ONLY public.detalles_orden
 
 
 --
--- TOC entry 3463 (class 2606 OID 24873)
+-- TOC entry 3478 (class 2606 OID 24873)
 -- Name: detalles_orden fk_detalles_orden_sentencia_padre; Type: FK CONSTRAINT; Schema: public; Owner: root
 --
 
@@ -1754,7 +1856,7 @@ ALTER TABLE ONLY public.detalles_orden
 
 
 --
--- TOC entry 3479 (class 2606 OID 33099)
+-- TOC entry 3494 (class 2606 OID 33099)
 -- Name: insumo_proveedor insumo_proveedor_insumo_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: root
 --
 
@@ -1763,7 +1865,7 @@ ALTER TABLE ONLY public.insumo_proveedor
 
 
 --
--- TOC entry 3480 (class 2606 OID 33104)
+-- TOC entry 3495 (class 2606 OID 33104)
 -- Name: insumo_proveedor insumo_proveedor_proveedor_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: root
 --
 
@@ -1772,7 +1874,16 @@ ALTER TABLE ONLY public.insumo_proveedor
 
 
 --
--- TOC entry 3486 (class 2606 OID 33181)
+-- TOC entry 3504 (class 2606 OID 41264)
+-- Name: inventario inventario_insumo_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: root
+--
+
+ALTER TABLE ONLY public.inventario
+    ADD CONSTRAINT inventario_insumo_id_fkey FOREIGN KEY (insumo_id) REFERENCES public.insumos(id);
+
+
+--
+-- TOC entry 3501 (class 2606 OID 33181)
 -- Name: items_compra items_compra_compra_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: root
 --
 
@@ -1781,7 +1892,7 @@ ALTER TABLE ONLY public.items_compra
 
 
 --
--- TOC entry 3487 (class 2606 OID 33186)
+-- TOC entry 3502 (class 2606 OID 33186)
 -- Name: items_compra items_compra_insumo_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: root
 --
 
@@ -1790,7 +1901,7 @@ ALTER TABLE ONLY public.items_compra
 
 
 --
--- TOC entry 3488 (class 2606 OID 33191)
+-- TOC entry 3503 (class 2606 OID 33191)
 -- Name: items_compra items_compra_requisicion_item_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: root
 --
 
@@ -1799,7 +1910,7 @@ ALTER TABLE ONLY public.items_compra
 
 
 --
--- TOC entry 3482 (class 2606 OID 33141)
+-- TOC entry 3497 (class 2606 OID 33141)
 -- Name: items_requisicion items_requisicion_insumo_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: root
 --
 
@@ -1808,7 +1919,7 @@ ALTER TABLE ONLY public.items_requisicion
 
 
 --
--- TOC entry 3483 (class 2606 OID 33136)
+-- TOC entry 3498 (class 2606 OID 33136)
 -- Name: items_requisicion items_requisicion_requisicion_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: root
 --
 
@@ -1817,7 +1928,7 @@ ALTER TABLE ONLY public.items_requisicion
 
 
 --
--- TOC entry 3464 (class 2606 OID 17189)
+-- TOC entry 3479 (class 2606 OID 17189)
 -- Name: ordenes ordenes_codigo_descuento_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: root
 --
 
@@ -1826,7 +1937,7 @@ ALTER TABLE ONLY public.ordenes
 
 
 --
--- TOC entry 3465 (class 2606 OID 17194)
+-- TOC entry 3480 (class 2606 OID 17194)
 -- Name: ordenes ordenes_empleado_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: root
 --
 
@@ -1835,7 +1946,7 @@ ALTER TABLE ONLY public.ordenes
 
 
 --
--- TOC entry 3466 (class 2606 OID 17199)
+-- TOC entry 3481 (class 2606 OID 17199)
 -- Name: ordenes ordenes_preso_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: root
 --
 
@@ -1844,7 +1955,7 @@ ALTER TABLE ONLY public.ordenes
 
 
 --
--- TOC entry 3467 (class 2606 OID 17204)
+-- TOC entry 3482 (class 2606 OID 17204)
 -- Name: pagos pagos_empleado_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: root
 --
 
@@ -1853,7 +1964,7 @@ ALTER TABLE ONLY public.pagos
 
 
 --
--- TOC entry 3468 (class 2606 OID 17209)
+-- TOC entry 3483 (class 2606 OID 17209)
 -- Name: pagos pagos_orden_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: root
 --
 
@@ -1862,7 +1973,7 @@ ALTER TABLE ONLY public.pagos
 
 
 --
--- TOC entry 3469 (class 2606 OID 17214)
+-- TOC entry 3484 (class 2606 OID 17214)
 -- Name: preso_grado preso_grado_grado_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: root
 --
 
@@ -1871,7 +1982,7 @@ ALTER TABLE ONLY public.preso_grado
 
 
 --
--- TOC entry 3470 (class 2606 OID 17219)
+-- TOC entry 3485 (class 2606 OID 17219)
 -- Name: preso_grado preso_grado_preso_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: root
 --
 
@@ -1880,7 +1991,7 @@ ALTER TABLE ONLY public.preso_grado
 
 
 --
--- TOC entry 3471 (class 2606 OID 17224)
+-- TOC entry 3486 (class 2606 OID 17224)
 -- Name: producto_sabor producto_sabor_producto_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: root
 --
 
@@ -1889,7 +2000,7 @@ ALTER TABLE ONLY public.producto_sabor
 
 
 --
--- TOC entry 3472 (class 2606 OID 17229)
+-- TOC entry 3487 (class 2606 OID 17229)
 -- Name: producto_sabor producto_sabor_sabor_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: root
 --
 
@@ -1898,7 +2009,7 @@ ALTER TABLE ONLY public.producto_sabor
 
 
 --
--- TOC entry 3474 (class 2606 OID 17281)
+-- TOC entry 3489 (class 2606 OID 17281)
 -- Name: productos_sentencias productos_sentencias_ingrediente_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: root
 --
 
@@ -1907,7 +2018,7 @@ ALTER TABLE ONLY public.productos_sentencias
 
 
 --
--- TOC entry 3475 (class 2606 OID 17266)
+-- TOC entry 3490 (class 2606 OID 17266)
 -- Name: productos_sentencias productos_sentencias_producto_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: root
 --
 
@@ -1916,7 +2027,7 @@ ALTER TABLE ONLY public.productos_sentencias
 
 
 --
--- TOC entry 3476 (class 2606 OID 17271)
+-- TOC entry 3491 (class 2606 OID 17271)
 -- Name: productos_sentencias productos_sentencias_sabor_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: root
 --
 
@@ -1925,7 +2036,7 @@ ALTER TABLE ONLY public.productos_sentencias
 
 
 --
--- TOC entry 3477 (class 2606 OID 17261)
+-- TOC entry 3492 (class 2606 OID 17261)
 -- Name: productos_sentencias productos_sentencias_sentencia_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: root
 --
 
@@ -1934,7 +2045,7 @@ ALTER TABLE ONLY public.productos_sentencias
 
 
 --
--- TOC entry 3478 (class 2606 OID 17276)
+-- TOC entry 3493 (class 2606 OID 17276)
 -- Name: productos_sentencias productos_sentencias_tamano_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: root
 --
 
@@ -1943,7 +2054,7 @@ ALTER TABLE ONLY public.productos_sentencias
 
 
 --
--- TOC entry 3481 (class 2606 OID 33120)
+-- TOC entry 3496 (class 2606 OID 33120)
 -- Name: requisiciones requisiciones_usuario_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: root
 --
 
@@ -1952,7 +2063,7 @@ ALTER TABLE ONLY public.requisiciones
 
 
 --
--- TOC entry 3473 (class 2606 OID 17234)
+-- TOC entry 3488 (class 2606 OID 17234)
 -- Name: sabores sabores_categoria_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: root
 --
 
@@ -1961,7 +2072,7 @@ ALTER TABLE ONLY public.sabores
 
 
 --
--- TOC entry 3640 (class 0 OID 0)
+-- TOC entry 3657 (class 0 OID 0)
 -- Dependencies: 5
 -- Name: SCHEMA public; Type: ACL; Schema: -; Owner: root
 --
@@ -1970,7 +2081,7 @@ REVOKE USAGE ON SCHEMA public FROM PUBLIC;
 GRANT CREATE ON SCHEMA public TO PUBLIC;
 
 
--- Completed on 2025-06-16 14:00:56 UTC
+-- Completed on 2025-07-01 17:46:40 UTC
 
 --
 -- PostgreSQL database dump complete

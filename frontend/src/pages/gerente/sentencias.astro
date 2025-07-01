@@ -1,0 +1,9 @@
+---
+import PrivateLayout from "../../layouts/PrivateLayout.astro";
+import SentenciasPanel from "../../components/SentenciasPanel";
+---
+
+<PrivateLayout title="Gestión de Sentencias">
+  <h1 class="text-3xl font-titulo text-amarillo mb-6">Gestión de Sentencias</h1>
+  <SentenciasPanel client:load />
+</PrivateLayout>

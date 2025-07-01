@@ -754,20 +754,97 @@ export const getHistorialProductosPreparados = async (fecha) => {
   return result.rows;
 };
 
-// Marcar un producto como preparado
-export const marcarProductoComoPreparado = async (detalle_id) => {
-  const query = `
-    UPDATE detalles_orden
-    SET preparado = TRUE,
-        tiempo_preparacion = CURRENT_TIMESTAMP,
-        entregado = FALSE,
-        tiempo_entrega = NULL
-    WHERE id = $1
-    RETURNING *
-  `;
+// Marcar un producto como preparado (versión original para compatibilidad)
+export const marcarProductoComoPreparado = async (detalle_id, cantidad_a_preparar = null) => {
+  const client = await pool.connect();
   
-  const result = await pool.query(query, [detalle_id]);
-  return result.rows[0];
+  try {
+    await client.query("BEGIN");
+    
+    // Primero obtenemos información del detalle
+    const detalleQuery = await client.query(
+      `SELECT * FROM detalles_orden WHERE id = $1`,
+      [detalle_id]
+    );
+    
+    if (detalleQuery.rows.length === 0) {
+      throw new Error("Detalle no encontrado");
+    }
+    
+    const detalle = detalleQuery.rows[0];
+    
+    // Si no se especifica cantidad o se especifica toda la cantidad, marcamos todo como preparado
+    if (!cantidad_a_preparar || cantidad_a_preparar >= detalle.cantidad) {
+      const query = `
+        UPDATE detalles_orden
+        SET preparado = TRUE,
+            tiempo_preparacion = CURRENT_TIMESTAMP,
+            entregado = FALSE,
+            tiempo_entrega = NULL
+        WHERE id = $1
+        RETURNING *
+      `;
+      
+      const result = await client.query(query, [detalle_id]);
+      await client.query("COMMIT");
+      return result.rows[0];
+    }
+    
+    // Si es preparación parcial, dividimos el registro
+    else {
+      // Reducir cantidad del registro original
+      const nuevaCantidadOriginal = detalle.cantidad - cantidad_a_preparar;
+      
+      if (nuevaCantidadOriginal > 0) {
+        await client.query(
+          `UPDATE detalles_orden SET cantidad = $1 WHERE id = $2`,
+          [nuevaCantidadOriginal, detalle_id]
+        );
+      } else {
+        // Si la cantidad original queda en 0, eliminamos el registro original
+        await client.query(
+          `DELETE FROM detalles_orden WHERE id = $1`,
+          [detalle_id]
+        );
+      }
+      
+      // Crear nuevo registro con la cantidad preparada
+      const nuevoRegistroQuery = `
+        INSERT INTO detalles_orden (
+          orden_id, producto_id, cantidad, precio_unitario, notas,
+          sabor_id, tamano_id, ingrediente_id, preparado, tiempo_preparacion,
+          es_sentencia_principal, sentencia_id, sentencia_detalle_orden_padre_id,
+          tiempo_creacion
+        ) VALUES (
+          $1, $2, $3, $4, $5, $6, $7, $8, TRUE, CURRENT_TIMESTAMP, $9, $10, $11, $12
+        ) RETURNING *
+      `;
+      
+      const nuevoRegistro = await client.query(nuevoRegistroQuery, [
+        detalle.orden_id,
+        detalle.producto_id,
+        cantidad_a_preparar,
+        detalle.precio_unitario,
+        detalle.notas,
+        detalle.sabor_id,
+        detalle.tamano_id,
+        detalle.ingrediente_id,
+        detalle.es_sentencia_principal,
+        detalle.sentencia_id,
+        detalle.sentencia_detalle_orden_padre_id,
+        detalle.tiempo_creacion
+      ]);
+      
+      await client.query("COMMIT");
+      return nuevoRegistro.rows[0];
+    }
+    
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
 };
 
 // Marcar un producto como NO preparado (despreparar)

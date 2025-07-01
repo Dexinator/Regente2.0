@@ -67,6 +67,40 @@ export default function DashboardGerente() {
 
   return (
     <div className="space-y-8">
+      {/* Botones de navegación */}
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+        <a
+          href="/gerente/productos"
+          className="bg-amarillo text-negro px-4 py-3 rounded-lg font-bold text-center hover:bg-yellow-500 transition"
+        >
+          📦 Gestión de Productos
+        </a>
+        <a
+          href="/gerente/variantes"
+          className="bg-amarillo text-negro px-4 py-3 rounded-lg font-bold text-center hover:bg-yellow-500 transition"
+        >
+          🎨 Gestión de Variantes
+        </a>
+        <a
+          href="/gerente/sentencias"
+          className="bg-amarillo text-negro px-4 py-3 rounded-lg font-bold text-center hover:bg-yellow-500 transition"
+        >
+          📋 Gestión de Sentencias
+        </a>
+        <a
+          href="/gerente/compras"
+          className="bg-vino text-white px-4 py-3 rounded-lg font-bold text-center hover:bg-vino/80 transition"
+        >
+          🛒 Compras
+        </a>
+        <a
+          href="/presos"
+          className="bg-vino text-white px-4 py-3 rounded-lg font-bold text-center hover:bg-vino/80 transition"
+        >
+          👥 Presos
+        </a>
+      </div>
+
       <h2 className="text-xl text-amarillo font-bold">
         Estadísticas del día
       </h2>

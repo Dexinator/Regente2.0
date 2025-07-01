@@ -436,9 +436,17 @@ export default function GestionOrden({ id }) {
   
   return (
     <section className="space-y-6">
-    <div className="bg-vino p-4 rounded shadow">
-    <h2 className="font-subtitulo text-xl mb-2">{orden.cliente}</h2>
+    <div className="bg-vino p-3 rounded shadow">
+    <div className="flex justify-between items-center mb-2">
+    <div className="flex items-center gap-2">
+    <span className="text-sm text-amarillo font-bold">#{id}</span>
+    <h2 className="font-subtitulo text-xl">{orden.cliente}</h2>
+    </div>
+    <p className="text-sm font-bold">Estado de pago: <strong>{orden.estado_pago}</strong></p>
+    </div>
     
+    <div className="flex justify-between items-start">
+    <div>
     {/* Mostrar total bruto y total con descuento */}
     {(orden.codigo_promocional || (orden.descuento_grado && parseFloat(orden.descuento_grado) > 0)) ? (
       <>
@@ -459,7 +467,8 @@ export default function GestionOrden({ id }) {
     {orden.diferencia < 0 && (
       <p className="text-red-400">Faltan: ${Math.abs(parseFloat(orden.diferencia)).toFixed(2)}</p>
     )}
-    <p className="text-sm mt-2">Estado de pago: <strong>{orden.estado_pago}</strong></p>
+    </div>
+    </div>
     
     {/* Mostrar información del descuento si existe */}
     {(orden.codigo_promocional || (orden.descuento_grado && parseFloat(orden.descuento_grado) > 0)) && (

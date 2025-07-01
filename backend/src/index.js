@@ -15,6 +15,7 @@ import insumosRoutes from "./routes/insumos.routes.js";
 import requisicionesRoutes from "./routes/requisiciones.routes.js";
 import comprasRoutes from "./routes/compras.routes.js";
 import inventarioRoutes from "./routes/inventario.routes.js";
+import variantesRoutes from "./routes/variantes.route.js";
 
 
 dotenv.config();
@@ -59,6 +60,7 @@ app.use("/insumos", insumosRoutes);
 app.use("/requisiciones", requisicionesRoutes);
 app.use("/compras", comprasRoutes);
 app.use("/inventario", inventarioRoutes);
+app.use("/variantes", variantesRoutes);
 
 // Ruta base
 app.get("/", (req, res) => {

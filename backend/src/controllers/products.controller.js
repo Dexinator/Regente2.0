@@ -88,3 +88,36 @@ export const fetchSaborById = async (req, res) => {
     res.status(500).json({ error: "Error obteniendo sabor", detail: err.message });
   }
 };
+
+// Controladores para variantes de productos
+export const fetchVariantesProducto = async (req, res) => {
+  try {
+    const { getVariantesProducto } = await import("../models/products.model.js");
+    const variantes = await getVariantesProducto(req.params.id);
+    res.json(variantes);
+  } catch (err) {
+    res.status(500).json({ error: "Error obteniendo variantes del producto", detail: err.message });
+  }
+};
+
+export const saveVariantesProducto = async (req, res) => {
+  try {
+    const { saveVariantesProducto } = await import("../models/products.model.js");
+    const { variantes } = req.body;
+    await saveVariantesProducto(req.params.id, variantes);
+    res.json({ message: "Variantes guardadas exitosamente" });
+  } catch (err) {
+    res.status(500).json({ error: "Error guardando variantes del producto", detail: err.message });
+  }
+};
+
+// Controlador para obtener tipos de variantes por categoría
+export const fetchTiposVariantesPorCategoria = async (req, res) => {
+  try {
+    const { getTiposVariantesPorCategoria } = await import("../models/products.model.js");
+    const tipos = await getTiposVariantesPorCategoria();
+    res.json(tipos);
+  } catch (err) {
+    res.status(500).json({ error: "Error obteniendo tipos de variantes", detail: err.message });
+  }
+};

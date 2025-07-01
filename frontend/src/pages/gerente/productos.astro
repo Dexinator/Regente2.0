@@ -1,0 +1,9 @@
+---
+import PrivateLayout from "../../layouts/PrivateLayout.astro";
+import ProductosPanel from "../../components/ProductosPanel";
+---
+
+<PrivateLayout title="Gestión de Productos">
+  <h1 class="text-3xl font-titulo text-amarillo mb-6">Gestión de Productos</h1>
+  <ProductosPanel client:load />
+</PrivateLayout>

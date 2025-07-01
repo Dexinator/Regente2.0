@@ -147,7 +147,9 @@ export const fetchHistorialProductosPreparados = async (req, res) => {
 export const updateEstadoProducto = async (req, res) => {
   try {
     const detalle_id = req.params.id;
-    const producto = await marcarProductoComoPreparado(detalle_id);
+    const { cantidad } = req.body; // Nueva: cantidad a preparar
+    
+    const producto = await marcarProductoComoPreparado(detalle_id, cantidad);
     
     if (!producto) {
       return res.status(404).json({ error: "Detalle de producto no encontrado" });

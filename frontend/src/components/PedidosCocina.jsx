@@ -118,7 +118,8 @@ export default function PedidosCocina() {
             ingrediente_id: producto.ingrediente_id,
             ingrediente_nombre: producto.ingrediente_nombre,
             notas: producto.notas ? [producto.notas] : [],
-            ordenes: [`#${producto.orden_id}`], // Guardamos números de orden para referencia
+            clientes: [producto.cliente], // Guardamos nombres de clientes
+            clientes_por_orden: [{orden: producto.orden_id, cliente: producto.cliente}], // Para rastrear individualmente
             nombre_sentencia_padre: producto.nombre_sentencia_padre || null // Añadido
           };
         } else {
@@ -126,10 +127,13 @@ export default function PedidosCocina() {
           productosAgrupados[clave].detalle_ids.push(producto.detalle_id);
           productosAgrupados[clave].cantidad_total += producto.cantidad;
           
-          // Solo agregamos órdenes y notas si no están ya presentes
-          if (!productosAgrupados[clave].ordenes.includes(`#${producto.orden_id}`)) {
-            productosAgrupados[clave].ordenes.push(`#${producto.orden_id}`);
+          // Solo agregamos clientes si no están ya presentes
+          if (!productosAgrupados[clave].clientes.includes(producto.cliente)) {
+            productosAgrupados[clave].clientes.push(producto.cliente);
           }
+          
+          // Agregamos la relación orden-cliente
+          productosAgrupados[clave].clientes_por_orden.push({orden: producto.orden_id, cliente: producto.cliente});
           
           if (producto.notas && !productosAgrupados[clave].notas.includes(producto.notas)) {
             productosAgrupados[clave].notas.push(producto.notas);
@@ -194,50 +198,35 @@ export default function PedidosCocina() {
       .filter(bloque => bloque.productos.length > 0); // Solo bloques con productos
   };
 
-  const marcarComoPreparado = async (detalleIds) => {
-    // Si no es un array, lo convertimos
-    if (!Array.isArray(detalleIds)) {
-      detalleIds = [detalleIds];
-    }
-
+  const marcarComoPreparado = async (producto) => {
     try {
-      // Marcamos todos los productos como "en proceso" para la animación
-      const nuevosEnProceso = detalleIds.reduce((obj, id) => {
-        obj[id] = true;
-        return obj;
-      }, {});
-      
+      // Marcamos el producto como "en proceso" para la animación
+      const claveProducto = producto.detalle_ids.join('-');
       setPedidosEnProceso(prev => ({
         ...prev,
-        ...nuevosEnProceso
+        [claveProducto]: true
       }));
 
-      // Para cada detalle_id, enviamos la petición al servidor
-      const promesas = detalleIds.map(detalle_id => 
-        fetch(`${API_URL}/orders/detalle/${detalle_id}/preparar`, {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({})
-        })
-      );
+      // Marcar solo UNA unidad como preparada del primer detalle_id disponible
+      const response = await fetch(`${API_URL}/orders/detalle/${producto.detalle_ids[0]}/preparar`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ cantidad: 1 })
+      });
       
-      // Esperamos a que todas las peticiones se completen
-      const resultados = await Promise.all(promesas);
-      
-      // Verificamos si hubo errores
-      if (resultados.some(res => !res.ok)) {
-        throw new Error("Error al actualizar uno o más productos");
+      if (!response.ok) {
+        throw new Error("Error al actualizar el producto");
       }
       
-      // Después de 2 segundos, recargamos todos los pedidos
+      // Después de 1 segundo, recargamos todos los pedidos
       setTimeout(() => {
         cargarPedidos();
         
         // Y limpiamos la lista de "en proceso"
         setPedidosEnProceso({});
-      }, 2000);
+      }, 1000);
       
     } catch (error) {
       console.error("Error al marcar como preparado:", error);
@@ -249,11 +238,9 @@ export default function PedidosCocina() {
   };
 
   // Función para verificar si un producto está en proceso
-  const estaEnProceso = (detalleIds) => {
-    if (!Array.isArray(detalleIds)) {
-      detalleIds = [detalleIds];
-    }
-    return detalleIds.some(id => pedidosEnProceso[id]);
+  const estaEnProceso = (producto) => {
+    const claveProducto = producto.detalle_ids.join('-');
+    return pedidosEnProceso[claveProducto];
   };
 
   // Función para filtrar los bloques de tiempo según el tipo seleccionado
@@ -324,108 +311,76 @@ export default function PedidosCocina() {
               
               <div className="space-y-3">
                 {bloque.productos.map((producto) => {
-                  const estaProcesando = estaEnProceso(producto.detalle_ids);
+                  const estaProcesando = estaEnProceso(producto);
+                  
+                  // Construir la primera línea del producto
+                  const lineaProducto = [
+                    `${producto.cantidad_total}`,
+                    "X",
+                    producto.nombre,
+                    producto.sabor_nombre,
+                    producto.ingrediente_nombre,
+                    producto.tamano_nombre
+                  ].filter(Boolean).join(" ");
                   
                   return (
                     <div
                       key={producto.detalle_ids.join('-')}
-                      className={`bg-vino/80 rounded-xl p-4 shadow-md 
+                      className={`bg-vino/80 rounded-xl p-3 shadow-md 
                         ${producto.cancelaciones ? 'border-l-4 border-red-500' : ''}
                         ${estaProcesando ? 'animate-pulse opacity-60 bg-green-800/70 pointer-events-none' : ''}`}
                     >
-                      {/* Producto y Cantidad */}
-                      <div className="flex items-center justify-between mb-2">
-                        <h3 className="text-xl font-bold">
-                          {producto.nombre}
-                        </h3>
-                        <div className="flex items-center space-x-2">
-                          <span className="text-2xl font-bold text-amarillo">
-                            {producto.cantidad_total}x
-                          </span>
-                          <span className="text-xs text-amarillo">{producto.categoria}</span>
-                        </div>
-                      </div>
-                      
-                      {/* Info del producto */}
-                      <div className="flex-1">
-                        <p className="font-bold text-amarillo text-lg">
-                          {producto.nombre} x{producto.cantidad_total}
+                      {/* Primera línea: Cantidad X Nombre Sabor Ingrediente Tamaño */}
+                      <div className="flex justify-between items-start mb-2">
+                        <p className="font-bold text-lg leading-tight">
+                          {lineaProducto}
+                          {producto.nombre_sentencia_padre && (
+                            <span className="text-xs text-cyan-400 italic ml-2">
+                              (Parte de: {producto.nombre_sentencia_padre})
+                            </span>
+                          )}
                         </p>
-                        {/* Mostrar si es parte de una sentencia */}
-                        {producto.nombre_sentencia_padre && (
-                          <p className="text-xs text-cyan-400 italic">
-                            Parte de: {producto.nombre_sentencia_padre}
-                          </p>
-                        )}
                       </div>
                       
-                      {/* Variantes */}
-                      <div className="mt-2 space-y-1">
-                        {producto.sabor_nombre && (
-                          <div className="flex items-center">
-                            <span className="text-xs font-semibold w-20">Sabor:</span>
-                            <span className="bg-vino/70 px-2 py-0.5 rounded text-xl">{producto.sabor_nombre}</span>
-                          </div>
-                        )}
-                        
-                        {producto.tamano_nombre && (
-                          <div className="flex items-center">
-                            <span className="text-xs font-semibold w-20">Tamaño:</span>
-                            <span className="bg-vino/70 px-2 py-0.5 rounded text-xl">{producto.tamano_nombre}</span>
-                          </div>
-                        )}
-                        
-                        {producto.ingrediente_nombre && (
-                          <div className="flex items-center">
-                            <span className="text-xs font-semibold w-20">Ingrediente:</span>
-                            <span className="bg-vino/70 px-2 py-0.5 rounded text-xl">{producto.ingrediente_nombre}</span>
-                          </div>
-                        )}
-                      </div>
-                      
-                      {/* Información de órdenes (opcional, podemos ocultarlo) */}
-                      <div className="mt-2 text-xs text-gray-400">
-                        Órdenes: {producto.ordenes.join(', ')}
-                      </div>
-                      
-                      {/* Alertas de Cancelación */}
-                      {producto.cancelaciones && producto.cancelaciones.length > 0 && (
-                        <div className="mt-2 px-2 py-1 bg-amarillo text-negro text-xs font-bold rounded animate-pulse text-center">
-                          {producto.cancelaciones.reduce((sum, c) => sum + c.cantidad, 0)} cancelado(s)
-                        </div>
-                      )}
-                      
-                      {/* Notas */}
+                      {/* Notas enumeradas a la izquierda */}
                       {producto.notas && producto.notas.length > 0 && (
-                        <div className="mt-2 text-sm text-gray-300 italic">
-                          <span className="font-semibold">Notas:</span> {producto.notas.join(' | ')}
+                        <div className="mb-2">
+                          {producto.notas.map((nota, index) => (
+                            <p key={index} className="text-sm text-gray-300 italic">
+                              {index + 1}. {nota}
+                            </p>
+                          ))}
                         </div>
                       )}
                       
-                      {/* Cancelaciones */}
+                      {/* Cancelaciones si existen */}
                       {producto.cancelaciones && producto.cancelaciones.length > 0 && (
-                        <div className="mt-2 text-sm text-red-300 italic">
-                          <span className="font-semibold">Motivos de cancelación:</span>
-                          <ul className="ml-2">
-                            {producto.cancelaciones.map((c, i) => (
-                              <li key={i}>• {c.cantidad}x: {c.nota}</li>
-                            ))}
-                          </ul>
+                        <div className="mb-2">
+                          {producto.cancelaciones.map((c, i) => (
+                            <p key={i} className="text-sm text-red-300 italic">
+                              {i + 1}. Cancelado {c.cantidad}x: {c.nota}
+                            </p>
+                          ))}
                         </div>
                       )}
                       
-                      {/* Botón de acción */}
-                      <div className="mt-3 flex justify-end">
+                      {/* Botón más pequeño y nombres de clientes */}
+                      <div className="flex justify-between items-end">
+                        <div className="text-xs flex-1">
+                          <span className="text-gray-400">Clientes: </span>
+                          {producto.clientes.map((cliente, index) => (
+                            <span key={index} className={`${index > 0 ? 'ml-1' : ''} text-white`}>
+                              {cliente}{index < producto.clientes.length - 1 ? ',' : ''}
+                            </span>
+                          ))}
+                        </div>
+                        
                         <button
-                          onClick={() => marcarComoPreparado(producto.detalle_ids)}
-                          className="bg-green-700 hover:bg-green-600 text-black font-bold px-4 py-2 rounded-lg transition-colors shadow-md flex items-center justify-center"
+                          onClick={() => marcarComoPreparado(producto)}
+                          className="bg-green-700 hover:bg-green-600 text-white px-3 py-1 rounded text-sm transition-colors ml-2"
                           disabled={estaProcesando}
                         >
-                          {estaProcesando ? (
-                            <span className="mr-1">✓ Procesando...</span>
-                          ) : (
-                            <span className="mr-1">✓ Marcar como preparado</span>
-                          )}
+                          {estaProcesando ? "⏳" : "✓"}
                         </button>
                       </div>
                     </div>

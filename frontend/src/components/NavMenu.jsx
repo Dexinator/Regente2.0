@@ -28,7 +28,7 @@ export default function NavMenu() {
     const validRoutes = {
       "mesero": ["/ordenes", "/entregar", "/cocina"],
       "cocinero": ["/cocina", "/entregar", "/cocinero/compras"],
-      "gerente": ["/reportes/gerente", "/gerente/compras"],
+      "gerente": ["/reportes/gerente", "/gerente/compras", "/gerente/productos", "/gerente/sentencias", "/gerente/variantes"],
       "financiero": ["/reportes/financiero"],
       "admin": ["/admin", "/admin/compras"],
       "administrador": ["/admin", "/admin/compras"]

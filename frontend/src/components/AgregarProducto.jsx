@@ -14,6 +14,7 @@ export default function AgregarProducto({ orden_id }) {
   const [cantidad, setCantidad] = useState(1);
   const [notas, setNotas] = useState("");
   const [enviando, setEnviando] = useState(false);
+  const [ordenInfo, setOrdenInfo] = useState(null);
   
   // Estados originales
   const [saboresDisponibles, setSaboresDisponibles] = useState([]);
@@ -39,7 +40,20 @@ export default function AgregarProducto({ orden_id }) {
 
   useEffect(() => {
     cargarProductos();
+    cargarOrdenInfo();
   }, []);
+
+  const cargarOrdenInfo = async () => {
+    try {
+      const res = await fetch(`${API_URL}/orders/${orden_id}/resumen`);
+      const data = await res.json();
+      if (res.ok) {
+        setOrdenInfo(data);
+      }
+    } catch (error) {
+      console.error("Error al cargar información de la orden:", error);
+    }
+  };
 
   useEffect(() => {
     if (productoSeleccionado) {
@@ -1431,7 +1445,12 @@ export default function AgregarProducto({ orden_id }) {
       )}
 
       <div className="flex justify-between items-center">
-        <h2 className="text-lg font-bold text-amarillo">Seleccionar productos</h2>
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-amarillo font-bold">#{orden_id}</span>
+          <h2 className="text-lg font-bold text-amarillo">
+            {ordenInfo ? `${ordenInfo.cliente} - Seleccionar productos` : "Seleccionar productos"}
+          </h2>
+        </div>
         
         {/* Botón para mostrar el selector de sentencias */}
         <button
@@ -1480,21 +1499,11 @@ export default function AgregarProducto({ orden_id }) {
                 e.preventDefault();
                 seleccionarProducto(producto);
               }}
-              className="bg-vino/80 rounded-xl p-4 cursor-pointer hover:bg-vino transition"
+              className="bg-vino/80 rounded-xl p-3 cursor-pointer hover:bg-vino transition"
             >
-              <div className="flex justify-between items-start">
-                <div>
-                  <h3 className="font-bold">{producto.nombre}</h3>
-                  {producto.descripcion && (
-                    <p className="text-sm text-gray-300 line-clamp-2">{producto.descripcion}</p>
-                  )}
-                </div>
+              <div className="flex justify-between items-center">
+                <h3 className="font-bold">{producto.nombre}</h3>
                 <p className="text-amarillo font-bold">${parseFloat(producto.precio).toFixed(2)}</p>
-              </div>
-              <div className="mt-2">
-                <span className="text-xs bg-negro/50 px-2 py-1 rounded">
-                  {producto.categoria}
-                </span>
               </div>
             </div>
           ))

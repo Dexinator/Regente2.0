@@ -47,10 +47,13 @@ export default function ListaOrdenes() {
         {ordenes.map((orden) => (
             <div
             key={orden.orden_id}
-            className="bg-vino rounded-xl p-4 shadow-md text-white space-y-2"
+            className="bg-vino rounded-xl p-3 shadow-md text-white space-y-2"
             >
             <div className="flex justify-between items-center">
+            <div className="flex items-center gap-2">
             <span className="text-sm text-amarillo font-bold">#{orden.orden_id}</span>
+            <span className="text-lg font-subtitulo">{orden.cliente}</span>
+            </div>
             <span
             className={`text-sm font-bold px-2 py-1 rounded ${
                 orden.estado_pago === "pendiente"
@@ -63,8 +66,6 @@ export default function ListaOrdenes() {
             {orden.estado_pago}
             </span>
             </div>
-            
-            <p className="text-lg font-subtitulo">{orden.cliente}</p>
             
             <div className="text-sm">
             <p>Total: ${orden.total.toFixed(2)}</p>

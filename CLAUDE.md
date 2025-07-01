@@ -183,12 +183,16 @@ regente2.0/
 - SSR-compatible authentication integration
 
 ### Kitchen Workflow Improvements
-**Enhanced kitchen operations**:
+**Enhanced kitchen operations with stack-based preparation**:
 - **Chronological ordering**: Oldest orders appear first (higher priority)
+- **Individual stack preparation**: Each product shows total quantity, cooks prepare one unit at a time
+- **Customer-based tracking**: Shows customer names instead of order numbers
+- **Stack reduction logic**: Clicking "✓" reduces quantity by 1, customer remains visible until all units prepared
+- **Compact card design**: Simplified layout with format "Quantity X Product Name Flavor Size Extra"
+- **Enumerated notes**: Special instructions numbered and displayed clearly
+- **Real-time updates**: 30-second polling for order status changes
 - **Cancellation handling**: Separate red-background section for cancelled items
 - **Despreparar function**: Allows reverting prepared status for error correction
-- **Real-time updates**: 30-second polling for order status changes
-- **Order grouping**: Products grouped by order for better organization
 
 ### Frontend Component Architecture
 **Sequential variant selection flow**:
@@ -281,3 +285,14 @@ regente2.0/
 - Smart filtering by weekdays for purchase planning
 - Combined requisition and inventory data in single view
 - Direct purchase registration from daily planning interface
+
+**UX Improvements Based on User Feedback (Latest)**:
+- **ListaOrdenes**: Reduced card height, moved customer name next to order number
+- **GestionOrden**: Relocated customer name to header, optimized summary card layout
+- **AgregarProducto**: Added customer name display, removed category tags from product cards
+- **PedidosCocina**: Complete redesign with stack-based preparation logic
+  - New compact format: "Quantity X Product Name Flavor Size Extra"
+  - Customer names instead of order numbers
+  - Individual preparation tracking (one unit at a time)
+  - Enumerated notes display
+  - Smaller preparation button with checkmark symbol

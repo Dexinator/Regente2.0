@@ -10,20 +10,20 @@ export const getProductById = async (id) => {
   return result.rows[0];
 };
 
-export const createProduct = async ({ nombre, precio, categoria }) => {
+export const createProduct = async ({ nombre, precio, categoria, costo }) => {
   const result = await pool.query(
-    `INSERT INTO productos (nombre, precio, categoria)
-     VALUES ($1, $2, $3) RETURNING *`,
-    [nombre, precio, categoria]
+    `INSERT INTO productos (nombre, precio, categoria, costo)
+     VALUES ($1, $2, $3, $4) RETURNING *`,
+    [nombre, precio, categoria, costo]
   );
   return result.rows[0];
 };
 
-export const updateProduct = async (id, { nombre, precio, categoria }) => {
+export const updateProduct = async (id, { nombre, precio, categoria, costo }) => {
   const result = await pool.query(
-    `UPDATE productos SET nombre = $1, precio = $2, categoria = $3
-     WHERE id = $4 RETURNING *`,
-    [nombre, precio, categoria, id]
+    `UPDATE productos SET nombre = $1, precio = $2, categoria = $3, costo = $4
+     WHERE id = $5 RETURNING *`,
+    [nombre, precio, categoria, costo, id]
   );
   return result.rows[0];
 };
@@ -110,4 +110,58 @@ export const getSaborById = async (id) => {
   `, [id]);
   
   return result.rows[0];
+};
+
+// Funciones para manejar variantes de productos
+export const getVariantesProducto = async (productoId) => {
+  const result = await pool.query(`
+    SELECT s.id, s.nombre, s.precio_adicional, cv.nombre as categoria_nombre
+    FROM producto_sabor ps
+    JOIN sabores s ON ps.sabor_id = s.id
+    JOIN categorias_variantes cv ON s.categoria_id = cv.id
+    WHERE ps.producto_id = $1
+    ORDER BY cv.nombre, s.nombre
+  `, [productoId]);
+  
+  return result.rows;
+};
+
+export const saveVariantesProducto = async (productoId, variantes) => {
+  // Iniciar transacción
+  const client = await pool.connect();
+  
+  try {
+    await client.query('BEGIN');
+    
+    // Eliminar variantes existentes
+    await client.query('DELETE FROM producto_sabor WHERE producto_id = $1', [productoId]);
+    
+    // Insertar nuevas variantes
+    if (variantes && variantes.length > 0) {
+      const values = variantes.map((varianteId, index) => 
+        `($1, $${index + 2})`
+      ).join(', ');
+      
+      const query = `INSERT INTO producto_sabor (producto_id, sabor_id) VALUES ${values}`;
+      await client.query(query, [productoId, ...variantes]);
+    }
+    
+    await client.query('COMMIT');
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
+};
+
+// Función para obtener tipos de variantes por categoría de producto
+export const getTiposVariantesPorCategoria = async () => {
+  const result = await pool.query(`
+    SELECT DISTINCT categoria_producto, tipo_variante
+    FROM categoria_producto_tipo_variante
+    ORDER BY categoria_producto, tipo_variante
+  `);
+  
+  return result.rows;
 };

@@ -389,13 +389,51 @@ GET /orders/cocina/historial
 #### Actualizar estado de producto (marcar como preparado)
 
 ```
-PUT /orders/detalle/:id
+PUT /orders/detalle/:id/preparar
+```
+
+**Body:**
+```json
+{
+  "cantidad": "integer" // Opcional: cantidad específica a preparar (default: toda la cantidad)
+}
+```
+
+**Ejemplo para preparación individual (stack-based):**
+```json
+{
+  "cantidad": 1  // Prepara solo 1 unidad del total
+}
 ```
 
 **Respuesta:**
 ```json
 {
-  "mensaje": "Estado del producto actualizado correctamente"
+  "id": "integer",
+  "orden_id": "integer", 
+  "producto_id": "integer",
+  "cantidad": "integer",  // Cantidad que se marcó como preparada
+  "preparado": true,
+  "tiempo_preparacion": "string"
+}
+```
+
+**Notas importantes:**
+- Si se especifica `cantidad`, el sistema divide el registro original
+- El registro original se reduce por la cantidad preparada
+- Se crea un nuevo registro marcado como preparado
+- Esto permite preparación individual manteniendo el stack por cliente
+
+#### Marcar como NO preparado (despreparar)
+
+```
+PUT /orders/detalle/:id/despreparar
+```
+
+**Respuesta:**
+```json
+{
+  "mensaje": "Producto marcado como no preparado"
 }
 ```
 
