@@ -668,6 +668,15 @@ export default function CrearOrden() {
         );
     };
 
+    // Nueva función para eliminar una sentencia completa
+    const eliminarSentenciaCompleta = (sentenciaId) => {
+        if (!confirm("¿Deseas eliminar esta sentencia y todos sus productos?")) return;
+        
+        setProductosSeleccionados(prev => 
+            prev.filter(p => p.sentencia_id !== sentenciaId)
+        );
+    };
+
     // Función para validar código promocional
     const validarCodigoPromocional = async () => {
         if (!codigoPromocional.trim()) {
@@ -1704,6 +1713,15 @@ export default function CrearOrden() {
                                         )}
                                         {producto.es_parte_sentencia && (
                                             <span className="font-bold">{producto.cantidad}x</span>
+                                        )}
+                                        {/* Botón para eliminar sentencia completa */}
+                                        {producto.esSentencia && (
+                                            <button
+                                                onClick={() => eliminarSentenciaCompleta(producto.sentencia_id)}
+                                                className="bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded text-xs ml-2"
+                                            >
+                                                Eliminar
+                                            </button>
                                         )}
                                     </div>
                                     
