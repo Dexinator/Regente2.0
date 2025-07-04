@@ -34,6 +34,11 @@ export default function SentenciasPanel() {
   
   // Estado para mostrar detalles
   const [sentenciaDetalle, setSentenciaDetalle] = useState(null);
+  
+  // Estados para variantes específicas del producto
+  const [saboresProducto, setSaboresProducto] = useState([]);
+  const [tamanosProducto, setTamanosProducto] = useState([]);
+  const [loadingVariantes, setLoadingVariantes] = useState(false);
 
   useEffect(() => {
     cargarDatos();
@@ -85,7 +90,14 @@ export default function SentenciasPanel() {
       if (!response.ok) throw new Error("Error al cargar detalles");
       
       const data = await response.json();
-      setSentenciaDetalle(data);
+      console.log("Datos recibidos del backend:", data);
+      
+      // Adaptar la estructura para el modal
+      setSentenciaDetalle({
+        ...data.sentencia,
+        productos_fijos: data.productos?.fijos || [],
+        productos_opcionales: data.productos?.opcionales || []
+      });
     } catch (err) {
       alert(err.message);
     }
@@ -171,6 +183,10 @@ export default function SentenciasPanel() {
       alert(err.message);
     }
     
+    // Limpiar las variantes al editar
+    setSaboresProducto([]);
+    setTamanosProducto([]);
+    
     setMostrarFormulario(true);
   };
 
@@ -227,6 +243,10 @@ export default function SentenciasPanel() {
       grupo_opcion: null,
       precio_unitario: 0
     });
+    
+    // Limpiar variantes
+    setSaboresProducto([]);
+    setTamanosProducto([]);
   };
 
   const quitarProducto = (index) => {
@@ -243,6 +263,45 @@ export default function SentenciasPanel() {
     setProductosSeleccionados([]);
     setEditando(null);
     setMostrarFormulario(false);
+    // Limpiar variantes del producto
+    setSaboresProducto([]);
+    setTamanosProducto([]);
+  };
+
+  // Cargar variantes específicas cuando se selecciona un producto
+  const cargarVariantesProducto = async (productoId) => {
+    if (!productoId) {
+      setSaboresProducto([]);
+      setTamanosProducto([]);
+      return;
+    }
+
+    setLoadingVariantes(true);
+    try {
+      // Cargar sabores del producto
+      const saboresRes = await fetch(`${API_URL}/products/sabores/producto/${productoId}?tipo=sabor_comida`, {
+        headers: { 'Authorization': `Bearer ${getToken()}` }
+      });
+      
+      if (saboresRes.ok) {
+        const saboresData = await saboresRes.json();
+        setSaboresProducto(saboresData);
+      }
+
+      // Cargar tamaños del producto
+      const tamanosRes = await fetch(`${API_URL}/products/sabores/producto/${productoId}?tipo=tamano`, {
+        headers: { 'Authorization': `Bearer ${getToken()}` }
+      });
+      
+      if (tamanosRes.ok) {
+        const tamanosData = await tamanosRes.json();
+        setTamanosProducto(tamanosData);
+      }
+    } catch (err) {
+      console.error("Error cargando variantes:", err);
+    } finally {
+      setLoadingVariantes(false);
+    }
   };
 
   const getSaboresPorTipo = (tipo) => {
@@ -429,7 +488,11 @@ export default function SentenciasPanel() {
                       <label className="block text-xs mb-1">Producto:</label>
                       <select
                         value={productoNuevo.producto_id}
-                        onChange={(e) => setProductoNuevo({...productoNuevo, producto_id: e.target.value})}
+                        onChange={(e) => {
+                          const productoId = e.target.value;
+                          setProductoNuevo({...productoNuevo, producto_id: productoId, sabor_id: "", tamano_id: ""});
+                          cargarVariantesProducto(productoId);
+                        }}
                         className="w-full px-2 py-1 rounded bg-vino text-white text-sm"
                       >
                         <option value="">Seleccionar producto</option>
@@ -458,14 +521,16 @@ export default function SentenciasPanel() {
                         value={productoNuevo.sabor_id}
                         onChange={(e) => setProductoNuevo({...productoNuevo, sabor_id: e.target.value})}
                         className="w-full px-2 py-1 rounded bg-vino text-white text-sm"
+                        disabled={!productoNuevo.producto_id || loadingVariantes}
                       >
                         <option value="">Sin sabor predefinido</option>
-                        {getSaboresPorTipo('sabor').map(s => (
+                        {saboresProducto.map(s => (
                           <option key={s.id} value={s.id}>
-                            {s.nombre} ({s.categoria_nombre})
+                            {s.nombre} {s.precio_adicional > 0 ? `(+$${s.precio_adicional})` : ''}
                           </option>
                         ))}
                       </select>
+                      {loadingVariantes && <p className="text-xs text-gray-400 mt-1">Cargando sabores...</p>}
                     </div>
                     
                     <div>
@@ -474,14 +539,16 @@ export default function SentenciasPanel() {
                         value={productoNuevo.tamano_id}
                         onChange={(e) => setProductoNuevo({...productoNuevo, tamano_id: e.target.value})}
                         className="w-full px-2 py-1 rounded bg-vino text-white text-sm"
+                        disabled={!productoNuevo.producto_id || loadingVariantes}
                       >
                         <option value="">Sin tamaño predefinido</option>
-                        {getSaboresPorTipo('tamaño').map(s => (
+                        {tamanosProducto.map(s => (
                           <option key={s.id} value={s.id}>
-                            {s.nombre}
+                            {s.nombre} {s.precio_adicional > 0 ? `(+$${s.precio_adicional})` : ''}
                           </option>
                         ))}
                       </select>
+                      {loadingVariantes && <p className="text-xs text-gray-400 mt-1">Cargando tamaños...</p>}
                     </div>
                     
                     <div className="flex items-center gap-2">
