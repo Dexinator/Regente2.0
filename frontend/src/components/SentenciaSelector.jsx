@@ -145,16 +145,18 @@ export default function SentenciaSelector({ onAddProducts, onClose }) {
             sentenciaSeleccionada.productos = data.productos;
         setPaso(2);
       } else {
-        // Si no hay opciones, pasar directamente a la confirmación
+        // Si no hay opciones, procesar directamente sin confirmación
             setPrecioTotal(sentenciaInfo.precio);
-            setPaso(3);
+            // Procesar directamente con los productos fijos
+            procesarSentenciaDirectamente(fijos, sentenciaInfo);
           }
         }
       } else {
         // Si no hay estructura clara, intentar usar lo que tengamos
         setProductosFinales(data);
         setPrecioTotal(sentenciaInfo.precio);
-        setPaso(3);
+        // Procesar directamente con los datos recibidos
+        procesarSentenciaDirectamente(data, sentenciaInfo);
       }
     } catch (error) {
       console.error("Error al cargar productos de la sentencia:", error);
@@ -184,6 +186,280 @@ export default function SentenciaSelector({ onAddProducts, onClose }) {
       ...prev,
       [grupoIndex]: productoConPreciosNumericos
     }));
+  };
+
+  // Función para procesar sentencia directamente con productos
+  const procesarSentenciaDirectamente = (productos, sentenciaInfo) => {
+    console.log("Procesando sentencia directamente sin confirmación");
+    
+    // Agregar la sentencia como producto principal
+    const sentenciaProducto = {
+      id: -1,
+      sentencia_id: sentenciaInfo.id,
+      nombre: sentenciaInfo.nombre,
+      descripcion: sentenciaInfo.descripcion || "Sentencia",
+      precio: sentenciaInfo.precio,
+      categoria: "Sentencia",
+      cantidad: 1,
+      esSentencia: true
+    };
+    
+    // Preparar array para productos que necesitan selección de variantes
+    const productosConVariantesPendientes = [];
+    
+    // Evaluar cada producto de la sentencia
+    productos.forEach(producto => {
+      const necesitaSeleccionVariante = 
+        (producto.sabor_id === null && producto.requiere_sabor) || 
+        (producto.tamano_id === null && producto.requiere_tamano) || 
+        (producto.ingrediente_id === null && producto.requiere_ingrediente);
+      
+      if (necesitaSeleccionVariante) {
+        productosConVariantesPendientes.push({
+          ...producto,
+          precio: 0,
+          precio_original: producto.producto_precio_original || producto.precio_original || producto.precio || 0,
+          categoria: producto.producto_categoria || producto.categoria,
+          nombre: producto.producto_nombre || producto.nombre,
+          es_parte_sentencia: true,
+          sentencia_id: sentenciaInfo.id,
+          cantidad: producto.cantidad || 1,
+          pendiente_seleccion_variante: true,
+          precio_adicional: parseFloat(producto.precio_adicional || 0),
+          tamano_precio: parseFloat(producto.tamano_precio || 0),
+          ingrediente_precio: parseFloat(producto.ingrediente_precio || 0)
+        });
+      } else {
+        // Enviar el producto directamente
+        const productoParaAgregar = {
+          ...producto,
+          id: producto.producto_id || producto.id,
+          nombre: producto.producto_nombre || producto.nombre,
+          categoria: producto.producto_categoria || producto.categoria,
+          precio: 0,
+          precio_original: producto.producto_precio_original || producto.precio_original || producto.precio || 0,
+          es_parte_sentencia: true,
+          sentencia_id: sentenciaInfo.id,
+          cantidad: producto.cantidad || 1,
+          precio_adicional: parseFloat(producto.precio_adicional || 0),
+          tamano_precio: parseFloat(producto.tamano_precio || 0),
+          ingrediente_precio: parseFloat(producto.ingrediente_precio || 0)
+        };
+        
+        onAddProducts(productoParaAgregar);
+      }
+    });
+    
+    // Agregar el producto principal
+    onAddProducts(sentenciaProducto);
+    
+    // Si hay productos con variantes pendientes, procesarlos
+    if (productosConVariantesPendientes.length > 0) {
+      onAddProducts({
+        tipo: "grupo_variantes_pendientes",
+        productos: productosConVariantesPendientes,
+        sentencia_id: sentenciaInfo.id
+      });
+    }
+    
+    // NO cerrar aquí - el cierre se manejará cuando se completen todas las variantes
+    onClose();
+  };
+
+  // Función para procesar sentencia con opciones seleccionadas
+  const procesarSentenciaConOpciones = () => {
+    console.log("Procesando sentencia con opciones seleccionadas");
+    
+    // Agregar la sentencia como producto principal
+    const sentenciaProducto = {
+      id: -1,
+      sentencia_id: sentenciaSeleccionada.id,
+      nombre: sentenciaSeleccionada.nombre,
+      descripcion: sentenciaSeleccionada.descripcion || "Sentencia",
+      precio: sentenciaSeleccionada.precio,
+      categoria: "Sentencia",
+      cantidad: 1,
+      esSentencia: true
+    };
+    
+    // Preparar array para productos que necesitan selección de variantes
+    const productosConVariantesPendientes = [];
+    
+    // Procesar productos fijos
+    productosFinales.forEach(producto => {
+      const necesitaSeleccionVariante = 
+        (producto.sabor_id === null && producto.requiere_sabor) || 
+        (producto.tamano_id === null && producto.requiere_tamano) || 
+        (producto.ingrediente_id === null && producto.requiere_ingrediente);
+      
+      if (necesitaSeleccionVariante) {
+        productosConVariantesPendientes.push({
+          ...producto,
+          precio: 0,
+          precio_original: producto.producto_precio_original || producto.precio_original || producto.precio || 0,
+          categoria: producto.producto_categoria || producto.categoria,
+          nombre: producto.producto_nombre || producto.nombre,
+          es_parte_sentencia: true,
+          sentencia_id: sentenciaSeleccionada.id,
+          cantidad: producto.cantidad || 1,
+          pendiente_seleccion_variante: true,
+          precio_adicional: parseFloat(producto.precio_adicional || 0),
+          tamano_precio: parseFloat(producto.tamano_precio || 0),
+          ingrediente_precio: parseFloat(producto.ingrediente_precio || 0)
+        });
+      } else {
+        const productoParaAgregar = {
+          ...producto,
+          id: producto.producto_id || producto.id,
+          nombre: producto.producto_nombre || producto.nombre,
+          categoria: producto.producto_categoria || producto.categoria,
+          precio: 0,
+          precio_original: producto.producto_precio_original || producto.precio_original || producto.precio || 0,
+          es_parte_sentencia: true,
+          sentencia_id: sentenciaSeleccionada.id,
+          cantidad: producto.cantidad || 1,
+          precio_adicional: parseFloat(producto.precio_adicional || 0),
+          tamano_precio: parseFloat(producto.tamano_precio || 0),
+          ingrediente_precio: parseFloat(producto.ingrediente_precio || 0)
+        };
+        
+        onAddProducts(productoParaAgregar);
+      }
+    });
+
+    // Procesar opciones seleccionadas
+    Object.values(opcionesSeleccionadas).forEach(producto => {
+      const necesitaSeleccionVariante = 
+        (producto.sabor_id === null && producto.requiere_sabor) || 
+        (producto.tamano_id === null && producto.requiere_tamano) || 
+        (producto.ingrediente_id === null && producto.requiere_ingrediente);
+      
+      if (necesitaSeleccionVariante) {
+        productosConVariantesPendientes.push({
+          ...producto,
+          id: producto.producto_id || producto.id,
+          nombre: producto.producto_nombre || producto.nombre,
+          categoria: producto.producto_categoria || producto.categoria,
+          precio: 0,
+          precio_original: producto.producto_precio_original || producto.precio_original || producto.precio || 0,
+          es_parte_sentencia: true,
+          sentencia_id: sentenciaSeleccionada.id,
+          cantidad: producto.cantidad || 1,
+          pendiente_seleccion_variante: true,
+          precio_adicional: parseFloat(producto.precio_adicional || 0),
+          tamano_precio: parseFloat(producto.tamano_precio || 0),
+          ingrediente_precio: parseFloat(producto.ingrediente_precio || 0)
+        });
+      } else {
+        const opcionParaAgregar = {
+          ...producto,
+          id: producto.producto_id || producto.id,
+          nombre: producto.producto_nombre || producto.nombre,
+          categoria: producto.producto_categoria || producto.categoria,
+          precio: 0,
+          precio_original: producto.producto_precio_original || producto.precio_original || producto.precio || 0,
+          es_parte_sentencia: true,
+          sentencia_id: sentenciaSeleccionada.id,
+          cantidad: producto.cantidad || 1,
+          precio_adicional: parseFloat(producto.precio_adicional || 0),
+          tamano_precio: parseFloat(producto.tamano_precio || 0),
+          ingrediente_precio: parseFloat(producto.ingrediente_precio || 0)
+        };
+        
+        onAddProducts(opcionParaAgregar);
+      }
+    });
+    
+    // Agregar el producto principal
+    onAddProducts(sentenciaProducto);
+    
+    // Si hay productos con variantes pendientes, procesarlos
+    if (productosConVariantesPendientes.length > 0) {
+      onAddProducts({
+        tipo: "grupo_variantes_pendientes",
+        productos: productosConVariantesPendientes,
+        sentencia_id: sentenciaSeleccionada.id
+      });
+    }
+    
+    onClose();
+  };
+
+  // Función para procesar sentencia sin pasar por confirmación
+  const procesarSentenciaSinConfirmacion = () => {
+    console.log("Procesando sentencia sin confirmación");
+    
+    // Agregar la sentencia como producto principal
+    const sentenciaProducto = {
+      id: -1,
+      sentencia_id: sentenciaSeleccionada.id,
+      nombre: sentenciaSeleccionada.nombre,
+      descripcion: sentenciaSeleccionada.descripcion || "Sentencia",
+      precio: sentenciaSeleccionada.precio,
+      categoria: "Sentencia",
+      cantidad: 1,
+      esSentencia: true
+    };
+    
+    // Preparar array para productos que necesitan selección de variantes
+    const productosConVariantesPendientes = [];
+    
+    // Evaluar cada producto de la sentencia
+    productosFinales.forEach(producto => {
+      const necesitaSeleccionVariante = 
+        (producto.sabor_id === null && producto.requiere_sabor) || 
+        (producto.tamano_id === null && producto.requiere_tamano) || 
+        (producto.ingrediente_id === null && producto.requiere_ingrediente);
+      
+      if (necesitaSeleccionVariante) {
+        productosConVariantesPendientes.push({
+          ...producto,
+          precio: 0,
+          precio_original: producto.producto_precio_original || producto.precio_original || producto.precio || 0,
+          categoria: producto.producto_categoria || producto.categoria,
+          nombre: producto.producto_nombre || producto.nombre,
+          es_parte_sentencia: true,
+          sentencia_id: sentenciaSeleccionada.id,
+          cantidad: producto.cantidad || 1,
+          pendiente_seleccion_variante: true,
+          precio_adicional: parseFloat(producto.precio_adicional || 0),
+          tamano_precio: parseFloat(producto.tamano_precio || 0),
+          ingrediente_precio: parseFloat(producto.ingrediente_precio || 0)
+        });
+      } else {
+        // Enviar el producto directamente
+        const productoParaAgregar = {
+          ...producto,
+          id: producto.producto_id || producto.id,
+          nombre: producto.producto_nombre || producto.nombre,
+          categoria: producto.producto_categoria || producto.categoria,
+          precio: 0,
+          precio_original: producto.producto_precio_original || producto.precio_original || producto.precio || 0,
+          es_parte_sentencia: true,
+          sentencia_id: sentenciaSeleccionada.id,
+          cantidad: producto.cantidad || 1,
+          precio_adicional: parseFloat(producto.precio_adicional || 0),
+          tamano_precio: parseFloat(producto.tamano_precio || 0),
+          ingrediente_precio: parseFloat(producto.ingrediente_precio || 0)
+        };
+        
+        onAddProducts(productoParaAgregar);
+      }
+    });
+    
+    // Agregar el producto principal
+    onAddProducts(sentenciaProducto);
+    
+    // Si hay productos con variantes pendientes, procesarlos
+    if (productosConVariantesPendientes.length > 0) {
+      onAddProducts({
+        tipo: "grupo_variantes_pendientes",
+        productos: productosConVariantesPendientes,
+        sentencia_id: sentenciaSeleccionada.id
+      });
+    }
+    
+    onClose();
   };
 
   // Continuar al siguiente paso
@@ -225,7 +501,9 @@ export default function SentenciaSelector({ onAddProducts, onClose }) {
       });
       
       setPrecioTotal(sentenciaSeleccionada.precio + precioVariantes);
-      setPaso(3);
+      
+      // En lugar de ir al paso 3, procesar directamente
+      procesarSentenciaConOpciones();
     } else if (paso === 3) {
       console.log("Continuando desde paso 3 - Confirmación");
       

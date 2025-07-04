@@ -43,6 +43,7 @@ export default function AgregarProducto({ orden_id }) {
     cargarOrdenInfo();
   }, []);
 
+
   const cargarOrdenInfo = async () => {
     try {
       const res = await fetch(`${API_URL}/orders/${orden_id}/resumen`);
@@ -309,8 +310,36 @@ export default function AgregarProducto({ orden_id }) {
   };
 
   // Función para manejar selección de tamaño
-  const seleccionarTamano = (tamano) => {
-    // Combinamos el producto con sabor y tamaño, y vamos a notas
+  const seleccionarTamano = async (tamano) => {
+    // Si el producto es parte de una sentencia, usar lógica específica
+    if (productoSeleccionado && productoSeleccionado.es_parte_sentencia) {
+      // Preparar datos de variante
+      const varianteParaAgregar = {
+        sabor_id: saborSeleccionado?.id || null,
+        sabor_nombre: saborSeleccionado?.nombre || null,
+        sabor_categoria_nombre: saborSeleccionado?.categoria_nombre || null,
+        sabor_precio_adicional: parseFloat(saborSeleccionado?.precio_adicional || 0),
+        tamano_id: tamano.id,
+        tamano_nombre: tamano.nombre,
+        tamano_precio_adicional: parseFloat(tamano.precio_adicional || 0)
+      };
+      
+      // Verificar si hay ingredientes para seleccionar
+      if (productoSeleccionado.ingrediente_id === null && productoSeleccionado.requiere_ingrediente) {
+        const tieneIngredientes = await cargarIngredientes(productoSeleccionado.id);
+        if (tieneIngredientes) {
+          setSeleccionIngrediente(true);
+          setSeleccionTamano(false);
+          return;
+        }
+      }
+      
+      // Si no hay ingredientes, agregar producto y continuar
+      agregarProductoSentenciaConVariante(productoSeleccionado, varianteParaAgregar);
+      return;
+    }
+    
+    // Lógica original para productos normales
     const datosCombinados = {
       ...saborSeleccionado,
       tamano_id: tamano.id,
@@ -324,7 +353,25 @@ export default function AgregarProducto({ orden_id }) {
 
   // Función para manejar selección de ingrediente extra
   const seleccionarIngrediente = (ingrediente) => {
-    // Si el ingrediente es nulo, significa "Sin ingrediente extra"
+    // Si el producto es parte de una sentencia, usar lógica específica
+    if (productoSeleccionado && productoSeleccionado.es_parte_sentencia) {
+      // Preparar datos de variante
+      const varianteParaAgregar = {
+        sabor_id: saborSeleccionado?.id || null,
+        sabor_nombre: saborSeleccionado?.nombre || null,
+        sabor_categoria_nombre: saborSeleccionado?.categoria_nombre || null,
+        sabor_precio_adicional: parseFloat(saborSeleccionado?.precio_adicional || 0),
+        ingrediente_id: ingrediente ? ingrediente.id : null,
+        ingrediente_nombre: ingrediente ? ingrediente.nombre : null,
+        ingrediente_precio_adicional: ingrediente ? parseFloat(ingrediente.precio_adicional || 0) : 0
+      };
+      
+      // Agregar producto con sus variantes y continuar
+      agregarProductoSentenciaConVariante(productoSeleccionado, varianteParaAgregar);
+      return;
+    }
+    
+    // Lógica original para productos normales
     if (!ingrediente) {
       // Pasamos directamente a notas con el sabor seleccionado pero sin ingrediente
       mostrarPantallaNotas(productoSeleccionado, {
@@ -551,6 +598,15 @@ export default function AgregarProducto({ orden_id }) {
     );
   };
 
+  // Función para eliminar una sentencia completa
+  const eliminarSentenciaCompleta = (sentenciaId) => {
+    if (!confirm("¿Deseas eliminar esta sentencia y todos sus productos?")) return;
+    
+    setProductosSeleccionados(prev => 
+      prev.filter(p => p.sentencia_id !== sentenciaId)
+    );
+  };
+
   const agregarProducto = async () => {
     if (productosSeleccionados.length === 0) {
       alert("Agrega al menos un producto");
@@ -632,6 +688,9 @@ export default function AgregarProducto({ orden_id }) {
         console.log(`  - tamano_id:`, prod.tamano_id);
         console.log(`  - ingrediente_id:`, prod.ingrediente_id);
       });
+      
+      // Cerrar el modal de sentencias antes de procesar variantes
+      setMostrarSelectorSentencias(false);
       
       // Iniciar el procesamiento del primer producto
       procesarProductoConVariantesPendientes(producto.productos, 0, producto.sentencia_id);
@@ -846,8 +905,21 @@ export default function AgregarProducto({ orden_id }) {
     
     console.log("El producto no requiere selección de variantes o no se encontraron opciones");
     
-    // Si llegamos aquí, no necesita selección de variantes o algo falló
-    // En cualquier caso, pasamos al siguiente producto
+    // Si no necesita variantes, agregar el producto directamente
+    const productoFinal = {
+      ...productoConPreciosNumericos,
+      id: productoId,
+      nombre: productoActual.producto_nombre || productoActual.nombre,
+      categoria: productoActual.producto_categoria || productoActual.categoria,
+      precio: 0,
+      es_parte_sentencia: true,
+      sentencia_id: sentenciaId,
+      cantidad: productoActual.cantidad || 1
+    };
+    
+    agregarProductosDeSentencia(productoFinal);
+    
+    // Continuar con el siguiente producto
     procesarProductoConVariantesPendientes(productos, indice + 1, sentenciaId);
   };
 
@@ -892,10 +964,6 @@ export default function AgregarProducto({ orden_id }) {
     
     // Si no hay más selecciones, agregar el producto con el sabor seleccionado
     agregarProductoSentenciaConVariante(producto, varianteParaAgregar);
-    
-    // Limpiar estados
-    setSeleccionSabores(false);
-    setSaborSeleccionado(null);
   };
 
   // Función para agregar un producto de sentencia con sus variantes seleccionadas
@@ -957,6 +1025,13 @@ export default function AgregarProducto({ orden_id }) {
       // Agregar el producto actual a la lista
       agregarProductosDeSentencia(productoCompleto);
       
+      // Limpiar estados antes de procesar el siguiente
+      setProductoSeleccionado(null);
+      setSaborSeleccionado(null);
+      setSeleccionSabores(false);
+      setSeleccionTamano(false);
+      setSeleccionIngrediente(false);
+      
       // Continuar con el siguiente producto en la secuencia
       procesarProductoConVariantesPendientes(
         producto.productos_pendientes,
@@ -966,11 +1041,11 @@ export default function AgregarProducto({ orden_id }) {
     } else {
       // Si no es parte de un procesamiento secuencial, simplemente agregarlo
       agregarProductosDeSentencia(productoCompleto);
+      
+      // Limpiar estados solo si no hay más productos que procesar
+      setProductoSeleccionado(null);
+      setSaborSeleccionado(null);
     }
-    
-    // Limpiar estados
-    setProductoSeleccionado(null);
-    setSaborSeleccionado(null);
   };
 
   if (loading) {
@@ -991,15 +1066,6 @@ export default function AgregarProducto({ orden_id }) {
     );
   }
 
-  // Mostrar selector de sentencias si está activo
-  if (mostrarSelectorSentencias) {
-    return (
-      <SentenciaSelector 
-        onAddProducts={agregarProductosDeSentencia} 
-        onClose={() => setMostrarSelectorSentencias(false)}
-      />
-    );
-  }
 
   if (mostrarSeleccionCantidad && productoSeleccionado) {
     return (
@@ -1405,6 +1471,18 @@ export default function AgregarProducto({ orden_id }) {
                   {prod.es_parte_sentencia && (
                     <span className="font-bold">{prod.cantidad}x</span>
                   )}
+                  {/* Botón para eliminar sentencia completa */}
+                  {prod.esSentencia && (
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault();
+                        eliminarSentenciaCompleta(prod.sentencia_id);
+                      }}
+                      className="bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded text-xs ml-2"
+                    >
+                      Eliminar
+                    </button>
+                  )}
                 </div>
                 
                 {/* Mostrar precio */}
@@ -1516,6 +1594,18 @@ export default function AgregarProducto({ orden_id }) {
       >
         Volver a la Orden
       </a>
+      
+      {/* Selector de Sentencias - como modal overlay */}
+      {mostrarSelectorSentencias && (
+        <div className="fixed inset-0 bg-negro/80 flex items-center justify-center z-50 p-4">
+          <div className="w-full max-w-md">
+            <SentenciaSelector 
+              onAddProducts={agregarProductosDeSentencia}
+              onClose={() => setMostrarSelectorSentencias(false)}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 } 
