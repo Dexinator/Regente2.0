@@ -1010,7 +1010,7 @@ export default function AgregarProducto({ orden_id }) {
       id: idOriginal,
       nombre: nombreOriginal,
       categoria: categoriaOriginal,
-      precio: 0, // Precio base 0 por ser parte de la sentencia
+      precio: precioTotalDeVariantes, // Ahora incluye el precio de las variantes
       precio_original: producto.precio_original || 0,
       es_parte_sentencia: true,
       sentencia_id: producto.sentencia_id,
@@ -1491,7 +1491,7 @@ export default function AgregarProducto({ orden_id }) {
                     <>${(prod.precio * prod.cantidad).toFixed(2)}</>
                   )}
                   {prod.es_parte_sentencia && prod.precio > 0 && (
-                    <>+${parseFloat(prod.precio).toFixed(2)}</>
+                    <span className="text-amarillo">+${(prod.precio * prod.cantidad).toFixed(2)}</span>
                   )}
                 </div>
               </div>
