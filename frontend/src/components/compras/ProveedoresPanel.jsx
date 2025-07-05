@@ -189,14 +189,14 @@ export default function ProveedoresPanel() {
             </div>
             
             <div>
-              <label className="block text-white mb-1">RFC *</label>
+              <label className="block text-white mb-1">RFC</label>
               <input
                 type="text"
                 name="rfc"
                 value={formData.rfc}
                 onChange={handleInputChange}
-                required
                 className="w-full bg-negro border border-gray-700 rounded p-2 text-white"
+                placeholder="Opcional"
               />
             </div>
             
@@ -301,7 +301,7 @@ export default function ProveedoresPanel() {
               {proveedores.map((proveedor) => (
                 <tr key={proveedor.id} className="border-b border-gray-700">
                   <td className="p-2">{proveedor.nombre}</td>
-                  <td className="p-2">{proveedor.rfc}</td>
+                  <td className="p-2">{proveedor.rfc || "-"}</td>
                   <td className="p-2">{proveedor.telefono || "-"}</td>
                   <td className="p-2">{proveedor.email || "-"}</td>
                   <td className="p-2">

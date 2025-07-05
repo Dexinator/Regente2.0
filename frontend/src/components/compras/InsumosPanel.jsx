@@ -24,6 +24,7 @@ export default function InsumosPanel() {
     categoria: "",
     marca: "",
     unidad_medida_default: "unidad",
+    cantidad_por_unidad: 1,
     proveedores: []
   });
 
@@ -144,6 +145,7 @@ export default function InsumosPanel() {
         categoria: insumo.categoria || "",
         marca: insumo.marca || "",
         unidad_medida_default: insumo.unidad_medida_default || "unidad",
+        cantidad_por_unidad: insumo.cantidad_por_unidad || 1,
         proveedores: insumo.proveedores || []
       });
       setMostrarFormulario(true);
@@ -175,6 +177,7 @@ export default function InsumosPanel() {
       categoria: "",
       marca: "",
       unidad_medida_default: "unidad",
+      cantidad_por_unidad: 1,
       proveedores: []
     });
     setMostrarFormulario(false);
@@ -283,6 +286,20 @@ export default function InsumosPanel() {
               </select>
             </div>
             
+            <div>
+              <label className="block text-white mb-1">Cantidad por Unidad</label>
+              <input
+                type="number"
+                name="cantidad_por_unidad"
+                value={formData.cantidad_por_unidad}
+                onChange={handleInputChange}
+                min="0.001"
+                step="0.001"
+                className="w-full bg-negro border border-gray-700 rounded p-2 text-white"
+                placeholder="Ej: 1 kg = 1000 g"
+              />
+            </div>
+            
             <div className="md:col-span-2">
               <label className="block text-white mb-1">Descripción</label>
               <textarea
@@ -374,6 +391,7 @@ export default function InsumosPanel() {
                 <th className="p-2 text-left">Categoría</th>
                 <th className="p-2 text-left">Marca</th>
                 <th className="p-2 text-left">Unidad</th>
+                <th className="p-2 text-center">Cant/Unidad</th>
                 <th className="p-2 text-left">Proveedores</th>
                 <th className="p-2 text-center">Acciones</th>
               </tr>
@@ -385,6 +403,7 @@ export default function InsumosPanel() {
                   <td className="p-2">{insumo.categoria || "-"}</td>
                   <td className="p-2">{insumo.marca || "-"}</td>
                   <td className="p-2">{insumo.unidad_medida_default}</td>
+                  <td className="p-2 text-center">{insumo.cantidad_por_unidad || 1}</td>
                   <td className="p-2">
                     {insumo.proveedores ? insumo.proveedores.length : 0}
                   </td>

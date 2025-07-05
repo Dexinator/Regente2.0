@@ -145,8 +145,13 @@ regente2.0/
 - `sentencia_id`: References the combo definition
 - `es_sentencia_principal`: Identifies main combo record 
 - `sentencia_detalle_orden_padre_id`: Links components to main record
-- **Pricing Logic**: Combo gets full price, components get $0.00
+- **Pricing Logic**: 
+  - Combo gets full price
+  - Components base price is $0.00
+  - Variant additional costs (size, flavor, extra ingredients) are tracked and displayed separately
 - **Kitchen Integration**: All components appear in kitchen queue individually
+- **Variant Selection**: Sequential selection flow for products requiring flavor/size/ingredient choices
+- **Price Display**: Additional variant costs shown in yellow as "+$X.XX" for transparency
 
 ### Compras (Purchasing) Module - Detailed
 **Complete supply chain management system with daily planning**:
@@ -289,10 +294,20 @@ regente2.0/
 **UX Improvements Based on User Feedback (Latest)**:
 - **ListaOrdenes**: Reduced card height, moved customer name next to order number
 - **GestionOrden**: Relocated customer name to header, optimized summary card layout
-- **AgregarProducto**: Added customer name display, removed category tags from product cards
+- **AgregarProducto**: 
+  - Added customer name display, removed category tags from product cards
+  - Fixed sentencia (combo) variant selection flow to work identically to CrearOrden
+  - Implemented sentencia deletion functionality
+  - Corrected variant pricing display for combo components
 - **PedidosCocina**: Complete redesign with stack-based preparation logic
   - New compact format: "Quantity X Product Name Flavor Size Extra"
   - Customer names instead of order numbers
   - Individual preparation tracking (one unit at a time)
   - Enumerated notes display
   - Smaller preparation button with checkmark symbol
+
+**Sentencias System Improvements**:
+- **SentenciasPanel**: Product-specific variant loading when creating/editing combos
+- **CrearOrden & AgregarProducto**: Unified sentencia handling with sequential variant selection
+- **Variant Pricing**: Additional costs from flavors, sizes, and ingredients now properly calculated and displayed
+- **Deletion Feature**: Users can remove entire sentencias (combos) including all component products

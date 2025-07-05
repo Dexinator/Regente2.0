@@ -61,6 +61,7 @@ export const createInsumo = async (data) => {
     categoria, 
     marca,
     unidad_medida_default,
+    cantidad_por_unidad,
     proveedores 
   } = data;
   
@@ -82,12 +83,12 @@ export const createInsumo = async (data) => {
     // Insertar el insumo
     const insumoQuery = `
       INSERT INTO insumos 
-      (nombre, descripcion, categoria, marca, unidad_medida_default) 
-      VALUES ($1, $2, $3, $4, $5) 
+      (nombre, descripcion, categoria, marca, unidad_medida_default, cantidad_por_unidad) 
+      VALUES ($1, $2, $3, $4, $5, $6) 
       RETURNING *
     `;
     
-    const insumoValues = [nombre, descripcion, categoria, marca, unidad_medida_default || 'unidad'];
+    const insumoValues = [nombre, descripcion, categoria, marca, unidad_medida_default || 'unidad', cantidad_por_unidad || 1];
     const insumoResult = await client.query(insumoQuery, insumoValues);
     const insumoId = insumoResult.rows[0].id;
     
@@ -125,6 +126,7 @@ export const updateInsumo = async (id, data) => {
     categoria, 
     marca,
     unidad_medida_default,
+    cantidad_por_unidad,
     proveedores,
     activo
   } = data;
@@ -148,12 +150,12 @@ export const updateInsumo = async (id, data) => {
     const insumoQuery = `
       UPDATE insumos 
       SET nombre = $1, descripcion = $2, categoria = $3, 
-          marca = $4, unidad_medida_default = $5, activo = $6
-      WHERE id = $7 
+          marca = $4, unidad_medida_default = $5, cantidad_por_unidad = $6, activo = $7
+      WHERE id = $8 
       RETURNING *
     `;
     
-    const insumoValues = [nombre, descripcion, categoria, marca, unidad_medida_default, activo, id];
+    const insumoValues = [nombre, descripcion, categoria, marca, unidad_medida_default, cantidad_por_unidad || 1, activo, id];
     const insumoResult = await client.query(insumoQuery, insumoValues);
     
     if (insumoResult.rows.length === 0) {

@@ -32,6 +32,10 @@ export default function RequisicionesPanel() {
     urgencia: "normal"
   });
   const [usuarioId, setUsuarioId] = useState(null);
+  const [busquedaInsumo, setBusquedaInsumo] = useState("");
+  const [insumosFiltrados, setInsumosFiltrados] = useState([]);
+  const [busquedaInsumoDetalle, setBusquedaInsumoDetalle] = useState("");
+  const [insumosFiltradosDetalle, setInsumosFiltradosDetalle] = useState([]);
 
   useEffect(() => {
     // Obtener ID del usuario actual
@@ -42,6 +46,36 @@ export default function RequisicionesPanel() {
   useEffect(() => {
     cargarRequisiciones();
   }, [filtroCompletada]);
+
+  useEffect(() => {
+    // Filtrar insumos para el formulario principal
+    if (busquedaInsumo.trim() === "") {
+      setInsumosFiltrados([]);
+    } else {
+      const termino = busquedaInsumo.toLowerCase();
+      const filtrados = insumos.filter(insumo => 
+        insumo.nombre.toLowerCase().includes(termino) ||
+        (insumo.categoria && insumo.categoria.toLowerCase().includes(termino)) ||
+        (insumo.marca && insumo.marca.toLowerCase().includes(termino))
+      ).slice(0, 10);
+      setInsumosFiltrados(filtrados);
+    }
+  }, [busquedaInsumo, insumos]);
+
+  useEffect(() => {
+    // Filtrar insumos para el formulario de detalle
+    if (busquedaInsumoDetalle.trim() === "") {
+      setInsumosFiltradosDetalle([]);
+    } else {
+      const termino = busquedaInsumoDetalle.toLowerCase();
+      const filtrados = insumos.filter(insumo => 
+        insumo.nombre.toLowerCase().includes(termino) ||
+        (insumo.categoria && insumo.categoria.toLowerCase().includes(termino)) ||
+        (insumo.marca && insumo.marca.toLowerCase().includes(termino))
+      ).slice(0, 10);
+      setInsumosFiltradosDetalle(filtrados);
+    }
+  }, [busquedaInsumoDetalle, insumos]);
 
   const cargarDatos = async () => {
     setLoading(true);
@@ -222,6 +256,8 @@ export default function RequisicionesPanel() {
       items: []
     });
     setMostrarFormulario(false);
+    setBusquedaInsumo("");
+    setMostrarFormularioItem(false);
   };
 
   const resetFormItem = () => {
@@ -232,6 +268,8 @@ export default function RequisicionesPanel() {
       urgencia: "normal"
     });
     setMostrarFormularioItem(false);
+    setBusquedaInsumo("");
+    setBusquedaInsumoDetalle("");
   };
 
   const agregarItemAFormulario = () => {
@@ -340,21 +378,51 @@ export default function RequisicionesPanel() {
               <div className="bg-negro/30 p-3 rounded mb-3">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
                   <div>
-                    <label className="block text-white mb-1">Insumo *</label>
-                    <select
-                      name="insumo_id"
-                      value={formItemData.insumo_id}
-                      onChange={handleItemInputChange}
-                      required
-                      className="w-full bg-negro border border-gray-700 rounded p-2 text-white"
-                    >
-                      <option value="">Seleccionar insumo</option>
-                      {insumos.map((insumo) => (
-                        <option key={insumo.id} value={insumo.id}>
-                          {insumo.nombre}
-                        </option>
-                      ))}
-                    </select>
+                    <label className="block text-white mb-1">Buscar Insumo *</label>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        value={busquedaInsumo}
+                        onChange={(e) => setBusquedaInsumo(e.target.value)}
+                        placeholder="Buscar por nombre, categoría o marca..."
+                        className="w-full bg-negro border border-gray-700 rounded p-2 text-white"
+                      />
+                      
+                      {/* Dropdown de resultados */}
+                      {insumosFiltrados.length > 0 && (
+                        <div className="absolute z-10 w-full mt-1 bg-negro border border-gray-700 rounded shadow-lg max-h-60 overflow-y-auto">
+                          {insumosFiltrados.map((insumo) => (
+                            <button
+                              key={insumo.id}
+                              type="button"
+                              onClick={() => {
+                                setFormItemData({
+                                  ...formItemData,
+                                  insumo_id: insumo.id.toString(),
+                                  unidad: insumo.unidad_medida_default
+                                });
+                                setBusquedaInsumo(insumo.nombre);
+                                setInsumosFiltrados([]);
+                              }}
+                              className="w-full text-left p-2 hover:bg-vino/30 border-b border-gray-800 last:border-0"
+                            >
+                              <div className="text-white">{insumo.nombre}</div>
+                              <div className="text-sm text-gray-400">
+                                {insumo.categoria && `Categoría: ${insumo.categoria} `}
+                                {insumo.marca && `| Marca: ${insumo.marca}`}
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                      
+                      {/* Mostrar si se seleccionó un insumo */}
+                      {formItemData.insumo_id && (
+                        <div className="text-xs text-green-400 mt-1">
+                          Insumo seleccionado
+                        </div>
+                      )}
+                    </div>
                   </div>
                   
                   <div>
@@ -526,21 +594,51 @@ export default function RequisicionesPanel() {
               <form onSubmit={handleItemSubmit} className="bg-negro/30 p-3 rounded mb-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
                   <div>
-                    <label className="block text-white mb-1">Insumo *</label>
-                    <select
-                      name="insumo_id"
-                      value={formItemData.insumo_id}
-                      onChange={handleItemInputChange}
-                      required
-                      className="w-full bg-negro border border-gray-700 rounded p-2 text-white"
-                    >
-                      <option value="">Seleccionar insumo</option>
-                      {insumos.map((insumo) => (
-                        <option key={insumo.id} value={insumo.id}>
-                          {insumo.nombre}
-                        </option>
-                      ))}
-                    </select>
+                    <label className="block text-white mb-1">Buscar Insumo *</label>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        value={busquedaInsumoDetalle}
+                        onChange={(e) => setBusquedaInsumoDetalle(e.target.value)}
+                        placeholder="Buscar por nombre, categoría o marca..."
+                        className="w-full bg-negro border border-gray-700 rounded p-2 text-white"
+                      />
+                      
+                      {/* Dropdown de resultados */}
+                      {insumosFiltradosDetalle.length > 0 && (
+                        <div className="absolute z-10 w-full mt-1 bg-negro border border-gray-700 rounded shadow-lg max-h-60 overflow-y-auto">
+                          {insumosFiltradosDetalle.map((insumo) => (
+                            <button
+                              key={insumo.id}
+                              type="button"
+                              onClick={() => {
+                                setFormItemData({
+                                  ...formItemData,
+                                  insumo_id: insumo.id.toString(),
+                                  unidad: insumo.unidad_medida_default
+                                });
+                                setBusquedaInsumoDetalle(insumo.nombre);
+                                setInsumosFiltradosDetalle([]);
+                              }}
+                              className="w-full text-left p-2 hover:bg-vino/30 border-b border-gray-800 last:border-0"
+                            >
+                              <div className="text-white">{insumo.nombre}</div>
+                              <div className="text-sm text-gray-400">
+                                {insumo.categoria && `Categoría: ${insumo.categoria} `}
+                                {insumo.marca && `| Marca: ${insumo.marca}`}
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                      
+                      {/* Mostrar si se seleccionó un insumo */}
+                      {formItemData.insumo_id && (
+                        <div className="text-xs text-green-400 mt-1">
+                          Insumo seleccionado
+                        </div>
+                      )}
+                    </div>
                   </div>
                   
                   <div>

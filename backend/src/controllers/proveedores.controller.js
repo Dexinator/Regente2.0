@@ -53,8 +53,8 @@ export const addProveedor = async (req, res) => {
   const { nombre, rfc, direccion, telefono, email, contacto_nombre, dias_compra } = req.body;
 
   // Validar campos requeridos
-  if (!nombre || !rfc) {
-    return res.status(400).json({ error: 'Nombre y RFC son obligatorios' });
+  if (!nombre) {
+    return res.status(400).json({ error: 'Nombre es obligatorio' });
   }
 
   try {
@@ -86,8 +86,8 @@ export const editProveedor = async (req, res) => {
   const { nombre, rfc, direccion, telefono, email, contacto_nombre, activo, dias_compra } = req.body;
 
   // Validar campos requeridos
-  if (!nombre || !rfc) {
-    return res.status(400).json({ error: 'Nombre y RFC son obligatorios' });
+  if (!nombre) {
+    return res.status(400).json({ error: 'Nombre es obligatorio' });
   }
 
   try {

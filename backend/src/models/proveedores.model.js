@@ -24,14 +24,16 @@ export const getProveedorById = async (id) => {
 export const createProveedor = async (data) => {
   const { nombre, rfc, direccion, telefono, email, contacto_nombre, dias_compra } = data;
   
-  // Verificar si ya existe un proveedor con el mismo RFC
-  const existingRFC = await pool.query(
-    'SELECT id FROM proveedores WHERE rfc = $1',
-    [rfc]
-  );
+  // Verificar si ya existe un proveedor con el mismo RFC (solo si se proporciona RFC)
+  if (rfc) {
+    const existingRFC = await pool.query(
+      'SELECT id FROM proveedores WHERE rfc = $1',
+      [rfc]
+    );
 
-  if (existingRFC.rows.length > 0) {
-    throw new Error('Ya existe un proveedor con este RFC');
+    if (existingRFC.rows.length > 0) {
+      throw new Error('Ya existe un proveedor con este RFC');
+    }
   }
 
   const query = `
@@ -52,14 +54,16 @@ export const createProveedor = async (data) => {
 export const updateProveedor = async (id, data) => {
   const { nombre, rfc, direccion, telefono, email, contacto_nombre, activo, dias_compra } = data;
   
-  // Verificar si ya existe otro proveedor con el mismo RFC
-  const existingRFC = await pool.query(
-    'SELECT id FROM proveedores WHERE rfc = $1 AND id != $2',
-    [rfc, id]
-  );
+  // Verificar si ya existe otro proveedor con el mismo RFC (solo si se proporciona RFC)
+  if (rfc) {
+    const existingRFC = await pool.query(
+      'SELECT id FROM proveedores WHERE rfc = $1 AND id != $2',
+      [rfc, id]
+    );
 
-  if (existingRFC.rows.length > 0) {
-    throw new Error('Ya existe otro proveedor con este RFC');
+    if (existingRFC.rows.length > 0) {
+      throw new Error('Ya existe otro proveedor con este RFC');
+    }
   }
 
   const query = `
