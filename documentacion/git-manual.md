@@ -18,3 +18,6 @@ git merge feature/nueva-funcionalidad
 git checkout main
 git merge development
 git push origin main  # Esto activará los despliegues automáticos
+
+# Para subir una rama local a una app heroki
+git subtree push --prefix backend regente-staging main    

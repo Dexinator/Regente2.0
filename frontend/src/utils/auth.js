@@ -4,6 +4,9 @@
  */
 export const decodeToken = () => {
   try {
+    // Verificar si estamos en el cliente
+    if (typeof window === 'undefined') return null;
+    
     const token = localStorage.getItem("token");
     if (!token) return null;
     
@@ -48,5 +51,17 @@ export const getUserName = () => {
  * @returns {boolean} true si hay un token válido
  */
 export const isAuthenticated = () => {
+  // Verificar si estamos en el cliente
+  if (typeof window === 'undefined') return false;
   return decodeToken() !== null;
+};
+
+/**
+ * Obtiene el token JWT del localStorage
+ * @returns {string|null} Token JWT o null si no existe
+ */
+export const getToken = () => {
+  // Verificar si estamos en el cliente
+  if (typeof window === 'undefined') return null;
+  return localStorage.getItem("token");
 }; 

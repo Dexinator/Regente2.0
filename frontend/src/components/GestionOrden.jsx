@@ -293,13 +293,160 @@ export default function GestionOrden({ id }) {
     }
   };
   
+  // Dentro del return del componente GestionOrden, donde se listan los productos:
+
+  // Lógica para preparar los datos para la visualización jerárquica
+  const renderizarProductos = () => {
+    if (!orden || !Array.isArray(orden.productos) || orden.productos.length === 0) {
+        return <p className="text-sm text-gray-400">No hay productos registrados.</p>;
+    }
+
+    const sentenciasPrincipales = orden.productos.filter(
+        p => p.es_sentencia_principal
+    );
+    // console.log("Sentencias Principales detectadas:", sentenciasPrincipales);
+
+    const componentesPorSentencia = orden.productos.reduce((acc, p) => {
+        if (p.sentencia_detalle_orden_padre_id) {
+            if (!acc[p.sentencia_detalle_orden_padre_id]) {
+                acc[p.sentencia_detalle_orden_padre_id] = [];
+            }
+            acc[p.sentencia_detalle_orden_padre_id].push(p);
+        }
+        return acc;
+    }, {});
+    // console.log("Componentes por Sentencia:", componentesPorSentencia);
+
+    const productosNormales = orden.productos.filter(
+        p => !p.es_sentencia_principal && !p.sentencia_detalle_orden_padre_id
+    );
+    // console.log("Productos Normales:", productosNormales);
+
+    const renderProductoItem = (p, esComponente = false) => {
+        // Determinar si el item está efectivamente cancelado para la UI
+        // Un item original (precio_unitario > 0) se considera cancelado si su cantidad_neta <= 0
+        const estaCanceladoUI = p.cantidad_neta <= 0 && p.precio_unitario > 0;
+
+        return (
+            <li 
+                key={p.id_detalle_original || p.producto_id} 
+                className={`p-2 rounded ${
+                    estaCanceladoUI ? 'bg-red-950/30 opacity-60' 
+                    : p.preparado ? 'bg-green-950/30' 
+                    : 'bg-negro/30'
+                } ${esComponente ? 'ml-4 mt-1 border-l-2 border-amarillo/30 pl-2' : 'mt-2'}`}
+            >
+                <div className="flex justify-between items-start">
+                    <div>
+                        <p className={`font-bold ${estaCanceladoUI ? 'line-through text-gray-400' : ''}`}>
+                            {p.nombre} x{p.cantidad_neta} — ${parseFloat(p.precio_unitario).toFixed(2)}
+                            {p.es_sentencia_principal && <span className="text-xs text-amarillo font-normal ml-2">(Sentencia)</span>}
+                        </p>
+                        {p.es_sentencia_principal && p.descripcion_promocion && (
+                            <p className="text-xs text-gray-300 italic">{p.descripcion_promocion}</p>
+                        )}
+
+                        {/* Información de variantes (común para productos y componentes) */}
+                        {p.sabor_nombre && (
+                            <p className="text-xs text-amarillo/80">
+                                Sabor: {p.sabor_nombre}
+                                {p.sabor_categoria ? ` (${p.sabor_categoria})` : ''}
+                                {p.sabor_precio > 0 && ` +$${parseFloat(p.sabor_precio).toFixed(2)}`}
+                            </p>
+                        )}
+                        {p.tamano_nombre && (
+                            <p className="text-xs text-amarillo/80">
+                                Tamaño: {p.tamano_nombre}
+                                {p.tamano_precio > 0 && ` +$${parseFloat(p.tamano_precio).toFixed(2)}`}
+                            </p>
+                        )}
+                        {p.ingrediente_nombre && (
+                            <p className="text-xs text-amarillo/80">
+                                Ingrediente Extra: {p.ingrediente_nombre}
+                                {p.ingrediente_precio > 0 && ` +$${parseFloat(p.ingrediente_precio).toFixed(2)}`}
+                            </p>
+                        )}
+                        {p.notas && (
+                            <p className="text-xs text-gray-400 mt-1 italic">
+                                Notas: {p.notas}
+                            </p>
+                        )}
+
+                        {/* Estado del item */}
+                        {estaCanceladoUI && <span className="text-red-400 text-xs ml-2">CANCELADO</span>}
+                        {p.preparado && !estaCanceladoUI && <span className="text-green-400 text-xs ml-2">PREPARADO</span>}
+                        {p.entregado && !estaCanceladoUI && <span className="text-blue-400 text-xs ml-2">ENTREGADO</span>}
+                    </div>
+                    <div>
+                        {/* Solo se pueden cancelar items que no sean sentencias principales directamente por ahora, 
+                            y que no estén cancelados ni preparados */}
+                        {!p.es_sentencia_principal && !estaCanceladoUI && !p.preparado && p.cantidad_neta > 0 && (
+                             <button
+                                onClick={() => {
+                                    // La función iniciarCancelacion espera un producto con "producto_id"
+                                    // y una "cantidad" que es la cantidad original positiva.
+                                    // Nuestro "p" aquí tiene "cantidad_neta".
+                                    // Necesitamos reconstruir un objeto similar al que esperaba iniciarCancelacion.
+                                    // La clave es que 'iniciarCancelacion' probablemente deba ser más inteligente
+                                    // o le pasamos los datos que necesita para calcular la 'cantidad_disponible'.
+                                    // Por ahora, simplificaremos asumiendo que cancelar opera sobre el item tal como está.
+                                    // La lógica de 'cantidad_disponible' en iniciarCancelacion debe revisarse con la nueva estructura.
+                                    const productoParaCancelar = {
+                                        ...p, // Contiene id_detalle_original, producto_id, sabor_id, etc.
+                                        cantidad: p.cantidad_neta // La cantidad actual neta que se puede cancelar
+                                    };
+                                    iniciarCancelacion(productoParaCancelar);
+                                }}
+                                className="bg-red-800 text-white text-xs px-2 py-1 rounded"
+                            >
+                                Cancelar
+                            </button>
+                        )}
+                        {/* Mensaje si no es cancelable */}
+                        {(!p.es_sentencia_principal && (estaCanceladoUI || p.preparado) && p.cantidad_neta > 0) && (
+                            <span className="text-xs text-gray-400">
+                                {estaCanceladoUI ? 'Cancelado' : 'No cancelable'}
+                            </span>
+                        )}
+                         {/* Para sentencias principales, podríamos tener un botón de "Cancelar Sentencia Completa" si se implementa esa lógica */}
+                    </div>
+                </div>
+            </li>
+        );
+    };
+
+    return (
+        <ul className="space-y-1 text-sm">
+            {/* Renderizar Sentencias Principales y sus Componentes */}
+            {sentenciasPrincipales.map(sp => (
+                <div key={`sp-div-${sp.id_detalle_original}`}>
+                    {renderProductoItem(sp, false)}
+                    {(componentesPorSentencia[sp.id_detalle_original] || []).map(comp => 
+                        renderProductoItem(comp, true)
+                    )}
+                </div>
+            ))}
+            {/* Renderizar Productos Normales */}
+            {productosNormales.map(pn => renderProductoItem(pn, false))}
+        </ul>
+    );
+  };
+  
   if (!orden) return <p className="text-center">Cargando orden...</p>;
   
   return (
     <section className="space-y-6">
-    <div className="bg-vino p-4 rounded shadow">
-    <h2 className="font-subtitulo text-xl mb-2">{orden.cliente}</h2>
+    <div className="bg-vino p-3 rounded shadow">
+    <div className="flex justify-between items-center mb-2">
+    <div className="flex items-center gap-2">
+    <span className="text-sm text-amarillo font-bold">#{id}</span>
+    <h2 className="font-subtitulo text-xl">{orden.cliente}</h2>
+    </div>
+    <p className="text-sm font-bold">Estado de pago: <strong>{orden.estado_pago}</strong></p>
+    </div>
     
+    <div className="flex justify-between items-start">
+    <div>
     {/* Mostrar total bruto y total con descuento */}
     {(orden.codigo_promocional || (orden.descuento_grado && parseFloat(orden.descuento_grado) > 0)) ? (
       <>
@@ -320,7 +467,8 @@ export default function GestionOrden({ id }) {
     {orden.diferencia < 0 && (
       <p className="text-red-400">Faltan: ${Math.abs(parseFloat(orden.diferencia)).toFixed(2)}</p>
     )}
-    <p className="text-sm mt-2">Estado de pago: <strong>{orden.estado_pago}</strong></p>
+    </div>
+    </div>
     
     {/* Mostrar información del descuento si existe */}
     {(orden.codigo_promocional || (orden.descuento_grado && parseFloat(orden.descuento_grado) > 0)) && (
@@ -386,72 +534,7 @@ export default function GestionOrden({ id }) {
     
     <div>
     <h3 className="text-amarillo font-bold mb-2">Productos</h3>
-    <ul className="space-y-1 text-sm">
-    {Array.isArray(orden.productos) ? (
-      <ul className="space-y-2 text-sm">
-      {orden.productos.map((p, i) => (
-        <li key={i} className={`p-2 rounded ${p.es_cancelacion ? 'bg-red-950/30 line-through text-gray-400' : p.preparado ? 'bg-green-950/30' : 'bg-negro/30'}`}>
-          <div className="flex justify-between items-start">
-            <div>
-              <p className="font-bold">{p.nombre} x{p.cantidad} — ${parseFloat(p.precio_unitario).toFixed(2)}</p>
-              
-              {/* Información de sabor */}
-              {p.sabor_nombre && (
-                <p className="text-xs text-amarillo">
-                  Sabor: {p.sabor_nombre} 
-                  {p.sabor_categoria ? ` (${p.sabor_categoria})` : ''}
-                  {p.sabor_precio > 0 && ` +$${p.sabor_precio}`}
-                </p>
-              )}
-              
-              {/* Información de tamaño */}
-              {p.tamano_nombre && (
-                <p className="text-xs text-amarillo">
-                  Tamaño: {p.tamano_nombre}
-                  {p.tamano_precio > 0 && ` +$${p.tamano_precio}`}
-                </p>
-              )}
-              
-              {/* Información de ingrediente extra */}
-              {p.ingrediente_nombre && (
-                <p className="text-xs text-amarillo">
-                  Ingrediente Extra: {p.ingrediente_nombre}
-                  {p.ingrediente_precio > 0 && ` +$${p.ingrediente_precio}`}
-                </p>
-              )}
-              
-              {/* Notas especiales */}
-              {p.notas && (
-                <p className="text-xs text-gray-400 mt-1 italic">
-                  Notas: {p.notas}
-                </p>
-              )}
-              
-              {p.es_cancelacion && <span className="text-red-400 text-xs ml-2">CANCELACIÓN</span>}
-              {p.preparado && !p.es_cancelacion && <span className="text-green-400 text-xs ml-2">PREPARADO</span>}
-            </div>
-            
-            <div>
-              {!p.es_cancelacion && !p.preparado && (
-                <button 
-                  onClick={() => iniciarCancelacion(p)}
-                  className="bg-red-800 text-white text-xs px-2 py-1 rounded"
-                >
-                  Cancelar
-                </button>
-              )}
-              {!p.es_cancelacion && p.preparado && (
-                <span className="text-xs text-gray-400">No cancelable</span>
-              )}
-            </div>
-          </div>
-        </li>
-      ))}
-      </ul>
-    ) : (
-      <p className="text-sm text-gray-400">No hay productos registrados.</p>
-    )}
-    </ul>
+    {orden && orden.productos ? renderizarProductos() : <p className="text-sm text-gray-400">Cargando productos...</p>}
     </div>
     
     <div>

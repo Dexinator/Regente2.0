@@ -27,11 +27,11 @@ export default function NavMenu() {
     const path = window.location.pathname;
     const validRoutes = {
       "mesero": ["/ordenes", "/entregar", "/cocina"],
-      "cocinero": ["/cocina", "/entregar"],
-      "gerente": ["/reportes/gerente"],
+      "cocinero": ["/cocina", "/entregar", "/cocinero/compras"],
+      "gerente": ["/reportes/gerente", "/gerente/compras", "/gerente/productos", "/gerente/sentencias", "/gerente/variantes"],
       "financiero": ["/reportes/financiero"],
-      "admin": ["/admin"],
-      "administrador": ["/admin"]
+      "admin": ["/admin", "/admin/compras"],
+      "administrador": ["/admin", "/admin/compras"]
     };
 
     // Verificar si el usuario está en una ruta permitida para su rol
@@ -124,6 +124,9 @@ export default function NavMenu() {
               <a href="/entregar" className="text-white text-xl font-bold py-3 px-6 rounded-full bg-vino w-full max-w-xs text-center">
                 Por Entregar
               </a>
+              <a href="/cocinero/compras" className="text-white text-xl font-bold py-3 px-6 rounded-full bg-vino w-full max-w-xs text-center">
+                Sistema de Compras
+              </a>
             </>
           )}
 
@@ -138,6 +141,9 @@ export default function NavMenu() {
               </a>
               <a href="/reportes/gerente/empleados" className="text-white text-xl font-bold py-3 px-6 rounded-full bg-vino w-full max-w-xs text-center">
                 Gestión de Empleados
+              </a>
+              <a href="/gerente/compras" className="text-white text-xl font-bold py-3 px-6 rounded-full bg-vino w-full max-w-xs text-center">
+                Sistema de Compras
               </a>
             </>
           )}
@@ -168,6 +174,9 @@ export default function NavMenu() {
               </a>
               <a href="/admin/productos" className="text-white text-xl font-bold py-3 px-6 rounded-full bg-vino w-full max-w-xs text-center">
                 Gestión de Productos
+              </a>
+              <a href="/admin/compras" className="text-white text-xl font-bold py-3 px-6 rounded-full bg-vino w-full max-w-xs text-center">
+                Sistema de Compras
               </a>
               <a href="/admin/configuracion" className="text-white text-xl font-bold py-3 px-6 rounded-full bg-vino w-full max-w-xs text-center">
                 Configuración

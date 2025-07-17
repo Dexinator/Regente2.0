@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { getEmpleadoId } from "../utils/auth";
 import { API_URL } from "../utils/api.js";
+import SentenciaSelector from "./SentenciaSelector";
 
 export default function CrearOrden() {
     const [presos, setPresos] = useState([]);
@@ -35,6 +36,7 @@ export default function CrearOrden() {
     const [tamanosDisponibles, setTamanosDisponibles] = useState([]);
     const [loadingTamanos, setLoadingTamanos] = useState(false);
     const [seleccionTamano, setSeleccionTamano] = useState(false);
+    const [tamanoSeleccionado, setTamanoSeleccionado] = useState(null);
     
     // Nuevos estados para ingredientes extra
     const [ingredientesDisponibles, setIngredientesDisponibles] = useState([]);
@@ -47,6 +49,12 @@ export default function CrearOrden() {
     const [verificandoCodigo, setVerificandoCodigo] = useState(false);
 
     const [filtroPreso, setFiltroPreso] = useState("");
+
+    // Nuevo estado para mostrar el selector de sentencias
+    const [mostrarSelectorSentencias, setMostrarSelectorSentencias] = useState(false);
+
+    // Nuevo estado para manejar la creación de la orden
+    const [creandoOrden, setCreandoOrden] = useState(false);
 
     useEffect(() => {
         // Cargar presos
@@ -246,8 +254,15 @@ export default function CrearOrden() {
         }
     };
 
-    // Función para manejar selección de sabores
+    // Modificar la selección de sabor original para manejar productos de sentencias
     const seleccionarSabor = async (sabor) => {
+        // Si el producto es parte de una sentencia, usar la función específica
+        if (productoSeleccionado && productoSeleccionado.es_parte_sentencia) {
+            seleccionarSaborSentencia(sabor, productoSeleccionado);
+            return;
+        }
+        
+        // Comportamiento original para productos normales
         setSaborSeleccionado(sabor);
         
         // Primero verificamos si hay tamaños disponibles
@@ -275,9 +290,56 @@ export default function CrearOrden() {
         setSeleccionSabores(false);
     };
 
-    // Función para manejar selección de tamaño
+    // Modificar la selección de tamaño para manejar productos de sentencias
     const seleccionarTamano = (tamano) => {
-        // Combinamos el producto con sabor y tamaño, y vamos a notas
+        // Si el producto es parte de una sentencia
+        if (productoSeleccionado && productoSeleccionado.es_parte_sentencia) {
+            // Agregar el tamaño al producto
+            const datosCombinados = {
+                // Del sabor (tomado de saborSeleccionado estado)
+                sabor_id: saborSeleccionado?.id || null,
+                sabor_nombre: saborSeleccionado?.nombre || null,
+                sabor_categoria_nombre: saborSeleccionado?.categoria_nombre || null,
+                sabor_precio_adicional: parseFloat(saborSeleccionado?.precio_adicional || 0),
+                // Del tamaño (tomado del argumento 'tamano')
+                tamano_id: tamano.id,
+                tamano_nombre: tamano.nombre,
+                tamano_precio_adicional: parseFloat(tamano.precio_adicional || 0)
+            };
+            
+            // Verificar si hay ingredientes para seleccionar
+            if (productoSeleccionado.ingrediente_id === null && productoSeleccionado.requiere_ingrediente) {
+                const cargarYSeleccionar = async () => {
+                    const tieneIngredientes = await cargarIngredientes(productoSeleccionado.id);
+                    if (tieneIngredientes) {
+                        // Guardar el tamaño seleccionado (con su precio) para usarlo después si se elige un ingrediente
+                        setTamanoSeleccionado({
+                            id: tamano.id,
+                            nombre: tamano.nombre,
+                            precio_adicional: parseFloat(tamano.precio_adicional || 0)
+                        });
+                        setSeleccionTamano(false);
+                        setSeleccionIngrediente(true);
+                    } else {
+                        // Si no hay ingredientes, agregar el producto con sabor y tamaño
+                        agregarProductoSentenciaConVariante(productoSeleccionado, datosCombinados);
+                        setSeleccionTamano(false);
+                        setSaborSeleccionado(null); // Limpiar sabor seleccionado
+                        setTamanoSeleccionado(null); // Limpiar tamaño seleccionado
+                    }
+                };
+                cargarYSeleccionar();
+                return;
+            }
+            
+            agregarProductoSentenciaConVariante(productoSeleccionado, datosCombinados);
+            setSeleccionTamano(false);
+            setSaborSeleccionado(null); // Limpiar sabor seleccionado
+            setTamanoSeleccionado(null); // Limpiar tamaño seleccionado
+            return;
+        }
+        
+        // Comportamiento original para productos normales
         const datosCombinados = {
             ...saborSeleccionado,
             tamano_id: tamano.id,
@@ -285,21 +347,75 @@ export default function CrearOrden() {
             tamano_precio: parseFloat(tamano.precio_adicional || 0)
         };
         
+        // Verificar si hay ingredientes para seleccionar
+        if (productoSeleccionado.requiere_ingrediente) {
+            const cargarYSeleccionar = async () => {
+                const tieneIngredientes = await cargarIngredientes(productoSeleccionado.id);
+                if (tieneIngredientes) {
+                    // Guardar tamaño para usarlo después
+                    setTamanoSeleccionado({
+                        ...tamano,
+                        precio_adicional: parseFloat(tamano.precio_adicional || 0)
+                    });
+                    setSeleccionTamano(false);
+                    setSeleccionIngrediente(true);
+                } else {
+                    mostrarPantallaNotas(productoSeleccionado, datosCombinados);
+                    setSeleccionTamano(false);
+                }
+            };
+            cargarYSeleccionar();
+            return;
+        }
+        
         mostrarPantallaNotas(productoSeleccionado, datosCombinados);
         setSeleccionTamano(false);
     };
 
-    // Función para manejar selección de ingrediente extra
+    // Modificar la selección de ingrediente para manejar productos de sentencias
     const seleccionarIngrediente = (ingrediente) => {
-        // Si el ingrediente es nulo, significa "Sin ingrediente extra"
-        if (!ingrediente) {
-            // Pasamos directamente a notas con el sabor seleccionado pero sin ingrediente
-            mostrarPantallaNotas(productoSeleccionado, {
+        // Si el producto es parte de una sentencia
+        if (productoSeleccionado && productoSeleccionado.es_parte_sentencia) {
+            // Preparar datos para agregar
+            const datosCombinados = {
+                // Del sabor (tomado de saborSeleccionado estado)
+                sabor_id: saborSeleccionado?.id || null,
+                sabor_nombre: saborSeleccionado?.nombre || null,
+                sabor_categoria_nombre: saborSeleccionado?.categoria_nombre || null,
+                sabor_precio_adicional: parseFloat(saborSeleccionado?.precio_adicional || 0),
+                // Del tamaño (tomado de tamanoSeleccionado estado)
+                tamano_id: tamanoSeleccionado?.id || null,
+                tamano_nombre: tamanoSeleccionado?.nombre || null,
+                tamano_precio_adicional: parseFloat(tamanoSeleccionado?.precio_adicional || 0),
+                // Del ingrediente (tomado del argumento 'ingrediente')
+                // Si 'ingrediente' es null (opción "Sin ingrediente extra"), los campos de ingrediente serán null/0
+                ingrediente_id: ingrediente?.id || null,
+                ingrediente_nombre: ingrediente?.nombre || null,
+                ingrediente_precio_adicional: parseFloat(ingrediente?.precio_adicional || 0)
+            };
+            
+            // Agregar a la lista
+            agregarProductoSentenciaConVariante(productoSeleccionado, datosCombinados);
+            setSeleccionIngrediente(false);
+            setSaborSeleccionado(null); // Limpiar
+            setTamanoSeleccionado(null); // Limpiar
+            return;
+        }
+        
+        // Si tenemos tamaño y sabor
+        if (tamanoSeleccionado) {
+            // Combinamos el producto con sabor, tamaño e ingrediente
+            const datosCombinados = {
                 ...saborSeleccionado,
-                ingrediente_id: null,
-                ingrediente_nombre: null,
-                ingrediente_precio: 0
-            });
+                tamano_id: tamanoSeleccionado.id,
+                tamano_nombre: tamanoSeleccionado.nombre,
+                tamano_precio: parseFloat(tamanoSeleccionado.precio_adicional || 0),
+                ingrediente_id: ingrediente.id,
+                ingrediente_nombre: ingrediente.nombre,
+                ingrediente_precio: parseFloat(ingrediente.precio_adicional || 0)
+            };
+            
+            mostrarPantallaNotas(productoSeleccionado, datosCombinados);
         } else {
             // Combinamos el producto con sabor e ingrediente, y vamos a notas
             const datosCombinados = {
@@ -552,6 +668,15 @@ export default function CrearOrden() {
         );
     };
 
+    // Nueva función para eliminar una sentencia completa
+    const eliminarSentenciaCompleta = (sentenciaId) => {
+        if (!confirm("¿Deseas eliminar esta sentencia y todos sus productos?")) return;
+        
+        setProductosSeleccionados(prev => 
+            prev.filter(p => p.sentencia_id !== sentenciaId)
+        );
+    };
+
     // Función para validar código promocional
     const validarCodigoPromocional = async () => {
         if (!codigoPromocional.trim()) {
@@ -600,6 +725,15 @@ export default function CrearOrden() {
         }
         
         try {
+            setCreandoOrden(true);
+            
+            // Calcular el total incluyendo los costos adicionales de variantes
+            const total = productosSeleccionados.reduce((sum, prod) => {
+                return sum + (prod.precio * prod.cantidad);
+            }, 0);
+            
+            console.log("Creando orden con productos:", productosSeleccionados);
+            
             const response = await fetch(`${API_URL}/orders`, {
                 method: 'POST',
                 headers: {
@@ -609,24 +743,54 @@ export default function CrearOrden() {
                 body: JSON.stringify({
                     preso_id: presoSeleccionado?.id,
                     nombre_cliente: presoSeleccionado ? presoSeleccionado.reg_name : nombreLibre,
-                    total: productosSeleccionados.reduce((sum, prod) => sum + (prod.precio * prod.cantidad), 0),
+                    total: total,
                     empleado_id: getEmpleadoId(),
                     num_personas: numPersonas,
                     codigo_promocional: codigoValido?.valid ? codigoPromocional.trim() : null,
-                    productos: productosSeleccionados.map(p => ({
-                        producto_id: p.id,
-                        cantidad: p.cantidad,
-                        precio_unitario: p.precio,
-                        sabor_id: p.sabor_id,
-                        tamano_id: p.tamano_id,
-                        ingrediente_id: p.ingrediente_id,
-                        notas: p.notas
-                    }))
+                    productos: productosSeleccionados.map(p => {
+                        // Producto normal o de sentencia
+                        const productoData = {
+                            producto_id: p.esSentencia ? null : p.id, // null si es la sentencia principal
+                            cantidad: p.cantidad,
+                            precio_unitario: p.precio, // Precio del ítem (sentencia, componente o producto normal)
+                            sabor_id: p.sabor_id || null,
+                            tamano_id: p.tamano_id || null,
+                            ingrediente_id: p.ingrediente_id || null,
+                            notas: p.notas || null,
+                            
+                            // --- Campos específicos para Sentencias ---
+                            sentencia_id: p.sentencia_id || null, 
+                            es_sentencia_principal: p.esSentencia || false,
+                            es_parte_sentencia: p.es_parte_sentencia || false,
+                            nombre_sentencia: p.esSentencia ? p.nombre : null,
+                            descripcion_sentencia: p.esSentencia ? p.descripcion : null
+                        };
+
+                        // Si es parte de una sentencia, agregar metadatos (ya lo hacías, solo revisando)
+                        // if (p.es_parte_sentencia) {
+                        // productoData.es_parte_sentencia = true; // ya está arriba
+                        // productoData.sentencia_id = p.sentencia_id; // ya está arriba
+                            
+                            // Los costos adicionales de variantes ya están sumados en p.precio para componentes
+                            // Si el backend los necesitara desglosados, se añadirían aquí.
+                        // }
+
+                        // Si es la sentencia principal (ya lo hacías, solo revisando)
+                        // if (p.esSentencia) {
+                            // productoData.es_sentencia_principal = true; // ya está arriba
+                            // productoData.sentencia_id = p.sentencia_id; // ya está arriba
+                            // productoData.nombre_sentencia = p.nombre; // ya está arriba
+                            // productoData.descripcion_sentencia = p.descripcion; // ya está arriba
+                        // }
+                        // console.log("Enviando productoData:", productoData); // Descomentar para depurar
+                        return productoData;
+                    })
                 })
             });
 
             if (!response.ok) {
-                throw new Error('Error al crear la orden');
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Error al crear la orden');
             }
 
             const data = await response.json();
@@ -635,6 +799,8 @@ export default function CrearOrden() {
         } catch (error) {
             console.error('Error:', error);
             alert(error.message);
+        } finally {
+            setCreandoOrden(false);
         }
     };
 
@@ -663,6 +829,359 @@ export default function CrearOrden() {
         setCantidad(1);
         setNotas("");
         setSaborSeleccionado(null);
+    };
+
+    // Nueva función para agregar productos de sentencias
+    const agregarProductosDeSentencia = (producto) => {
+        // Si recibimos un grupo de productos con variantes pendientes
+        if (producto.tipo === "grupo_variantes_pendientes" && producto.productos) {
+            console.log("Recibido grupo de productos con variantes pendientes:", producto);
+            
+            // Verificar cada producto pendiente
+            producto.productos.forEach((prod, i) => {
+                console.log(`Producto pendiente ${i}:`, prod);
+                console.log(`  - requiere_sabor:`, prod.requiere_sabor);
+                console.log(`  - requiere_tamano:`, prod.requiere_tamano);
+                console.log(`  - requiere_ingrediente:`, prod.requiere_ingrediente);
+                console.log(`  - sabor_id:`, prod.sabor_id);
+                console.log(`  - tamano_id:`, prod.tamano_id);
+                console.log(`  - ingrediente_id:`, prod.ingrediente_id);
+            });
+            
+            // Iniciar el procesamiento del primer producto
+            procesarProductoConVariantesPendientes(producto.productos, 0, producto.sentencia_id);
+            return;
+        }
+        
+        // Si es una sentencia principal (el producto con precio y nombre de la sentencia)
+        if (producto.esSentencia) {
+            // Verificar si ya existe esta sentencia
+            const yaExiste = productosSeleccionados.find(p => 
+                p.esSentencia && p.sentencia_id === producto.sentencia_id
+            );
+            
+            if (yaExiste) {
+                // Si ya existe, incrementar cantidad
+                setProductosSeleccionados(prev => 
+                    prev.map(p => 
+                        p.esSentencia && p.sentencia_id === producto.sentencia_id
+                            ? { ...p, cantidad: p.cantidad + producto.cantidad } 
+                            : p
+                    )
+                );
+            } else {
+                // Agregar la sentencia como un producto especial
+                setProductosSeleccionados(prev => [
+                    ...prev, 
+                    { 
+                        ...producto,
+                        cantidad: producto.cantidad || 1
+                    }
+                ]);
+            }
+            return;
+        }
+        
+        // Si es un producto que forma parte de una sentencia
+        if (producto.es_parte_sentencia) {
+            // Verificar si ya existe este producto exacto
+            const yaExiste = productosSeleccionados.find(p => 
+                p.id === producto.id && 
+                p.es_parte_sentencia &&
+                p.sentencia_id === producto.sentencia_id &&
+                p.sabor_id === producto.sabor_id && 
+                p.tamano_id === producto.tamano_id && 
+                p.ingrediente_id === producto.ingrediente_id &&
+                ((p.notas || "") === (producto.notas || ""))
+            );
+            
+            if (yaExiste) {
+                // Si ya existe, incrementar cantidad
+                setProductosSeleccionados(prev => 
+                    prev.map(p => 
+                        p.id === producto.id && 
+                        p.es_parte_sentencia &&
+                        p.sentencia_id === producto.sentencia_id &&
+                        p.sabor_id === producto.sabor_id && 
+                        p.tamano_id === producto.tamano_id && 
+                        p.ingrediente_id === producto.ingrediente_id &&
+                        ((p.notas || "") === (producto.notas || ""))
+                            ? { ...p, cantidad: p.cantidad + producto.cantidad } 
+                            : p
+                    )
+                );
+            } else {
+                // Agregar producto de sentencia
+                setProductosSeleccionados(prev => [
+                    ...prev, 
+                    { 
+                        ...producto,
+                        cantidad: producto.cantidad || 1
+                    }
+                ]);
+            }
+            return;
+        }
+        
+        // Para productos normales (no sentencias), usar el comportamiento existente
+        // Verificar si ya existe este producto con este sabor, tamaño, ingrediente y notas
+        const yaExiste = productosSeleccionados.find(p => 
+            p.id === producto.id && 
+            p.sabor_id === producto.sabor_id && 
+            p.tamano_id === producto.tamano_id && 
+            p.ingrediente_id === producto.ingrediente_id &&
+            ((p.notas || "") === (producto.notas || ""))
+        );
+        
+        if (yaExiste) {
+            // Si ya existe, incrementar cantidad
+            setProductosSeleccionados(prev => 
+                prev.map(p => 
+                    p.id === producto.id && 
+                    p.sabor_id === producto.sabor_id && 
+                    p.tamano_id === producto.tamano_id && 
+                    p.ingrediente_id === producto.ingrediente_id &&
+                    ((p.notas || "") === (producto.notas || ""))
+                        ? { ...p, cantidad: p.cantidad + producto.cantidad } 
+                        : p
+                )
+            );
+        } else {
+            // Calcular precio total con adicionales
+            let precioTotal = producto.precio;
+            
+            if (producto.precio_adicional) {
+                precioTotal += producto.precio_adicional;
+            }
+            
+            if (producto.tamano_precio) {
+                precioTotal += producto.tamano_precio;
+            }
+            
+            if (producto.ingrediente_precio) {
+                precioTotal += producto.ingrediente_precio;
+            }
+            
+            // Agregar nuevo producto a la lista
+            setProductosSeleccionados(prev => [
+                ...prev, 
+                { 
+                    ...producto, 
+                    precio_original: producto.precio,
+                    precio: precioTotal
+                }
+            ]);
+        }
+    };
+
+    // Nueva función para procesar secuencialmente productos con variantes pendientes
+    const procesarProductoConVariantesPendientes = async (productos, indice, sentenciaId) => {
+        // Si ya procesamos todos los productos, no hacemos nada
+        if (indice >= productos.length) {
+            console.log("Todos los productos con variantes pendientes han sido procesados");
+            return;
+        }
+        
+        const productoActual = productos[indice];
+        console.log(`Procesando producto con variantes pendientes ${indice + 1} de ${productos.length}:`, productoActual);
+        
+        // Obtener el ID del producto correctamente según su origen
+        const productoId = productoActual.producto_id || productoActual.id;
+        if (!productoId) {
+            console.error("Error: No se encontró ID de producto:", productoActual);
+            // Continuar con el siguiente producto
+            procesarProductoConVariantesPendientes(productos, indice + 1, sentenciaId);
+            return;
+        }
+        
+        // Asegurar que los precios estén en formato numérico
+        const productoConPreciosNumericos = {
+            ...productoActual,
+            precio_adicional: parseFloat(productoActual.precio_adicional || 0),
+            tamano_precio: parseFloat(productoActual.tamano_precio || 0),
+            ingrediente_precio: parseFloat(productoActual.ingrediente_precio || 0)
+        };
+        
+        // Establecer el producto seleccionado
+        setProductoSeleccionado({
+            ...productoConPreciosNumericos,
+            id: productoId,
+            nombre: productoActual.producto_nombre || productoActual.nombre,
+            precio: 0, // El precio es 0 porque es parte de una sentencia
+            categoria: productoActual.producto_categoria || productoActual.categoria,
+            // Agregar metadatos para identificar que es parte de una sentencia
+            es_parte_sentencia: true,
+            sentencia_id: sentenciaId,
+            // Para continuar el procesamiento después de seleccionar variantes
+            indice_procesamiento: indice,
+            productos_pendientes: productos
+        });
+        
+        console.log("Verificando variantes para:", productoConPreciosNumericos);
+        
+        // Determinar qué tipo de variante necesitamos seleccionar primero
+        if (productoActual.sabor_id === null && productoActual.requiere_sabor) {
+            console.log("El producto requiere selección de SABOR");
+            // Necesita seleccionar sabor
+            const tieneSabores = await cargarSabores(productoId);
+            if (tieneSabores) {
+                setSeleccionSabores(true);
+                setMostrarSeleccionCantidad(false);
+                return;
+            } else {
+                console.warn("No se pudieron cargar sabores para este producto");
+            }
+        }
+        
+        if (productoActual.tamano_id === null && productoActual.requiere_tamano) {
+            console.log("El producto requiere selección de TAMAÑO");
+            // Necesita seleccionar tamaño
+            const tieneTamanos = await cargarTamanos(productoId);
+            if (tieneTamanos) {
+                setSeleccionTamano(true);
+                setMostrarSeleccionCantidad(false);
+                return;
+            } else {
+                console.warn("No se pudieron cargar tamaños para este producto");
+            }
+        }
+        
+        if (productoActual.ingrediente_id === null && productoActual.requiere_ingrediente) {
+            console.log("El producto requiere selección de INGREDIENTE");
+            // Necesita seleccionar ingrediente
+            const tieneIngredientes = await cargarIngredientes(productoId);
+            if (tieneIngredientes) {
+                setSeleccionIngrediente(true);
+                setMostrarSeleccionCantidad(false);
+                return;
+            } else {
+                console.warn("No se pudieron cargar ingredientes para este producto");
+            }
+        }
+        
+        console.log("El producto no requiere selección de variantes o no se encontraron opciones");
+        
+        // Si llegamos aquí, no necesita selección de variantes o algo falló
+        // En cualquier caso, pasamos al siguiente producto
+        procesarProductoConVariantesPendientes(productos, indice + 1, sentenciaId);
+    };
+
+    // Modificar las funciones de selección para continuar procesando productos pendientes
+    const seleccionarSaborSentencia = async (sabor, producto) => {
+        // Guardar el sabor seleccionado con todos sus datos
+        const saborCompletoParaEstado = { // Para el estado local y flujo de selección
+            id: sabor.id,
+            nombre: sabor.nombre,
+            categoria_nombre: sabor.categoria_nombre,
+            precio_adicional: parseFloat(sabor.precio_adicional || 0)
+        };
+        setSaborSeleccionado(saborCompletoParaEstado);
+        
+        // Preparar datos de variante para agregarProductoSentenciaConVariante
+        const varianteParaAgregar = {
+            sabor_id: sabor.id,
+            sabor_nombre: sabor.nombre,
+            sabor_categoria_nombre: sabor.categoria_nombre, // Corregido para pasar categoría
+            sabor_precio_adicional: parseFloat(sabor.precio_adicional || 0)
+        };
+
+        // Verificar si hay tamaños para seleccionar
+        if (producto.tamano_id === null && producto.requiere_tamano) {
+            const tieneTamanos = await cargarTamanos(producto.id);
+            if (tieneTamanos) {
+                setSeleccionTamano(true);
+                setSeleccionSabores(false);
+                return;
+            }
+        }
+        
+        // Verificar si hay ingredientes para seleccionar
+        if (producto.ingrediente_id === null && producto.requiere_ingrediente) {
+            const tieneIngredientes = await cargarIngredientes(producto.id);
+            if (tieneIngredientes) {
+                setSeleccionIngrediente(true);
+                setSeleccionSabores(false);
+                return;
+            }
+        }
+        
+        // Si no hay más selecciones, agregar el producto con el sabor seleccionado
+        agregarProductoSentenciaConVariante(producto, varianteParaAgregar);
+        
+        // Limpiar estados
+        setSeleccionSabores(false);
+        setSaborSeleccionado(null);
+    };
+
+    // Función para agregar un producto de sentencia con sus variantes seleccionadas
+    const agregarProductoSentenciaConVariante = (producto, variantes) => {
+        // Preservar el nombre original del producto y otros campos importantes
+        const nombreOriginal = producto.producto_nombre || producto.nombre;
+        const categoriaOriginal = producto.producto_categoria || producto.categoria;
+        const idOriginal = producto.producto_id || producto.id;
+        // console.log("Producto de sentencia con variantes a agregar:", producto);
+        // console.log("Variantes recibidas en agregarProductoSentenciaConVariante:", variantes);
+        
+        // Calcular precio total sumando los precios adicionales de las variantes
+        let precioTotalDeVariantes = 0;
+        
+        if (variantes.sabor_precio_adicional) {
+            precioTotalDeVariantes += parseFloat(variantes.sabor_precio_adicional);
+        }
+        if (variantes.tamano_precio_adicional) {
+            precioTotalDeVariantes += parseFloat(variantes.tamano_precio_adicional);
+        }
+        if (variantes.ingrediente_precio_adicional) {
+            precioTotalDeVariantes += parseFloat(variantes.ingrediente_precio_adicional);
+        }
+        
+        // Asegurarnos de que todos los campos de las variantes estén presentes para la visualización y datos
+        const variantesCompletasParaProducto = {
+            // Campos de sabor
+            sabor_id: variantes.sabor_id || null,
+            sabor_nombre: variantes.sabor_nombre || null,
+            sabor_categoria: variantes.sabor_categoria_nombre || null, // Usar el campo correcto
+            precio_adicional: parseFloat(variantes.sabor_precio_adicional || 0), // Usado para mostrar precio del sabor
+            
+            // Campos de tamaño
+            tamano_id: variantes.tamano_id || null,
+            tamano_nombre: variantes.tamano_nombre || null,
+            tamano_precio: parseFloat(variantes.tamano_precio_adicional || 0), // Usado para mostrar precio del tamaño
+            
+            // Campos de ingrediente
+            ingrediente_id: variantes.ingrediente_id || null,
+            ingrediente_nombre: variantes.ingrediente_nombre || null,
+            ingrediente_precio: parseFloat(variantes.ingrediente_precio_adicional || 0) // Usado para mostrar precio del ingrediente
+        };
+        
+        // Crear un objeto con todas las propiedades necesarias
+        const productoCompleto = {
+            ...producto, // Producto base de la sentencia (puede tener info de procesamiento)
+            ...variantesCompletasParaProducto, // Información de las variantes seleccionadas
+            es_parte_sentencia: true,
+            // Preservar campos originales del producto
+            nombre: nombreOriginal,
+            categoria: categoriaOriginal,
+            id: idOriginal, // ID original del producto, no de la variante
+            // El 'precio' del producto de sentencia en la lista es la suma de los costos adicionales de sus variantes.
+            precio: precioTotalDeVariantes,
+            // Ya no necesitamos precio_adicional_total, ya que 'precio' cumple esta función para productos de sentencia.
+            cantidad: producto.cantidad || 1
+        };
+        
+        // console.log("Producto de sentencia COMPLETO a agregar:", productoCompleto);
+        
+        // Agregar a la lista de productos seleccionados
+        setProductosSeleccionados(prev => [...prev, productoCompleto]);
+        
+        // Continuar con el siguiente producto pendiente
+        if (producto.productos_pendientes && producto.indice_procesamiento !== undefined) {
+            procesarProductoConVariantesPendientes(
+                producto.productos_pendientes, 
+                producto.indice_procesamiento + 1,
+                producto.sentencia_id
+            );
+        }
     };
 
     // Renderización principal
@@ -1101,66 +1620,123 @@ export default function CrearOrden() {
                 {productosSeleccionados.length > 0 && (
                     <div className="bg-negro rounded p-4 space-y-3">
                         <h3 className="font-bold text-amarillo">Productos seleccionados</h3>
-                        {productosSeleccionados.map((prod, index) => (
-                            <div key={index} className="flex justify-between items-start border-b border-gray-700 pb-2">
+                        {productosSeleccionados.map((producto, index) => (
+                            <div 
+                                key={`${index}-${producto.id}-${producto.sabor_id}-${producto.tamano_id}-${producto.ingrediente_id}`} 
+                                className="bg-negro p-3 rounded flex justify-between items-start border-b border-gray-800 pb-3"
+                            >
                                 <div className="flex-1">
-                                    <p className="font-bold">{prod.nombre}</p>
-                                    {prod.sabor_nombre && (
-                                        <p className="text-xs text-amarillo">
-                                            Sabor: {prod.sabor_nombre} 
-                                            {prod.sabor_categoria ? ` (${prod.sabor_categoria})` : ''}
-                                            {prod.precio_adicional > 0 && ` +$${prod.precio_adicional}`}
-                                        </p>
-                                    )}
-                                    {prod.tamano_nombre && (
-                                        <p className="text-xs text-amarillo">
-                                            Tamaño: {prod.tamano_nombre}
-                                            {prod.tamano_precio > 0 && ` +$${prod.tamano_precio}`}
-                                        </p>
-                                    )}
-                                    {prod.ingrediente_nombre && (
-                                        <p className="text-xs text-amarillo">
-                                            Ingrediente: {prod.ingrediente_nombre}
-                                            {prod.ingrediente_precio > 0 && ` +$${prod.ingrediente_precio}`}
-                                        </p>
-                                    )}
-                                    {prod.notas && (
-                                        <p className="text-xs text-gray-400 mt-1 italic">
-                                            Notas: {prod.notas}
-                                        </p>
-                                    )}
+                                    <div className="flex items-center gap-2">
+                                        <span className="font-bold">{producto.nombre}</span>
+                                        {producto.esSentencia && (
+                                            <span className="bg-amarillo text-negro px-2 py-0.5 rounded-full text-xs">
+                                                Sentencia
+                                            </span>
+                                        )}
+                                        {producto.es_parte_sentencia && (
+                                            <span className="bg-amarillo/30 text-amarillo px-2 py-0.5 rounded-full text-xs">
+                                                Incluido
+                                            </span>
+                                        )}
+                                    </div>
+                                    
+                                    {/* Mostrar información de variantes si existe */}
+                                    <div className="text-xs text-gray-400 mt-1">
+                                        {/* Mostrar sabor si existe */}
+                                        {producto.sabor_nombre && (
+                                            <div className="flex justify-between mt-1">
+                                                <span>Sabor: {producto.sabor_nombre}</span>
+                                                {parseFloat(producto.precio_adicional) > 0 && (
+                                                    <span className="text-amarillo">+${parseFloat(producto.precio_adicional).toFixed(2)}</span>
+                                                )}
+                                            </div>
+                                        )}
+                                        
+                                        {/* Mostrar tamaño si existe */}
+                                        {producto.tamano_nombre && (
+                                            <div className="flex justify-between mt-1">
+                                                <span>Tamaño: {producto.tamano_nombre}</span>
+                                                {parseFloat(producto.tamano_precio) > 0 && (
+                                                    <span className="text-amarillo">+${parseFloat(producto.tamano_precio).toFixed(2)}</span>
+                                                )}
+                                            </div>
+                                        )}
+                                        
+                                        {/* Mostrar ingrediente si existe */}
+                                        {producto.ingrediente_nombre && (
+                                            <div className="flex justify-between mt-1">
+                                                <span>Ingrediente: {producto.ingrediente_nombre}</span>
+                                                {parseFloat(producto.ingrediente_precio) > 0 && (
+                                                    <span className="text-amarillo">+${parseFloat(producto.ingrediente_precio).toFixed(2)}</span>
+                                                )}
+                                            </div>
+                                        )}
+                                        
+                                        {/* Mostrar notas si existen */}
+                                        {producto.notas && (
+                                            <div className="mt-2 italic">"{producto.notas}"</div>
+                                        )}
+                                    </div>
                                 </div>
-                                <div className="flex items-center gap-2">
-                                    <button
-                                        onClick={() => quitarProducto(prod.id, prod.sabor_id, prod.tamano_id, prod.ingrediente_id, prod.notas)}
-                                        className="bg-vino text-white px-2 py-1 rounded-full text-xs"
-                                    >
-                                        -
-                                    </button>
-                                    <span className="text-sm px-2">
-                                        {prod.cantidad}
-                                    </span>
-                                    <button
-                                        onClick={() => aumentarCantidad(prod.id, prod.sabor_id, prod.tamano_id, prod.ingrediente_id, prod.notas)}
-                                        className="bg-vino text-white px-2 py-1 rounded-full text-xs"
-                                    >
-                                        +
-                                    </button>
-                                    <span className="text-sm ml-2">
-                                        ${prod.precio.toFixed(2)}
-                                    </span>
+                                
+                                <div className="flex flex-col items-end">
+                                    <div className="flex items-center gap-2">
+                                        {/* Botones para modificar cantidad */}
+                                        {!producto.es_parte_sentencia && (
+                                            <>
+                                                <button
+                                                    onClick={() => quitarProducto(
+                                                        producto.id, 
+                                                        producto.sabor_id, 
+                                                        producto.tamano_id, 
+                                                        producto.ingrediente_id,
+                                                        producto.notas
+                                                    )}
+                                                    className="bg-vino px-2 rounded-full"
+                                                >
+                                                    -
+                                                </button>
+                                                <span className="font-bold">{producto.cantidad}</span>
+                                                <button
+                                                    onClick={() => aumentarCantidad(
+                                                        producto.id, 
+                                                        producto.sabor_id, 
+                                                        producto.tamano_id, 
+                                                        producto.ingrediente_id,
+                                                        producto.notas
+                                                    )}
+                                                    className="bg-vino px-2 rounded-full"
+                                                >
+                                                    +
+                                                </button>
+                                            </>
+                                        )}
+                                        {producto.es_parte_sentencia && (
+                                            <span className="font-bold">{producto.cantidad}x</span>
+                                        )}
+                                        {/* Botón para eliminar sentencia completa */}
+                                        {producto.esSentencia && (
+                                            <button
+                                                onClick={() => eliminarSentenciaCompleta(producto.sentencia_id)}
+                                                className="bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded text-xs ml-2"
+                                            >
+                                                Eliminar
+                                            </button>
+                                        )}
+                                    </div>
+                                    
+                                    {/* Mostrar precio */}
+                                    <div className="text-sm">
+                                        {!producto.es_parte_sentencia && (
+                                            <>${(producto.precio * producto.cantidad).toFixed(2)}</>
+                                        )}
+                                        {producto.es_parte_sentencia && producto.precio > 0 && (
+                                            <>+${parseFloat(producto.precio).toFixed(2)}</>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
                         ))}
-                        <p className="font-bold text-right text-lg mt-4">
-                            Total: ${productosSeleccionados.reduce((sum, prod) => sum + (prod.precio * prod.cantidad), 0).toFixed(2)}
-                        </p>
-                        <button
-                            onClick={crearOrden}
-                            className="w-full bg-amarillo text-negro p-3 rounded font-bold hover:bg-yellow-500 mt-4"
-                        >
-                            Crear Orden
-                        </button>
                     </div>
                 )}
                 {productosSeleccionados.length === 0 && (
@@ -1171,7 +1747,17 @@ export default function CrearOrden() {
             </div>
 
             <hr className="my-6 border-amarillo" />
-            <h2 className="text-lg font-bold text-amarillo">Seleccionar productos</h2>
+            <div className="flex justify-between items-center">
+                <h2 className="text-lg font-bold text-amarillo">Seleccionar productos</h2>
+                
+                {/* Nuevo botón para mostrar el selector de sentencias */}
+                <button
+                    onClick={() => setMostrarSelectorSentencias(true)}
+                    className="bg-amarillo text-negro px-4 py-2 rounded font-bold hover:bg-yellow-500"
+                >
+                    Agregar Sentencia
+                </button>
+            </div>
             
             {/* Filtros de productos */}
             <div className="space-y-4">
@@ -1232,6 +1818,43 @@ export default function CrearOrden() {
                     ))
                 )}
             </div>
+            
+            {/* Selector de Sentencias - como overlay */}
+            {mostrarSelectorSentencias && (
+                <div className="fixed inset-0 bg-negro/80 flex items-center justify-center z-50 p-4">
+                    <div className="w-full max-w-md">
+                        <SentenciaSelector 
+                            onAddProducts={agregarProductosDeSentencia}
+                            onClose={() => setMostrarSelectorSentencias(false)}
+                        />
+                    </div>
+                </div>
+            )}
+
+            <div className="flex justify-between">
+                <span>Subtotal:</span>
+                <span className="font-bold">
+                    ${productosSeleccionados
+                        .reduce((total, p) => {
+                            if (p.es_parte_sentencia && !p.esSentencia) {
+                                // Para productos de sentencia, solo sumamos los costos adicionales
+                                return total + (p.precio * p.cantidad);
+                            } else {
+                                // Para productos normales o sentencias principales, sumamos el precio completo
+                                return total + (p.precio * p.cantidad);
+                            }
+                        }, 0)
+                        .toFixed(2)}
+                </span>
+            </div>
+
+            <button
+                onClick={crearOrden}
+                className="w-full bg-amarillo text-negro py-3 rounded font-bold"
+                disabled={creandoOrden}
+            >
+                {creandoOrden ? "Creando orden..." : "Crear Orden"}
+            </button>
         </div>
     );
 }

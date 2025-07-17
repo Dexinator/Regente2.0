@@ -37,6 +37,66 @@ Se han realizado mejoras significativas en los componentes de cocina para optimi
   - Elimina el tiempo de preparación
   - Permite que el producto vuelva a la lista de pendientes
 
+# Implementación del Sistema de Sentencias
+
+## Resumen
+Se ha implementado un sistema completo para manejar "sentencias" (combos predefinidos de productos) en todo el flujo de ventas. El sistema permite ahora:
+
+1. Crear órdenes con sentencias desde CrearOrden.jsx
+2. Agregar sentencias a órdenes existentes desde AgregarProducto.jsx
+3. Gestionar todos los componentes de las sentencias en cocina y reportes
+
+## Detalles de los Cambios
+
+### 1. Frontend
+- **SentenciaSelector.jsx**:
+  - Componente compartido que permite seleccionar sentencias
+  - Maneja la selección de variantes para productos componentes
+  - Funciona tanto en creación como en modificación de órdenes
+
+- **CrearOrden.jsx y AgregarProducto.jsx**:
+  - Integración completa del selector de sentencias
+  - Visualización consistente de sentencias y sus componentes
+  - Manejo de precios: la sentencia mantiene el precio total, los componentes tienen precio 0
+
+### 2. Backend
+- **orders.model.js**:
+  - Procesamiento en dos pasos para sentencias (principales y componentes)
+  - Manejo consistente en `createOrder` y `addProductsToOrder`
+  - Mantiene relaciones entre sentencias principales y sus componentes
+
+- **orders.controller.js**:
+  - Validación mejorada para sentencias
+  - Mismo comportamiento en creación y modificación de órdenes
+
+### 3. Base de datos
+- Campos adicionales en `detalles_orden`:
+  - `sentencia_id`: ID de la sentencia
+  - `es_sentencia_principal`: Identifica registro principal
+  - `sentencia_detalle_orden_padre_id`: Relación con registro principal
+  - `nombre_sentencia` y `descripcion_sentencia`: Datos descriptivos
+
+## Beneficios
+- Experiencia consistente al agregar sentencias en cualquier punto
+- Mismo comportamiento y visualización en todo el sistema
+- Manejo correcto de precios y relaciones entre componentes
+- Compatibilidad total con sistema de cocina, preparación y entregas
+
+## Instrucciones para Meseros
+1. **Botones "Agregar Sentencia"**:
+   - Disponibles tanto en CrearOrden como en AgregarProducto
+   - Abren el mismo selector intuitivo de sentencias
+
+2. **Selección de sentencias**:
+   - Elegir una sentencia muestra sus componentes
+   - Si algún componente requiere variantes, se solicitarán automáticamente
+   - Los productos se agregan correctamente agrupados a la orden
+
+3. **Visualización en órdenes**:
+   - Las sentencias aparecen con su nombre y precio
+   - Los componentes aparecen indentados con la etiqueta "Parte de sentencia"
+   - Los precios se calculan correctamente: total en la sentencia, cero en componentes
+
 ## Beneficios
 - Mayor claridad en la gestión de cancelaciones
 - Capacidad de corregir errores sin necesidad de intervención técnica

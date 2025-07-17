@@ -34,3 +34,8 @@ pgdata/
 Thumbs.db
 *.swp
 *.swo
+
+# 📌 Ignorar claves de seguridad y datos sensibles
+conn/
+report_data/
+estructuras-sql/

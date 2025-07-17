@@ -1,0 +1,9 @@
+---
+import PrivateLayout from "../../layouts/PrivateLayout.astro";
+import VariantesPanel from "../../components/VariantesPanel";
+---
+
+<PrivateLayout title="Gestión de Variantes">
+  <h1 class="text-3xl font-titulo text-amarillo mb-6">Gestión de Variantes</h1>
+  <VariantesPanel client:load />
+</PrivateLayout>
