@@ -811,12 +811,12 @@ export const marcarProductoComoPreparado = async (detalle_id, cantidad_a_prepara
       // Crear nuevo registro con la cantidad preparada
       const nuevoRegistroQuery = `
         INSERT INTO detalles_orden (
-          orden_id, producto_id, cantidad, precio_unitario, notas,
+          orden_id, producto_id, cantidad, precio_unitario, empleado_id, notas,
           sabor_id, tamano_id, ingrediente_id, preparado, tiempo_preparacion,
           es_sentencia_principal, sentencia_id, sentencia_detalle_orden_padre_id,
-          tiempo_creacion
+          nombre_sentencia, descripcion_sentencia, tiempo_creacion
         ) VALUES (
-          $1, $2, $3, $4, $5, $6, $7, $8, TRUE, CURRENT_TIMESTAMP, $9, $10, $11, $12
+          $1, $2, $3, $4, $5, $6, $7, $8, $9, TRUE, CURRENT_TIMESTAMP, $10, $11, $12, $13, $14, $15
         ) RETURNING *
       `;
       
@@ -825,6 +825,7 @@ export const marcarProductoComoPreparado = async (detalle_id, cantidad_a_prepara
         detalle.producto_id,
         cantidad_a_preparar,
         detalle.precio_unitario,
+        detalle.empleado_id,
         detalle.notas,
         detalle.sabor_id,
         detalle.tamano_id,
@@ -832,6 +833,8 @@ export const marcarProductoComoPreparado = async (detalle_id, cantidad_a_prepara
         detalle.es_sentencia_principal,
         detalle.sentencia_id,
         detalle.sentencia_detalle_orden_padre_id,
+        detalle.nombre_sentencia,
+        detalle.descripcion_sentencia,
         detalle.tiempo_creacion
       ]);
       
