@@ -960,6 +960,58 @@ export const cancelarProductoOrden = async (orden_id, producto_id, cantidad, emp
       ]
     );
 
+    // Obtener información de descuentos aplicados a la orden
+    const descuentosQuery = await client.query(
+      `SELECT o.codigo_descuento_id, cp.porcentaje_descuento,
+              p.id AS preso_id, pg.grado_id, g.descuento AS descuento_grado
+       FROM ordenes o
+       LEFT JOIN codigos_promocionales cp ON o.codigo_descuento_id = cp.id
+       LEFT JOIN presos p ON o.preso_id = p.id
+       LEFT JOIN preso_grado pg ON p.id = pg.preso_id
+       LEFT JOIN grados g ON pg.grado_id = g.id
+       WHERE o.orden_id = $1`,
+      [orden_id]
+    );
+
+    // Calcular descuentos si existen
+    let porcentaje_descuento_codigo = 0;
+    let porcentaje_descuento_grado = 0;
+    
+    if (descuentosQuery.rows[0]?.porcentaje_descuento) {
+      porcentaje_descuento_codigo = parseFloat(descuentosQuery.rows[0].porcentaje_descuento);
+    }
+    
+    if (descuentosQuery.rows[0]?.descuento_grado) {
+      porcentaje_descuento_grado = parseFloat(descuentosQuery.rows[0].descuento_grado);
+    }
+    
+    // Calcular el descuento total (acumulativo)
+    const porcentaje_descuento_total = porcentaje_descuento_codigo + porcentaje_descuento_grado;
+    const factor_descuento = (100 - porcentaje_descuento_total) / 100;
+
+    // Recalcular el total bruto de la orden sumando valores absolutos
+    await client.query(`
+      WITH totales AS (
+        SELECT 
+          SUM(ABS(precio_unitario) * cantidad) AS total_bruto
+        FROM detalles_orden 
+        WHERE orden_id = $1
+      )
+      UPDATE ordenes 
+      SET total_bruto = totales.total_bruto
+      FROM totales
+      WHERE orden_id = $1`,
+      [orden_id]
+    );
+    
+    // Calcular el total con el descuento aplicado
+    await client.query(`
+      UPDATE ordenes 
+      SET total = ROUND(total_bruto * $2, 2)
+      WHERE orden_id = $1`,
+      [orden_id, factor_descuento]
+    );
+
     await client.query("COMMIT");
     // Agregamos los IDs de las variantes a la respuesta
     return { 
