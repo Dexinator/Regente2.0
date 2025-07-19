@@ -324,3 +324,29 @@ regente2.0/
 - Fixed `marcarProductoComoPreparado` to include `empleado_id` when splitting records for partial preparation
 
 **Important**: When migrating, always preserve production customer data (presos table) as it may contain more records than staging
+
+### Product Cancellation System (Fixed January 2025)
+
+**Issue Fixed**: Product cancellations were not updating order totals or showing in kitchen view.
+
+**Cancellation Flow**:
+1. **GestionOrden**: Meseros can cancel products that are not prepared
+   - Cancellation creates a new `detalles_orden` record with negative quantity and price
+   - Supports partial cancellations with variant tracking (flavor, size, ingredients)
+   - Modal shows available quantity considering previous cancellations
+   
+2. **Backend Updates**:
+   - `cancelarProductoOrden` now recalculates `total_bruto` and `total` after cancellation
+   - Maintains applied discounts (promotional codes and customer grades)
+   - Query in `getProductosPorPreparar` changed from `cantidad > 0` to `cantidad != 0` to include cancellations
+   
+3. **PedidosCocina Display**:
+   - Shows adjusted quantities after cancellations
+   - Displays cancellation notes with reason
+   - Products fully cancelled (quantity ≤ 0) are removed from view
+   - Red border indicates products with cancellations
+
+**Technical Implementation**:
+- Cancellations stored as negative quantity records in `detalles_orden`
+- Total calculation uses ABS(precio_unitario) * cantidad for accurate totals
+- Frontend groups products and processes cancellations to show net quantities
