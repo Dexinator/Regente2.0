@@ -311,3 +311,16 @@ regente2.0/
 - **CrearOrden & AgregarProducto**: Unified sentencia handling with sequential variant selection
 - **Variant Pricing**: Additional costs from flavors, sizes, and ingredients now properly calculated and displayed
 - **Deletion Feature**: Users can remove entire sentencias (combos) including all component products
+
+### Database Migration Notes (January 2025)
+
+**Production Database Updated**:
+- Added complete purchasing module tables (proveedores, insumos, requisiciones, compras, inventario)
+- Added sentencias (combos) system tables
+- Modified `detalles_orden` table to support sentencias with new columns:
+  - `nombre_sentencia`, `descripcion_sentencia` for combo display
+  - `sentencia_id`, `es_sentencia_principal`, `sentencia_detalle_orden_padre_id` for combo tracking
+- `producto_id` now allows NULL for sentencia principal records
+- Fixed `marcarProductoComoPreparado` to include `empleado_id` when splitting records for partial preparation
+
+**Important**: When migrating, always preserve production customer data (presos table) as it may contain more records than staging

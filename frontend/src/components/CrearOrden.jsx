@@ -410,9 +410,9 @@ export default function CrearOrden() {
                 tamano_id: tamanoSeleccionado.id,
                 tamano_nombre: tamanoSeleccionado.nombre,
                 tamano_precio: parseFloat(tamanoSeleccionado.precio_adicional || 0),
-                ingrediente_id: ingrediente.id,
-                ingrediente_nombre: ingrediente.nombre,
-                ingrediente_precio: parseFloat(ingrediente.precio_adicional || 0)
+                ingrediente_id: ingrediente?.id || null,
+                ingrediente_nombre: ingrediente?.nombre || null,
+                ingrediente_precio: parseFloat(ingrediente?.precio_adicional || 0)
             };
             
             mostrarPantallaNotas(productoSeleccionado, datosCombinados);
@@ -420,9 +420,9 @@ export default function CrearOrden() {
             // Combinamos el producto con sabor e ingrediente, y vamos a notas
             const datosCombinados = {
                 ...saborSeleccionado,
-                ingrediente_id: ingrediente.id,
-                ingrediente_nombre: ingrediente.nombre,
-                ingrediente_precio: parseFloat(ingrediente.precio_adicional || 0)
+                ingrediente_id: ingrediente?.id || null,
+                ingrediente_nombre: ingrediente?.nombre || null,
+                ingrediente_precio: parseFloat(ingrediente?.precio_adicional || 0)
             };
             
             mostrarPantallaNotas(productoSeleccionado, datosCombinados);
