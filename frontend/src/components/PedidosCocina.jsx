@@ -276,12 +276,12 @@ export default function PedidosCocina() {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-subtitulo">Pedidos por preparar</h2>
+        <h2 className="text-3xl font-subtitulo">Pedidos por preparar</h2>
         <div className="flex items-center gap-4">
           <select
             value={filtroTipo}
             onChange={(e) => setFiltroTipo(e.target.value)}
-            className="bg-vino text-white px-3 py-1 rounded text-base hover:bg-amarillo hover:text-negro transition-colors"
+            className="bg-vino text-white px-4 py-2 rounded text-lg hover:bg-amarillo hover:text-negro transition-colors"
           >
             <option value="todos">Todos los pedidos</option>
             <option value="Alimentos">Solo Alimentos</option>
@@ -290,7 +290,7 @@ export default function PedidosCocina() {
           </select>
           <button
             onClick={cargarPedidos}
-            className="bg-vino text-white px-3 py-1 rounded text-base hover:bg-amarillo hover:text-negro transition-colors"
+            className="bg-vino text-white px-4 py-2 rounded text-lg hover:bg-amarillo hover:text-negro transition-colors"
           >
             Actualizar
           </button>
@@ -298,14 +298,14 @@ export default function PedidosCocina() {
       </div>
       
       {bloquesFiltrados.length === 0 ? (
-        <p className="text-center text-gray-400 py-8">
+        <p className="text-center text-gray-400 py-8 text-xl">
           ¡No hay pedidos pendientes! 🎉
         </p>
       ) : (
         <div className="space-y-8">
           {bloquesFiltrados.map((bloque) => (
             <div key={bloque.bloque_key} className="bg-negro/20 rounded-xl p-4">
-              <h3 className="text-xl font-bold text-amarillo border-b border-amarillo/40 pb-2 mb-3">
+              <h3 className="text-2xl font-bold text-amarillo border-b border-amarillo/40 pb-2 mb-3">
                 Pedidos de {bloque.hora}
               </h3>
               
@@ -332,10 +332,10 @@ export default function PedidosCocina() {
                     >
                       {/* Primera línea: Cantidad X Nombre Sabor Ingrediente Tamaño */}
                       <div className="flex justify-between items-start mb-2">
-                        <p className="font-bold text-xl leading-tight">
+                        <p className="font-bold text-2xl leading-tight">
                           {lineaProducto}
                           {producto.nombre_sentencia_padre && (
-                            <span className="text-sm text-cyan-400 italic ml-2">
+                            <span className="text-base text-cyan-400 italic ml-2">
                               (Parte de: {producto.nombre_sentencia_padre})
                             </span>
                           )}
@@ -346,7 +346,7 @@ export default function PedidosCocina() {
                       {producto.notas && producto.notas.length > 0 && (
                         <div className="mb-2">
                           {producto.notas.map((nota, index) => (
-                            <p key={index} className="text-base text-gray-300 italic">
+                            <p key={index} className="text-lg text-gray-300 italic">
                               {index + 1}. {nota}
                             </p>
                           ))}
@@ -357,7 +357,7 @@ export default function PedidosCocina() {
                       {producto.cancelaciones && producto.cancelaciones.length > 0 && (
                         <div className="mb-2">
                           {producto.cancelaciones.map((c, i) => (
-                            <p key={i} className="text-base text-red-300 italic">
+                            <p key={i} className="text-lg text-red-300 italic">
                               {i + 1}. Cancelado {c.cantidad}x: {c.nota}
                             </p>
                           ))}
@@ -366,7 +366,7 @@ export default function PedidosCocina() {
                       
                       {/* Botón más pequeño y nombres de clientes */}
                       <div className="flex justify-between items-end">
-                        <div className="text-sm flex-1">
+                        <div className="text-base flex-1">
                           <span className="text-gray-400">Clientes: </span>
                           {producto.clientes.map((cliente, index) => (
                             <span key={index} className={`${index > 0 ? 'ml-1' : ''} text-white`}>
@@ -377,7 +377,7 @@ export default function PedidosCocina() {
                         
                         <button
                           onClick={() => marcarComoPreparado(producto)}
-                          className="bg-green-700 hover:bg-green-600 text-white px-4 py-2 rounded text-base transition-colors ml-2"
+                          className="bg-green-700 hover:bg-green-600 text-white px-6 py-3 rounded text-lg transition-colors ml-2"
                           disabled={estaProcesando}
                         >
                           {estaProcesando ? "⏳" : "✓"}
