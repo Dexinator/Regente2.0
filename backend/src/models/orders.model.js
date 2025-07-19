@@ -699,7 +699,7 @@ export const getProductosPorPreparar = async () => {
     LEFT JOIN categorias_variantes cvi ON i.categoria_id = cvi.id
     LEFT JOIN detalles_orden sp ON d.sentencia_detalle_orden_padre_id = sp.id AND sp.es_sentencia_principal = TRUE
     WHERE d.preparado = FALSE 
-      AND d.cantidad > 0 -- Solo items con cantidad positiva (no cancelaciones directas)
+      AND d.cantidad != 0 -- Incluir tanto positivas (productos normales) como negativas (cancelaciones)
       AND d.es_sentencia_principal = FALSE -- Muy importante: Excluir las sentencias principales como items a preparar
     ORDER BY d.tiempo_creacion ASC
   `;
