@@ -322,7 +322,34 @@ export default function GestionOrden({ id }) {
     );
     // console.log("Productos Normales:", productosNormales);
 
-    const renderProductoItem = (p, esComponente = false) => {
+    // Paleta de colores para diferenciar sentencias
+    const coloresSentencias = [
+        'border-blue-400',
+        'border-green-400',
+        'border-purple-400',
+        'border-orange-400',
+        'border-pink-400',
+        'border-teal-400'
+    ];
+
+    // Mapear cada sentencia principal a un color e índice
+    const sentenciasConIndice = {};
+    const contadorPorTipo = {};
+    
+    sentenciasPrincipales.forEach((sp, index) => {
+        const tipo = sp.nombre_promocion || sp.nombre;
+        if (!contadorPorTipo[tipo]) {
+            contadorPorTipo[tipo] = 0;
+        }
+        contadorPorTipo[tipo]++;
+        sentenciasConIndice[sp.id_detalle_original] = {
+            color: coloresSentencias[index % coloresSentencias.length],
+            numeroInstancia: contadorPorTipo[tipo],
+            tipoSentencia: tipo
+        };
+    });
+
+    const renderProductoItem = (p, esComponente = false, infoSentencia = null) => {
         // Determinar si el item está efectivamente cancelado para la UI
         // Un item original (precio_unitario > 0) se considera cancelado si su cantidad_neta <= 0
         const estaCanceladoUI = p.cantidad_neta <= 0 && p.precio_unitario > 0;
@@ -334,13 +361,20 @@ export default function GestionOrden({ id }) {
                     estaCanceladoUI ? 'bg-red-950/30 opacity-60' 
                     : p.preparado ? 'bg-green-950/30' 
                     : 'bg-negro/30'
-                } ${esComponente ? 'ml-4 mt-1 border-l-2 border-amarillo/30 pl-2' : 'mt-2'}`}
+                } ${esComponente && infoSentencia ? `ml-4 mt-1 border-l-4 ${infoSentencia.color} pl-2` : esComponente ? 'ml-4 mt-1 border-l-2 border-amarillo/30 pl-2' : 'mt-2'}`}
             >
                 <div className="flex justify-between items-start">
                     <div>
                         <p className={`font-bold ${estaCanceladoUI ? 'line-through text-gray-400' : ''}`}>
                             {p.nombre} x{p.cantidad_neta} — ${parseFloat(p.precio_unitario).toFixed(2)}
                             {p.es_sentencia_principal && <span className="text-xs text-amarillo font-normal ml-2">(Sentencia)</span>}
+                            {esComponente && infoSentencia && (
+                                <span className={`text-xs font-normal ml-2 px-2 py-0.5 rounded ${
+                                    infoSentencia.color.replace('border-', 'bg-').replace('400', '400/20')
+                                } ${infoSentencia.color.replace('border-', 'text-')}`}>
+                                    {infoSentencia.tipoSentencia} #{infoSentencia.numeroInstancia}
+                                </span>
+                            )}
                         </p>
                         {p.es_sentencia_principal && p.descripcion_promocion && (
                             <p className="text-xs text-gray-300 italic">{p.descripcion_promocion}</p>
@@ -418,14 +452,17 @@ export default function GestionOrden({ id }) {
     return (
         <ul className="space-y-1 text-sm">
             {/* Renderizar Sentencias Principales y sus Componentes */}
-            {sentenciasPrincipales.map(sp => (
-                <div key={`sp-div-${sp.id_detalle_original}`}>
-                    {renderProductoItem(sp, false)}
-                    {(componentesPorSentencia[sp.id_detalle_original] || []).map(comp => 
-                        renderProductoItem(comp, true)
-                    )}
-                </div>
-            ))}
+            {sentenciasPrincipales.map(sp => {
+                const infoSentencia = sentenciasConIndice[sp.id_detalle_original];
+                return (
+                    <div key={`sp-div-${sp.id_detalle_original}`}>
+                        {renderProductoItem(sp, false)}
+                        {(componentesPorSentencia[sp.id_detalle_original] || []).map(comp => 
+                            renderProductoItem(comp, true, infoSentencia)
+                        )}
+                    </div>
+                );
+            })}
             {/* Renderizar Productos Normales */}
             {productosNormales.map(pn => renderProductoItem(pn, false))}
         </ul>
