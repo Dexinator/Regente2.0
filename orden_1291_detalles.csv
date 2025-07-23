@@ -1,0 +1,18 @@
+id,orden_id,producto_id,producto_nombre,cantidad,precio_unitario,sabor_id,sabor_nombre,tamano_id,tamano_nombre,ingrediente_id,ingrediente_nombre,notas,preparado,entregado,sentencia_id,es_sentencia_principal,sentencia_detalle_orden_padre_id,nombre_sentencia,estado,tiempo_creacion,tiempo_preparacion,tiempo_entrega
+5305,1291,34,Especial ,1,75.00,10,Vino,12,Medio litro,,,,t,t,,f,,,pendiente,2025-07-22 02:51:19.597614,2025-07-22 02:58:48.303704,2025-07-22 03:00:28.231985
+5308,1291,,,2,155.00,,,,,,,,f,f,3,t,,Noche en los Separos,pendiente,2025-07-22 02:59:01.455463,,
+5309,1291,,,3,140.00,,,,,,,,f,f,2,t,,El Apando,pendiente,2025-07-22 02:59:01.455463,,
+5310,1291,22,Brebajes,1,0.00,37,Tradicional,,,,,,f,f,3,f,5308,,pendiente,2025-07-22 02:59:01.455463,,
+5311,1291,5,Molletes,1,30.00,60,Carne árabe,,,,,,t,t,3,f,5308,,pendiente,2025-07-22 02:59:01.455463,2025-07-22 03:55:42.926801,2025-07-22 04:10:38.996269
+5312,1291,32,Temporada,1,0.00,6,Piña,,,,,,f,f,3,f,5308,,pendiente,2025-07-22 02:59:01.455463,,
+5313,1291,22,Brebajes,2,0.00,37,Tradicional,,,,,,f,f,2,f,5309,,pendiente,2025-07-22 02:59:01.455463,,
+5314,1291,5,Molletes,1,30.00,4,Hongos,,,,,,t,t,2,f,5309,,pendiente,2025-07-22 02:59:01.455463,2025-07-22 03:55:45.474546,2025-07-22 04:10:39.003165
+5315,1291,34,Especial ,2,0.00,10,Vino,,,,,,f,f,2,f,5309,,pendiente,2025-07-22 02:59:01.455463,,
+5316,1291,5,Molletes,-1,-30.00,60,Carne árabe,,,,,CANCELACIÓN,f,f,,f,,,pendiente,2025-07-22 03:00:03.995229,,
+5317,1291,5,Molletes,-1,-30.00,4,Hongos,,,,,CANCELACIÓN,f,f,,f,,,pendiente,2025-07-22 03:00:08.058515,,
+5318,1291,5,Molletes,-1,-30.00,4,Hongos,,,,,CANCELACIÓN,f,f,,f,,,pendiente,2025-07-22 03:00:11.254214,,
+5328,1291,5,Molletes,1,30.00,4,Hongos,,,,,,t,t,2,f,5309,,pendiente,2025-07-22 02:59:01.455,2025-07-22 03:55:41.42848,2025-07-22 04:10:38.990326
+5330,1291,34,Especial ,1,75.00,10,Vino,12,Medio litro,,,,t,t,,f,,,pendiente,2025-07-22 04:06:50.941746,2025-07-22 04:11:51.090376,2025-07-22 04:18:00.239672
+5331,1291,32,Temporada,1,60.00,6,Piña,12,Medio litro,,,,t,t,,f,,,pendiente,2025-07-22 04:06:50.941746,2025-07-22 04:11:48.444701,2025-07-22 04:18:00.372509
+5333,1291,34,Especial ,1,75.00,10,Vino,12,Medio litro,,,,t,t,,f,,,pendiente,2025-07-22 04:06:50.941,2025-07-22 04:11:46.526498,2025-07-22 04:18:00.306085
+5334,1291,90,Para llevar,1,10.00,,,,,,,,f,f,,f,,,pendiente,2025-07-22 04:18:39.622114,,

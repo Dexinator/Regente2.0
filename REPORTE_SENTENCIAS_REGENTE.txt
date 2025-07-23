@@ -1,0 +1,100 @@
+REPORTE DE SENTENCIAS (COMBOS) - SISTEMA REGENTE
+================================================
+Fecha: 22 de Enero de 2025
+
+Este reporte contiene todas las sentencias (combos) disponibles en el sistema,
+con su precio y los productos que incluye cada una.
+
+================================================================================
+
+SENTENCIAS ACTIVAS
+==================
+
+1. INFRACCIÓN - $85.00
+   Descripción: Sentencia leve para infracciones menores
+   
+   Incluye:
+   • 1 Victoria
+   • 1 Corona
+   • 1 Brebajes (Tradicional)
+   • 1 Natural (Medio litro)
+   • 1 Carta blanca
+
+--------------------------------------------------------------------------------
+
+2. EL APANDO - $140.00
+   Descripción: Sentencia media para delitos moderados
+   
+   Incluye:
+   • 1 Molletes
+   • 1 Brebajes (Tradicional)
+   • 1 Especial (Medio litro)
+
+--------------------------------------------------------------------------------
+
+3. NOCHE EN LOS SEPAROS - $155.00
+   Descripción: Sentencia grave para delitos mayores
+   
+   Incluye:
+   • 2 Victoria
+   • 1 Molletes
+   • 1 Brebajes (Tradicional)
+   • 1 Temporada (Litro Temporada)
+   • 2 Carta blanca
+   • 2 Corona
+
+--------------------------------------------------------------------------------
+
+4. PENA CAPITAL - $125.00
+   Descripción: Sentencia máxima para los delitos más graves
+   
+   Incluye:
+   • 1 Natural (Medio litro)
+   • 1 Brebajes (Tradicional)
+   • 1 Corona
+   • 1 Victoria
+   • 1 Carta blanca
+
+--------------------------------------------------------------------------------
+
+5. SANGRIAS 3x2 - $140.00
+   Descripción: Jueves 3 sangrías al precio de 2
+   
+   Incluye:
+   • 3 Sangria palaciega
+
+================================================================================
+
+SENTENCIAS INACTIVAS
+====================
+
+1. CADENA PERPETUA - $175.00
+   Descripción: Bara libre de pulque
+   Estado: INACTIVA
+   
+   Incluye:
+   • 1 Cadena perpetua
+
+================================================================================
+
+RESUMEN
+=======
+• Total de sentencias en el sistema: 6
+• Sentencias activas: 5
+• Sentencias inactivas: 1
+
+Rango de precios:
+• Más económica: Infracción ($85.00)
+• Más cara: Cadena perpetua ($175.00) - INACTIVA
+• Precio promedio sentencias activas: $129.00
+
+================================================================================
+
+NOTAS IMPORTANTES
+=================
+• Los precios mostrados son los precios base del combo
+• Algunos productos pueden tener variantes adicionales (sabor, tamaño) 
+  que pueden modificar el precio final
+• Las sentencias inactivas no están disponibles para venta
+
+================================================================================

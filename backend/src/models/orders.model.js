@@ -203,7 +203,18 @@ export const createOrder = async ({ preso_id, nombre_cliente, empleado_id, produ
         continue; // Ya procesada
       }
 
-      total_bruto += (prodItem.precio_unitario || 0) * (prodItem.cantidad || 1);
+      // Calcular la cantidad real del producto
+      let cantidadReal = prodItem.cantidad || 1;
+      
+      // Si es parte de una sentencia, multiplicar por la cantidad de la sentencia
+      if (prodItem.es_parte_sentencia && prodItem.sentencia_id) {
+        const sentenciaPrincipal = sentenciasPrincipalesItems.find(sp => sp.sentencia_id === prodItem.sentencia_id);
+        if (sentenciaPrincipal) {
+          cantidadReal = (prodItem.cantidad || 1) * (sentenciaPrincipal.cantidad || 1);
+        }
+      }
+
+      total_bruto += (prodItem.precio_unitario || 0) * cantidadReal;
       let sentenciaDetalleOrdenPadreId = null;
 
       if (prodItem.es_parte_sentencia && prodItem.sentencia_id) {
@@ -224,7 +235,7 @@ export const createOrder = async ({ preso_id, nombre_cliente, empleado_id, produ
       await client.query(qDetalleProducto, [
         orden_id,
         prodItem.producto_id,
-        prodItem.cantidad,
+        cantidadReal,
         prodItem.precio_unitario,
         empleado_id,
         prodItem.sabor_id,
@@ -419,7 +430,18 @@ export const addProductsToOrder = async (orden_id, productos, empleado_id) => {
         continue; // Ya procesada
       }
 
-      total_bruto += (prodItem.precio_unitario || 0) * (prodItem.cantidad || 1);
+      // Calcular la cantidad real del producto
+      let cantidadReal = prodItem.cantidad || 1;
+      
+      // Si es parte de una sentencia, multiplicar por la cantidad de la sentencia
+      if (prodItem.es_parte_sentencia && prodItem.sentencia_id) {
+        const sentenciaPrincipal = sentenciasPrincipalesItems.find(sp => sp.sentencia_id === prodItem.sentencia_id);
+        if (sentenciaPrincipal) {
+          cantidadReal = (prodItem.cantidad || 1) * (sentenciaPrincipal.cantidad || 1);
+        }
+      }
+
+      total_bruto += (prodItem.precio_unitario || 0) * cantidadReal;
       let sentenciaDetalleOrdenPadreId = null;
 
       if (prodItem.es_parte_sentencia && prodItem.sentencia_id) {
@@ -440,7 +462,7 @@ export const addProductsToOrder = async (orden_id, productos, empleado_id) => {
       await client.query(qDetalleProducto, [
         orden_id,
         prodItem.producto_id,
-        prodItem.cantidad,
+        cantidadReal,
         prodItem.precio_unitario,
         empleado_id,
         prodItem.sabor_id,
