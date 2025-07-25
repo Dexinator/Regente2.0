@@ -560,11 +560,16 @@ export const getOrderResumen = async (orden_id) => {
     // Los componentes de sentencia se tratan como productos individuales con variantes.
     let claveUnica;
     if (row.es_sentencia_principal) {
+        // Las sentencias principales nunca se agrupan
         claveUnica = `sentencia_principal_${row.detalle_orden_id}`;
-    } else if (row.producto_id) { // Productos normales o componentes de sentencia
+    } else if (row.sentencia_detalle_orden_padre_id) {
+        // Componentes de sentencia: incluir el padre en la clave para no agrupar entre diferentes sentencias
+        claveUnica = `comp_sentencia_${row.sentencia_detalle_orden_padre_id}_prod_${row.producto_id}_sabor_${row.sabor_id || 'null'}_tam_${row.tamano_id || 'null'}_ing_${row.ingrediente_id || 'null'}`;
+    } else if (row.producto_id) { 
+        // Productos normales (no parte de sentencia)
         claveUnica = `prod_${row.producto_id}_sabor_${row.sabor_id || 'null'}_tam_${row.tamano_id || 'null'}_ing_${row.ingrediente_id || 'null'}`;
     } else {
-        // Caso inesperado, podría ser un error de datos si no es sentencia principal y no tiene producto_id
+        // Caso inesperado
         claveUnica = `detalle_directo_${row.detalle_orden_id}`;
     }
 
