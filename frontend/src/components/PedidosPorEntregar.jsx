@@ -93,6 +93,7 @@ export default function PedidosPorEntregar() {
         ingrediente_id: item.ingrediente_id,
         ingrediente_nombre: item.ingrediente_nombre,
         notas: item.notas,
+        es_para_llevar: item.es_para_llevar || false,
         tiempo_preparacion: new Date(item.tiempo_preparacion).toLocaleTimeString('es-ES', {
           hour: '2-digit',
           minute: '2-digit'
@@ -371,6 +372,11 @@ export default function PedidosPorEntregar() {
                     <div>
                       <p className="font-bold">
                         {producto.cantidad}x {formatearDetallesProducto(producto)}
+                        {producto.es_para_llevar && (
+                          <span className="ml-2 bg-amarillo text-negro text-xs px-2 py-1 rounded font-bold">
+                            🛍️ Para llevar
+                          </span>
+                        )}
                       </p>
                       {producto.notas && (
                         <p className="text-sm text-gray-300 italic">

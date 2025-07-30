@@ -367,6 +367,11 @@ export default function GestionOrden({ id }) {
                     <div>
                         <p className={`font-bold ${estaCanceladoUI ? 'line-through text-gray-400' : ''}`}>
                             {p.nombre} x{p.cantidad_neta} — ${parseFloat(p.precio_unitario).toFixed(2)}
+                            {p.es_para_llevar && (
+                                <span className="ml-2 text-xs bg-amarillo text-negro px-2 py-0.5 rounded font-bold">
+                                    🛍️ Para llevar
+                                </span>
+                            )}
                             {p.es_sentencia_principal && <span className="text-xs text-amarillo font-normal ml-2">(Sentencia)</span>}
                             {esComponente && infoSentencia && (
                                 <span className={`text-xs font-normal ml-2 px-2 py-0.5 rounded ${

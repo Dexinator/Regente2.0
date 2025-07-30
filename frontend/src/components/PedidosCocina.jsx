@@ -120,7 +120,8 @@ export default function PedidosCocina() {
             notas: producto.notas ? [producto.notas] : [],
             clientes: [producto.cliente], // Guardamos nombres de clientes
             clientes_por_orden: [{orden: producto.orden_id, cliente: producto.cliente}], // Para rastrear individualmente
-            nombre_sentencia_padre: producto.nombre_sentencia_padre || null // Añadido
+            nombre_sentencia_padre: producto.nombre_sentencia_padre || null, // Añadido
+            es_para_llevar: producto.es_para_llevar || false
           };
         } else {
           // Actualizamos los datos del producto existente
@@ -141,6 +142,11 @@ export default function PedidosCocina() {
           // Conservar el nombre_sentencia_padre si ya existe o el nuevo producto lo trae
           if (producto.nombre_sentencia_padre && !productosAgrupados[clave].nombre_sentencia_padre) {
             productosAgrupados[clave].nombre_sentencia_padre = producto.nombre_sentencia_padre;
+          }
+          
+          // Actualizar el tiempo_creacion para mantener el más antiguo
+          if (new Date(producto.tiempo_creacion) < new Date(productosAgrupados[clave].tiempo_creacion)) {
+            productosAgrupados[clave].tiempo_creacion = producto.tiempo_creacion;
           }
         }
       });
@@ -185,7 +191,9 @@ export default function PedidosCocina() {
       });
       
       // Actualizamos los productos del bloque con los productos agrupados y filtrados
-      bloque.productos = Object.values(productosAgrupados);
+      // Ordenamos por tiempo_creacion para mantener el orden cronológico
+      bloque.productos = Object.values(productosAgrupados)
+        .sort((a, b) => new Date(a.tiempo_creacion) - new Date(b.tiempo_creacion));
     });
     
     // Convertimos el objeto a un array, ordenado por tiempo
@@ -334,6 +342,11 @@ export default function PedidosCocina() {
                       <div className="flex justify-between items-start mb-2">
                         <p className="font-bold text-3xl leading-tight">
                           {lineaProducto}
+                          {producto.es_para_llevar && (
+                            <span className="text-lg bg-amarillo text-negro px-2 py-1 rounded ml-2">
+                              🛍️ Para llevar
+                            </span>
+                          )}
                           {producto.nombre_sentencia_padre && (
                             <span className="text-lg text-cyan-400 italic ml-2">
                               (Parte de: {producto.nombre_sentencia_padre})
@@ -368,9 +381,9 @@ export default function PedidosCocina() {
                       <div className="flex justify-between items-end">
                         <div className="text-lg flex-1">
                           <span className="text-gray-400">Clientes: </span>
-                          {producto.clientes.map((cliente, index) => (
+                          {producto.clientes_por_orden.map((item, index) => (
                             <span key={index} className={`${index > 0 ? 'ml-1' : ''} text-white`}>
-                              {cliente}{index < producto.clientes.length - 1 ? ',' : ''}
+                              {item.cliente}{index < producto.clientes_por_orden.length - 1 ? ',' : ''}
                             </span>
                           ))}
                         </div>

@@ -46,7 +46,7 @@ export const getOpenOrdersWithPayments = async () => {
       total_pagado: parseFloat(orden.total_pagado),
       total_propina: parseFloat(orden.total_propina),
       diferencia: parseFloat(diferencia.toFixed(2)),
-      estado_pago,
+      estado_pago
     };
   });
 };
@@ -179,9 +179,9 @@ export const createOrder = async ({ preso_id, nombre_cliente, empleado_id, produ
       const qDetalleSentencia = `
         INSERT INTO detalles_orden (
             orden_id, producto_id, cantidad, precio_unitario, empleado_id, notas,
-            sentencia_id, es_sentencia_principal, nombre_sentencia, descripcion_sentencia
+            sentencia_id, es_sentencia_principal, nombre_sentencia, descripcion_sentencia, es_para_llevar
         )
-        VALUES ($1, NULL, $2, $3, $4, $5, $6, TRUE, $7, $8)
+        VALUES ($1, NULL, $2, $3, $4, $5, $6, TRUE, $7, $8, $9)
         RETURNING id;
       `;
       const rDetalleSentencia = await client.query(qDetalleSentencia, [
@@ -192,7 +192,8 @@ export const createOrder = async ({ preso_id, nombre_cliente, empleado_id, produ
         spItem.notas,
         spItem.sentencia_id,
         spItem.nombre_sentencia,
-        spItem.descripcion_sentencia
+        spItem.descripcion_sentencia,
+        spItem.es_para_llevar || false
       ]);
       mapaSentenciasCreadas[spItem.sentencia_id] = rDetalleSentencia.rows[0].id;
     }
@@ -228,9 +229,9 @@ export const createOrder = async ({ preso_id, nombre_cliente, empleado_id, produ
         INSERT INTO detalles_orden (
             orden_id, producto_id, cantidad, precio_unitario, empleado_id,
             sabor_id, tamano_id, ingrediente_id, notas,
-            sentencia_id, es_sentencia_principal, sentencia_detalle_orden_padre_id
+            sentencia_id, es_sentencia_principal, sentencia_detalle_orden_padre_id, es_para_llevar
         )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, FALSE, $11);
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, FALSE, $11, $12);
       `;
       await client.query(qDetalleProducto, [
         orden_id,
@@ -243,7 +244,8 @@ export const createOrder = async ({ preso_id, nombre_cliente, empleado_id, produ
         prodItem.ingrediente_id,
         prodItem.notas,
         prodItem.es_parte_sentencia ? prodItem.sentencia_id : null,
-        sentenciaDetalleOrdenPadreId
+        sentenciaDetalleOrdenPadreId,
+        prodItem.es_para_llevar || false
       ]);
     }
     
@@ -406,9 +408,9 @@ export const addProductsToOrder = async (orden_id, productos, empleado_id) => {
       const qDetalleSentencia = `
         INSERT INTO detalles_orden (
             orden_id, producto_id, cantidad, precio_unitario, empleado_id, notas,
-            sentencia_id, es_sentencia_principal, nombre_sentencia, descripcion_sentencia
+            sentencia_id, es_sentencia_principal, nombre_sentencia, descripcion_sentencia, es_para_llevar
         )
-        VALUES ($1, NULL, $2, $3, $4, $5, $6, TRUE, $7, $8)
+        VALUES ($1, NULL, $2, $3, $4, $5, $6, TRUE, $7, $8, $9)
         RETURNING id;
       `;
       const rDetalleSentencia = await client.query(qDetalleSentencia, [
@@ -419,7 +421,8 @@ export const addProductsToOrder = async (orden_id, productos, empleado_id) => {
         spItem.notas,
         spItem.sentencia_id,
         spItem.nombre_sentencia,
-        spItem.descripcion_sentencia
+        spItem.descripcion_sentencia,
+        spItem.es_para_llevar || false
       ]);
       mapaSentenciasCreadas[spItem.sentencia_id] = rDetalleSentencia.rows[0].id;
     }
@@ -455,9 +458,9 @@ export const addProductsToOrder = async (orden_id, productos, empleado_id) => {
         INSERT INTO detalles_orden (
             orden_id, producto_id, cantidad, precio_unitario, empleado_id,
             sabor_id, tamano_id, ingrediente_id, notas,
-            sentencia_id, es_sentencia_principal, sentencia_detalle_orden_padre_id
+            sentencia_id, es_sentencia_principal, sentencia_detalle_orden_padre_id, es_para_llevar
         )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, FALSE, $11);
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, FALSE, $11, $12);
       `;
       await client.query(qDetalleProducto, [
         orden_id,
@@ -470,7 +473,8 @@ export const addProductsToOrder = async (orden_id, productos, empleado_id) => {
         prodItem.ingrediente_id,
         prodItem.notas,
         prodItem.es_parte_sentencia ? prodItem.sentencia_id : null,
-        sentenciaDetalleOrdenPadreId
+        sentenciaDetalleOrdenPadreId,
+        prodItem.es_para_llevar || false
       ]);
     }
 
@@ -537,7 +541,8 @@ export const getOrderResumen = async (orden_id) => {
       d.sentencia_detalle_orden_padre_id,
       d.nombre_sentencia AS nombre_promocion, 
       d.descripcion_sentencia AS descripcion_promocion,
-      p.categoria AS categoria_producto -- Categoría del producto si existe
+      p.categoria AS categoria_producto, -- Categoría del producto si existe
+      d.es_para_llevar
     FROM detalles_orden d
     LEFT JOIN productos p ON d.producto_id = p.id
     LEFT JOIN sabores s ON d.sabor_id = s.id
@@ -714,7 +719,8 @@ export const getProductosPorPreparar = async () => {
       i.nombre AS ingrediente_nombre,
       i.precio_adicional AS ingrediente_precio,
       cvi.nombre AS ingrediente_categoria,
-      sp.nombre_sentencia AS nombre_sentencia_padre -- Nombre de la sentencia a la que pertenece
+      sp.nombre_sentencia AS nombre_sentencia_padre, -- Nombre de la sentencia a la que pertenece
+      d.es_para_llevar
     FROM detalles_orden d
     JOIN productos p ON d.producto_id = p.id -- Componentes de sentencia o productos normales SIEMPRE tienen producto_id
     JOIN ordenes o ON d.orden_id = o.orden_id
@@ -1083,7 +1089,8 @@ export const getProductosPorEntregar = async () => {
       t.precio_adicional AS tamano_precio,
       i.nombre AS ingrediente_nombre,
       i.precio_adicional AS ingrediente_precio,
-      cvi.nombre AS ingrediente_categoria
+      cvi.nombre AS ingrediente_categoria,
+      d.es_para_llevar
     FROM detalles_orden d
     JOIN productos p ON d.producto_id = p.id
     JOIN ordenes o ON d.orden_id = o.orden_id
