@@ -8,7 +8,8 @@ export default function ProductSelector({
   initialProducts = [],
   showCustomerName = false,
   customerName = "",
-  orderId = null
+  orderId = null,
+  hideProductSummary = false
 }) {
   const [productos, setProductos] = useState([]);
   const [categorias, setCategorias] = useState([]);
@@ -54,6 +55,13 @@ export default function ProductSelector({
   useEffect(() => {
     cargarProductos();
   }, []);
+
+  // Actualizar el componente padre cuando cambian los productos seleccionados
+  useEffect(() => {
+    if (hideProductSummary && onProductsSelected) {
+      onProductsSelected(productosSeleccionados);
+    }
+  }, [productosSeleccionados, hideProductSummary]);
 
   useEffect(() => {
     if (productoSeleccionado) {
@@ -1263,7 +1271,7 @@ export default function ProductSelector({
   // Vista principal
   return (
     <div className="space-y-6">
-      {productosSeleccionados.length > 0 && (
+      {!hideProductSummary && productosSeleccionados.length > 0 && (
         <div className="bg-negro rounded p-4 space-y-3">
           <h3 className="font-bold text-amarillo">Productos seleccionados</h3>
           {productosSeleccionados.map((prod, index) => (

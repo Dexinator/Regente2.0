@@ -9,6 +9,7 @@ import {
   marcarProductoComoPreparado,
   desprepararProducto,
   cancelarProductoOrden,
+  cancelarSentenciaCompleta,
   getProductosPorEntregar,
   marcarProductoComoEntregado,
   revertirEntregaProducto,
@@ -181,8 +182,45 @@ export const revertirEstadoProducto = async (req, res) => {
 export const cancelarProducto = async (req, res) => {
   try {
     const orden_id = req.params.id;
-    const { producto_id, cantidad, empleado_id, razon_cancelacion, sabor_id, tamano_id, ingrediente_id } = req.body;
+    const { 
+      producto_id, 
+      cantidad, 
+      empleado_id, 
+      razon_cancelacion, 
+      sabor_id, 
+      tamano_id, 
+      ingrediente_id,
+      es_cancelacion_sentencia_completa,
+      sentencia_detalle_orden_padre_id
+    } = req.body;
 
+    // Si es cancelación de sentencia completa
+    if (es_cancelacion_sentencia_completa && sentencia_detalle_orden_padre_id) {
+      if (!empleado_id) {
+        return res.status(400).json({ 
+          error: "Datos incompletos", 
+          detail: "Se requiere empleado_id" 
+        });
+      }
+
+      console.log("Procesando cancelación de sentencia completa:", {
+        orden_id,
+        sentencia_detalle_orden_padre_id,
+        empleado_id,
+        razon_cancelacion
+      });
+
+      const resultado = await cancelarSentenciaCompleta(
+        orden_id,
+        sentencia_detalle_orden_padre_id,
+        empleado_id,
+        razon_cancelacion || "Cancelación de sentencia completa"
+      );
+
+      return res.status(200).json(resultado);
+    }
+
+    // Cancelación normal de producto individual
     if (!producto_id || !cantidad || !empleado_id) {
       return res.status(400).json({ 
         error: "Datos incompletos", 
@@ -193,7 +231,7 @@ export const cancelarProducto = async (req, res) => {
     // Si la cantidad es positiva, convertirla a negativa para indicar cancelación
     const cantidadFinal = cantidad < 0 ? cantidad : -Math.abs(cantidad);
     
-    console.log("Recibiendo cancelación:", {
+    console.log("Recibiendo cancelación de producto:", {
       orden_id,
       producto_id,
       cantidad: cantidadFinal, 
@@ -218,7 +256,7 @@ export const cancelarProducto = async (req, res) => {
     res.status(200).json(resultado);
   } catch (err) {
     res.status(500).json({ 
-      error: "Error al cancelar el producto", 
+      error: "Error al cancelar", 
       detail: err.message 
     });
   }

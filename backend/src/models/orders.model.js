@@ -698,43 +698,104 @@ export const getOrderResumen = async (orden_id) => {
 // Obtener productos pendientes por preparar
 export const getProductosPorPreparar = async () => {
   const query = `
+    WITH productos_agrupados AS (
+      -- Agrupar productos con sus variantes y calcular cantidades netas
+      SELECT 
+        MIN(d.id) AS primer_detalle_id, -- Para mantener referencia al primer detalle
+        d.orden_id,
+        d.producto_id,
+        d.sabor_id,
+        d.tamano_id,
+        d.ingrediente_id,
+        d.sentencia_detalle_orden_padre_id,
+        SUM(d.cantidad) AS cantidad_neta, -- Suma algebraica (positivos - negativos)
+        MIN(CASE WHEN d.cantidad > 0 THEN d.tiempo_creacion END) AS tiempo_creacion_original,
+        -- Recolectar todos los IDs de detalles positivos (para marcar como preparados)
+        ARRAY_AGG(d.id) FILTER (WHERE d.cantidad > 0 AND d.preparado = FALSE) AS detalle_ids,
+        -- Información de cancelaciones
+        ARRAY_AGG(
+          CASE 
+            WHEN d.cantidad < 0 THEN 
+              json_build_object(
+                'cantidad', ABS(d.cantidad),
+                'razon', d.notas,
+                'tiempo', d.tiempo_creacion
+              )
+          END
+        ) FILTER (WHERE d.cantidad < 0) AS cancelaciones_json,
+        MAX(CASE WHEN d.cantidad < 0 THEN d.tiempo_creacion END) AS ultima_cancelacion,
+        -- Recolectar notas de productos positivos
+        STRING_AGG(DISTINCT d.notas, '; ') FILTER (WHERE d.cantidad > 0 AND d.notas IS NOT NULL AND d.notas != '') AS notas_combinadas,
+        BOOL_OR(d.es_para_llevar) AS es_para_llevar
+      FROM detalles_orden d
+      WHERE d.preparado = FALSE 
+        AND d.es_sentencia_principal = FALSE
+      GROUP BY 
+        d.orden_id, d.producto_id, d.sabor_id, d.tamano_id, 
+        d.ingrediente_id, d.sentencia_detalle_orden_padre_id
+    ),
+    productos_con_info AS (
+      SELECT 
+        pg.*,
+        p.nombre,
+        p.categoria,
+        COALESCE(pr.reg_name, o.nombre_cliente) AS cliente,
+        o.fecha AS tiempo_orden,
+        s.nombre AS sabor_nombre,
+        s.precio_adicional AS sabor_precio,
+        cv.nombre AS sabor_categoria,
+        t.nombre AS tamano_nombre,
+        t.precio_adicional AS tamano_precio,
+        i.nombre AS ingrediente_nombre,
+        i.precio_adicional AS ingrediente_precio,
+        cvi.nombre AS ingrediente_categoria,
+        sp.nombre_sentencia AS nombre_sentencia_padre
+      FROM productos_agrupados pg
+      JOIN productos p ON pg.producto_id = p.id
+      JOIN ordenes o ON pg.orden_id = o.orden_id
+      LEFT JOIN presos pr ON o.preso_id = pr.id
+      LEFT JOIN sabores s ON pg.sabor_id = s.id
+      LEFT JOIN categorias_variantes cv ON s.categoria_id = cv.id
+      LEFT JOIN sabores t ON pg.tamano_id = t.id
+      LEFT JOIN sabores i ON pg.ingrediente_id = i.id
+      LEFT JOIN categorias_variantes cvi ON i.categoria_id = cvi.id
+      LEFT JOIN detalles_orden sp ON pg.sentencia_detalle_orden_padre_id = sp.id AND sp.es_sentencia_principal = TRUE
+    )
     SELECT 
-      d.id AS detalle_id, 
-      d.orden_id, 
-      d.producto_id, 
-      d.cantidad, 
-      d.notas,
-      d.tiempo_creacion,
-      d.sabor_id,
-      d.tamano_id,
-      d.ingrediente_id,
-      p.nombre,
-      p.categoria,
-      COALESCE(pr.reg_name, o.nombre_cliente) AS cliente,
-      s.nombre AS sabor_nombre,
-      s.precio_adicional AS sabor_precio,
-      cv.nombre AS sabor_categoria,
-      t.nombre AS tamano_nombre,
-      t.precio_adicional AS tamano_precio,
-      i.nombre AS ingrediente_nombre,
-      i.precio_adicional AS ingrediente_precio,
-      cvi.nombre AS ingrediente_categoria,
-      sp.nombre_sentencia AS nombre_sentencia_padre, -- Nombre de la sentencia a la que pertenece
-      d.es_para_llevar
-    FROM detalles_orden d
-    JOIN productos p ON d.producto_id = p.id -- Componentes de sentencia o productos normales SIEMPRE tienen producto_id
-    JOIN ordenes o ON d.orden_id = o.orden_id
-    LEFT JOIN presos pr ON o.preso_id = pr.id
-    LEFT JOIN sabores s ON d.sabor_id = s.id
-    LEFT JOIN categorias_variantes cv ON s.categoria_id = cv.id
-    LEFT JOIN sabores t ON d.tamano_id = t.id
-    LEFT JOIN sabores i ON d.ingrediente_id = i.id
-    LEFT JOIN categorias_variantes cvi ON i.categoria_id = cvi.id
-    LEFT JOIN detalles_orden sp ON d.sentencia_detalle_orden_padre_id = sp.id AND sp.es_sentencia_principal = TRUE
-    WHERE d.preparado = FALSE 
-      AND d.cantidad != 0 -- Incluir tanto positivas (productos normales) como negativas (cancelaciones)
-      AND d.es_sentencia_principal = FALSE -- Muy importante: Excluir las sentencias principales como items a preparar
-    ORDER BY d.tiempo_creacion ASC
+      detalle_ids,
+      primer_detalle_id AS detalle_id,
+      orden_id,
+      producto_id,
+      cantidad_neta AS cantidad,
+      notas_combinadas AS notas,
+      tiempo_creacion_original AS tiempo_creacion,
+      sabor_id,
+      tamano_id,
+      ingrediente_id,
+      nombre,
+      categoria,
+      cliente,
+      sabor_nombre,
+      sabor_precio,
+      sabor_categoria,
+      tamano_nombre,
+      tamano_precio,
+      ingrediente_nombre,
+      ingrediente_precio,
+      ingrediente_categoria,
+      nombre_sentencia_padre,
+      es_para_llevar,
+      cancelaciones_json AS cancelaciones,
+      ultima_cancelacion,
+      -- Indicador si está completamente cancelado
+      CASE WHEN cantidad_neta = 0 THEN true ELSE false END AS cancelado_completo
+    FROM productos_con_info
+    WHERE 
+      -- Mostrar productos con cantidad > 0
+      cantidad_neta > 0 
+      -- O productos cancelados completamente en los últimos 15 minutos
+      OR (cantidad_neta = 0 AND ultima_cancelacion > NOW() - INTERVAL '15 minutes')
+    ORDER BY tiempo_creacion_original ASC
   `;
   
   const result = await pool.query(query);
@@ -768,7 +829,8 @@ export const getHistorialProductosPreparados = async (fecha) => {
       t.precio_adicional AS tamano_precio,
       i.nombre AS ingrediente_nombre,
       i.precio_adicional AS ingrediente_precio,
-      cvi.nombre AS ingrediente_categoria
+      cvi.nombre AS ingrediente_categoria,
+      d.es_para_llevar
     FROM detalles_orden d
     JOIN productos p ON d.producto_id = p.id
     JOIN ordenes o ON d.orden_id = o.orden_id
@@ -895,6 +957,142 @@ export const desprepararProducto = async (detalle_id) => {
   
   const result = await pool.query(query, [detalle_id]);
   return result.rows[0];
+};
+
+// Cancelar sentencia completa con todos sus componentes
+export const cancelarSentenciaCompleta = async (orden_id, sentencia_detalle_orden_padre_id, empleado_id, razon_cancelacion = null) => {
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+
+    // Verificar que la orden esté abierta
+    const ordenCheck = await client.query(
+      `SELECT estado FROM ordenes WHERE orden_id = $1`,
+      [orden_id]
+    );
+    if (ordenCheck.rows.length === 0) throw new Error("Orden no encontrada.");
+    if (ordenCheck.rows[0].estado !== "abierta") {
+      throw new Error("La orden ya está cerrada.");
+    }
+
+    // Obtener la sentencia principal
+    const sentenciaPrincipal = await client.query(
+      `SELECT * FROM detalles_orden 
+       WHERE id = $1 AND es_sentencia_principal = TRUE`,
+      [sentencia_detalle_orden_padre_id]
+    );
+
+    if (sentenciaPrincipal.rows.length === 0) {
+      throw new Error("Sentencia principal no encontrada.");
+    }
+
+    // Verificar que ningún componente esté preparado
+    const componentesPreparados = await client.query(
+      `SELECT COUNT(*) as count FROM detalles_orden 
+       WHERE sentencia_detalle_orden_padre_id = $1 AND preparado = TRUE`,
+      [sentencia_detalle_orden_padre_id]
+    );
+
+    if (parseInt(componentesPreparados.rows[0].count) > 0) {
+      throw new Error("No se puede cancelar la sentencia porque algunos componentes ya están preparados.");
+    }
+
+    // Obtener todos los componentes de la sentencia (incluyendo la principal)
+    const componentes = await client.query(
+      `SELECT * FROM detalles_orden 
+       WHERE (id = $1 OR sentencia_detalle_orden_padre_id = $1) 
+       AND precio_unitario >= 0`,
+      [sentencia_detalle_orden_padre_id]
+    );
+
+    // Crear registros de cancelación para cada componente
+    for (const componente of componentes.rows) {
+      const notaCancelacion = componente.es_sentencia_principal 
+        ? `CANCELACIÓN: ${razon_cancelacion} (Sentencia principal)`
+        : `CANCELACIÓN: ${razon_cancelacion} (Componente de sentencia)`;
+
+      await client.query(
+        `INSERT INTO detalles_orden (
+          orden_id, producto_id, cantidad, precio_unitario, empleado_id, 
+          notas, sabor_id, tamano_id, ingrediente_id, 
+          sentencia_id, es_sentencia_principal, sentencia_detalle_orden_padre_id,
+          nombre_sentencia, descripcion_sentencia, es_para_llevar
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)`,
+        [
+          orden_id,
+          componente.producto_id,
+          -Math.abs(componente.cantidad),
+          -Math.abs(componente.precio_unitario),
+          empleado_id,
+          notaCancelacion,
+          componente.sabor_id,
+          componente.tamano_id,
+          componente.ingrediente_id,
+          componente.sentencia_id,
+          componente.es_sentencia_principal,
+          componente.sentencia_detalle_orden_padre_id,
+          componente.nombre_sentencia,
+          componente.descripcion_sentencia,
+          componente.es_para_llevar
+        ]
+      );
+    }
+
+    // Actualizar el total de la orden
+    const totalResult = await client.query(
+      `SELECT 
+        SUM(cantidad * precio_unitario) as nuevo_total_bruto
+       FROM detalles_orden 
+       WHERE orden_id = $1`,
+      [orden_id]
+    );
+
+    const nuevoTotalBruto = parseFloat(totalResult.rows[0].nuevo_total_bruto || 0);
+
+    // Obtener descuentos aplicados
+    const descuentosResult = await client.query(
+      `SELECT o.codigo_descuento_id, cp.porcentaje_descuento,
+              p.id AS preso_id, pg.grado_id, g.descuento AS descuento_grado
+       FROM ordenes o
+       LEFT JOIN codigos_promocionales cp ON o.codigo_descuento_id = cp.id
+       LEFT JOIN presos p ON o.preso_id = p.id
+       LEFT JOIN preso_grado pg ON p.id = pg.preso_id
+       LEFT JOIN grados g ON pg.grado_id = g.id
+       WHERE o.orden_id = $1`,
+      [orden_id]
+    );
+
+    const descuentos = descuentosResult.rows[0];
+    const porcentajeDescuento = parseFloat(descuentos?.porcentaje_descuento || 0);
+    const descuentoGrado = parseFloat(descuentos?.descuento_grado || 0);
+    const descuentoTotal = porcentajeDescuento + descuentoGrado;
+
+    // Calcular el total con descuentos
+    const nuevoTotal = nuevoTotalBruto * (1 - descuentoTotal / 100);
+
+    // Actualizar totales en la orden
+    await client.query(
+      `UPDATE ordenes 
+       SET total_bruto = $1, total = $2 
+       WHERE orden_id = $3`,
+      [nuevoTotalBruto, nuevoTotal, orden_id]
+    );
+
+    await client.query("COMMIT");
+
+    return {
+      mensaje: `Sentencia cancelada exitosamente`,
+      total_componentes_cancelados: componentes.rows.length,
+      nuevo_total_bruto: nuevoTotalBruto,
+      nuevo_total: nuevoTotal
+    };
+
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
 };
 
 // Cancelar producto de una orden (registrar como precio negativo)

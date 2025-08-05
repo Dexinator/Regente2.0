@@ -97,7 +97,9 @@ export default function HistorialCocina() {
             ingrediente_id: producto.ingrediente_id,
             ingrediente_nombre: producto.ingrediente_nombre,
             notas: producto.notas ? [producto.notas] : [],
-            ordenes: [`#${producto.orden_id}`] // Guardamos números de orden para referencia
+            ordenes: [`#${producto.orden_id}`], // Guardamos números de orden para referencia
+            es_para_llevar: producto.es_para_llevar,
+            cliente: producto.cliente
           };
         } else {
           // Actualizamos los datos del producto existente
@@ -111,6 +113,11 @@ export default function HistorialCocina() {
           
           if (producto.notas && !productosAgrupados[clave].notas.includes(producto.notas)) {
             productosAgrupados[clave].notas.push(producto.notas);
+          }
+          
+          // Si algún producto es para llevar, marcamos el grupo como para llevar
+          if (producto.es_para_llevar) {
+            productosAgrupados[clave].es_para_llevar = true;
           }
         }
       });
@@ -257,6 +264,11 @@ export default function HistorialCocina() {
                       <div className="flex items-center justify-between mb-2">
                         <h3 className="text-xl font-bold">
                           {producto.nombre}
+                          {producto.es_para_llevar && (
+                            <span className="text-sm bg-amarillo text-negro px-2 py-1 rounded ml-2 font-normal">
+                              🛍️ Para llevar
+                            </span>
+                          )}
                         </h3>
                         <div className="flex items-center space-x-2">
                           <span className="text-2xl font-bold text-amarillo">
@@ -290,9 +302,11 @@ export default function HistorialCocina() {
                         )}
                       </div>
                       
-                      {/* Información de órdenes (opcional) */}
-                      <div className="mt-2 text-xs text-gray-400">
-                        Órdenes: {producto.ordenes.join(', ')}
+                      {/* Información del cliente y órdenes */}
+                      <div className="mt-2 text-sm">
+                        <span className="text-gray-300">Cliente: </span>
+                        <span className="text-white font-semibold">{producto.cliente}</span>
+                        <span className="text-xs text-gray-400 ml-2">({producto.ordenes.join(', ')})</span>
                       </div>
                       
                       {/* Notas */}

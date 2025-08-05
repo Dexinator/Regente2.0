@@ -60,16 +60,11 @@ export default function PedidosCocina() {
     }
   };
 
-  // Nueva función para organizar los pedidos en bloques de 10 minutos y agrupar productos
+  // Nueva función para organizar los pedidos en bloques de 10 minutos
   const organizarPedidosPorTiempoYProducto = (data) => {
-    // Primero, separamos productos por bloques de 10 minutos
     const bloquesTiempo = {};
     
     data.forEach(item => {
-      // Determinamos si es cancelación por cantidad negativa
-      const esCancelacion = item.cantidad < 0;
-      if (esCancelacion) return; // Ignoramos cancelaciones para la agrupación inicial
-
       // Obtenemos la fecha del pedido y redondeamos a bloques de 10 minutos
       const fecha = new Date(item.tiempo_creacion);
       const minutos = fecha.getMinutes();
@@ -88,112 +83,31 @@ export default function PedidosCocina() {
         };
       }
       
-      // Añadir el producto al bloque
-      bloquesTiempo[bloqueKey].productos.push(item);
-    });
-    
-    // Procesamos las cancelaciones y agrupamos productos similares dentro de cada bloque
-    Object.keys(bloquesTiempo).forEach(bloqueKey => {
-      const bloque = bloquesTiempo[bloqueKey];
-      const productosAgrupados = {};
+      // Procesar el producto con datos ya calculados del backend
+      const productoProcessado = {
+        ...item,
+        // Convertir detalle_ids de string PostgreSQL array a JS array
+        detalle_ids: item.detalle_ids ? 
+          (typeof item.detalle_ids === 'string' ? 
+            item.detalle_ids.replace(/[{}]/g, '').split(',').filter(id => id).map(id => parseInt(id)) : 
+            item.detalle_ids) : 
+          [item.detalle_id],
+        // Procesar cancelaciones JSON
+        cancelaciones: item.cancelaciones ? 
+          (typeof item.cancelaciones === 'string' ? 
+            JSON.parse(item.cancelaciones) : 
+            item.cancelaciones).filter(c => c !== null) : 
+          [],
+        // Procesar notas múltiples
+        notas: item.notas ? item.notas.split('; ').filter(n => n) : [],
+        // Crear estructura de clientes compatible
+        clientes: [item.cliente],
+        clientes_por_orden: [{orden: item.orden_id, cliente: item.cliente}],
+        cantidad_total: item.cantidad
+      };
       
-      // Primero agrupamos los productos normales
-      bloque.productos.forEach(producto => {
-        // Creamos una clave única por producto con sus variantes
-        const clave = `${producto.producto_id}_${producto.sabor_id || 'sin'}_${producto.tamano_id || 'sin'}_${producto.ingrediente_id || 'sin'}`;
-        
-        if (!productosAgrupados[clave]) {
-          productosAgrupados[clave] = {
-            detalle_ids: [producto.detalle_id], // Guardamos todos los IDs para marcar como preparados
-            producto_id: producto.producto_id,
-            nombre: producto.nombre,
-            categoria: producto.categoria,
-            cantidad_total: producto.cantidad,
-            tiempo_creacion: producto.tiempo_creacion,
-            sabor_id: producto.sabor_id,
-            sabor_nombre: producto.sabor_nombre,
-            sabor_categoria: producto.sabor_categoria,
-            tamano_id: producto.tamano_id,
-            tamano_nombre: producto.tamano_nombre,
-            ingrediente_id: producto.ingrediente_id,
-            ingrediente_nombre: producto.ingrediente_nombre,
-            notas: producto.notas ? [producto.notas] : [],
-            clientes: [producto.cliente], // Guardamos nombres de clientes
-            clientes_por_orden: [{orden: producto.orden_id, cliente: producto.cliente}], // Para rastrear individualmente
-            nombre_sentencia_padre: producto.nombre_sentencia_padre || null, // Añadido
-            es_para_llevar: producto.es_para_llevar || false
-          };
-        } else {
-          // Actualizamos los datos del producto existente
-          productosAgrupados[clave].detalle_ids.push(producto.detalle_id);
-          productosAgrupados[clave].cantidad_total += producto.cantidad;
-          
-          // Solo agregamos clientes si no están ya presentes
-          if (!productosAgrupados[clave].clientes.includes(producto.cliente)) {
-            productosAgrupados[clave].clientes.push(producto.cliente);
-          }
-          
-          // Agregamos la relación orden-cliente
-          productosAgrupados[clave].clientes_por_orden.push({orden: producto.orden_id, cliente: producto.cliente});
-          
-          if (producto.notas && !productosAgrupados[clave].notas.includes(producto.notas)) {
-            productosAgrupados[clave].notas.push(producto.notas);
-          }
-          // Conservar el nombre_sentencia_padre si ya existe o el nuevo producto lo trae
-          if (producto.nombre_sentencia_padre && !productosAgrupados[clave].nombre_sentencia_padre) {
-            productosAgrupados[clave].nombre_sentencia_padre = producto.nombre_sentencia_padre;
-          }
-          
-          // Actualizar el tiempo_creacion para mantener el más antiguo
-          if (new Date(producto.tiempo_creacion) < new Date(productosAgrupados[clave].tiempo_creacion)) {
-            productosAgrupados[clave].tiempo_creacion = producto.tiempo_creacion;
-          }
-        }
-      });
-      
-      // Ahora procesamos las cancelaciones
-      data.forEach(item => {
-        if (item.cantidad >= 0) return; // Solo nos interesan cancelaciones
-        
-        // Verificamos si esta cancelación pertenece a este bloque de tiempo
-        const fechaCancel = new Date(item.tiempo_creacion);
-        const minutosCancel = fechaCancel.getMinutes();
-        const bloqueMinutosCancel = Math.floor(minutosCancel / 10) * 10;
-        fechaCancel.setMinutes(bloqueMinutosCancel, 0, 0);
-        
-        if (fechaCancel.toISOString() !== bloqueKey) return;
-        
-        // Buscamos el producto correspondiente
-        const clave = `${item.producto_id}_${item.sabor_id || 'sin'}_${item.tamano_id || 'sin'}_${item.ingrediente_id || 'sin'}`;
-        
-        if (productosAgrupados[clave]) {
-          // Actualizamos la cantidad y añadimos nota de cancelación
-          productosAgrupados[clave].cantidad_total += item.cantidad; // Restamos porque la cantidad es negativa
-          
-          if (productosAgrupados[clave].cantidad_total <= 0) {
-            // Si se canceló todo, quitamos el producto de la lista
-            delete productosAgrupados[clave];
-          } else if (item.notas) {
-            // Añadimos nota de cancelación si existe
-            const notaCancelacion = item.notas.includes('CANCELACIÓN:') ? 
-              item.notas : `CANCELACIÓN: ${item.notas}`;
-            
-            if (!productosAgrupados[clave].cancelaciones) {
-              productosAgrupados[clave].cancelaciones = [];
-            }
-            
-            productosAgrupados[clave].cancelaciones.push({
-              cantidad: Math.abs(item.cantidad),
-              nota: notaCancelacion
-            });
-          }
-        }
-      });
-      
-      // Actualizamos los productos del bloque con los productos agrupados y filtrados
-      // Ordenamos por tiempo_creacion para mantener el orden cronológico
-      bloque.productos = Object.values(productosAgrupados)
-        .sort((a, b) => new Date(a.tiempo_creacion) - new Date(b.tiempo_creacion));
+      // Añadir el producto al bloque correspondiente
+      bloquesTiempo[bloqueKey].productos.push(productoProcessado);
     });
     
     // Convertimos el objeto a un array, ordenado por tiempo
@@ -203,7 +117,7 @@ export default function PedidosCocina() {
         ...bloquesTiempo[key],
         bloque_key: key
       }))
-      .filter(bloque => bloque.productos.length > 0); // Solo bloques con productos
+      .filter(bloque => bloque.productos.length > 0);
   };
 
   const marcarComoPreparado = async (producto) => {
@@ -320,8 +234,49 @@ export default function PedidosCocina() {
               <div className="space-y-3">
                 {bloque.productos.map((producto) => {
                   const estaProcesando = estaEnProceso(producto);
+                  const estaCanceladoCompleto = producto.cancelado_completo || false;
                   
-                  // Construir la primera línea del producto
+                  // Para productos completamente cancelados, mostrar un formato especial
+                  if (estaCanceladoCompleto) {
+                    // Calcular tiempo transcurrido desde la cancelación
+                    const tiempoCancelacion = producto.ultima_cancelacion ? new Date(producto.ultima_cancelacion) : new Date();
+                    const minutosTranscurridos = Math.floor((new Date() - tiempoCancelacion) / 60000);
+                    
+                    return (
+                      <div
+                        key={producto.detalle_ids.join('-')}
+                        className="bg-red-950/50 rounded-xl p-4 shadow-md border-2 border-red-600"
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex-1">
+                            <p className="font-bold text-2xl text-red-300 line-through">
+                              ❌ CANCELADO - {producto.nombre}
+                              {producto.sabor_nombre && ` ${producto.sabor_nombre}`}
+                              {producto.ingrediente_nombre && ` ${producto.ingrediente_nombre}`}
+                              {producto.tamano_nombre && ` ${producto.tamano_nombre}`}
+                            </p>
+                            {producto.cancelaciones && producto.cancelaciones.length > 0 && (
+                              <div className="mt-2">
+                                {producto.cancelaciones.map((c, i) => (
+                                  <p key={i} className="text-lg text-red-200 italic">
+                                    Razón: {c.razon.replace('CANCELACIÓN:', '').trim()} 
+                                    <span className="text-sm ml-2">
+                                      (hace {minutosTranscurridos} min)
+                                    </span>
+                                  </p>
+                                ))}
+                              </div>
+                            )}
+                            <p className="text-sm text-gray-400 mt-1">
+                              Cliente: {producto.cliente}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  }
+                  
+                  // Construir la primera línea del producto normal
                   const lineaProducto = [
                     `${producto.cantidad_total}`,
                     "X",
@@ -335,7 +290,7 @@ export default function PedidosCocina() {
                     <div
                       key={producto.detalle_ids.join('-')}
                       className={`bg-vino/80 rounded-xl p-4 shadow-md 
-                        ${producto.cancelaciones ? 'border-l-4 border-red-500' : ''}
+                        ${producto.cancelaciones && producto.cancelaciones.length > 0 ? 'border-l-4 border-red-500' : ''}
                         ${estaProcesando ? 'animate-pulse opacity-60 bg-green-800/70 pointer-events-none' : ''}`}
                     >
                       {/* Primera línea: Cantidad X Nombre Sabor Ingrediente Tamaño */}
@@ -371,7 +326,8 @@ export default function PedidosCocina() {
                         <div className="mb-2">
                           {producto.cancelaciones.map((c, i) => (
                             <p key={i} className="text-xl text-red-300 italic">
-                              {i + 1}. Cancelado {c.cantidad}x: {c.nota}
+                              {producto.cancelaciones.length > 1 ? `${i + 1}. ` : ''}
+                              Cancelado {c.cantidad}x: {c.razon.replace('CANCELACIÓN:', '').trim()}
                             </p>
                           ))}
                         </div>

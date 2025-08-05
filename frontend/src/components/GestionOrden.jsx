@@ -25,7 +25,8 @@ export default function GestionOrden({ id }) {
       const resOrden = await fetch(`${API_URL}/orders/${id}/resumen`);
       const resPagos = await fetch(`${API_URL}/pagos/orden/${id}`);
       const datosOrden = await resOrden.json();
-      console.log("ORDEN:", datosOrden); 
+      console.log("ORDEN COMPLETA:", datosOrden); 
+      console.log("PRODUCTOS EN ORDEN:", datosOrden.productos);
       const datosPagos = await resPagos.json();
       console.log("PAGOS:", datosPagos);
       // Asegurarse que datosPagos sea un array
@@ -171,6 +172,67 @@ export default function GestionOrden({ id }) {
     }
   };
 
+  // Función para iniciar el proceso de cancelación de una sentencia completa
+  const iniciarCancelacionSentencia = async (sentenciaPrincipal) => {
+    try {
+      // Verificar que ningún componente esté preparado
+      const componentesSentencia = orden.productos.filter(
+        p => p.sentencia_detalle_orden_padre_id === sentenciaPrincipal.id_detalle_original
+      );
+      
+      const algunComponentePreparado = componentesSentencia.some(c => c.preparado);
+      if (algunComponentePreparado) {
+        alert("No se puede cancelar la sentencia porque algunos componentes ya están preparados.");
+        return;
+      }
+
+      // Obtener el ID del empleado desde el token JWT
+      const token = localStorage.getItem("token");
+      if (!token) {
+        alert("Sesión no válida. Inicia sesión nuevamente.");
+        window.location.href = "/login";
+        return;
+      }
+
+      const payload = JSON.parse(atob(token.split(".")[1]));
+      const empleadoId = payload.id;
+
+      // Preparar datos para cancelar la sentencia completa
+      const datosCancelacion = {
+        sentencia_detalle_orden_padre_id: sentenciaPrincipal.id_detalle_original,
+        empleado_id: empleadoId,
+        razon_cancelacion: "Cancelación de sentencia completa",
+        es_cancelacion_sentencia_completa: true
+      };
+
+      console.log("Enviando cancelación de sentencia:", datosCancelacion);
+
+      const response = await fetch(`${API_URL}/orders/${id}/cancelar-sentencia`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify(datosCancelacion)
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || "Error al cancelar la sentencia");
+      }
+
+      const resultado = await response.json();
+      alert(`Sentencia cancelada exitosamente: ${resultado.mensaje}`);
+      
+      // Recargar datos
+      await cargarDatos();
+      
+    } catch (error) {
+      console.error("Error:", error);
+      alert(error.message);
+    }
+  };
+
   // Función para cancelar un producto
   const confirmarCancelacion = async () => {
     try {
@@ -301,12 +363,56 @@ export default function GestionOrden({ id }) {
         return <p className="text-sm text-gray-400">No hay productos registrados.</p>;
     }
 
-    const sentenciasPrincipales = orden.productos.filter(
+    // Agrupar productos para calcular cantidades netas correctamente
+    const productosAgrupados = {};
+    
+    orden.productos.forEach(p => {
+      // Crear una clave única basada en características del producto
+      let claveAgrupacion;
+      
+      if (p.es_sentencia_principal) {
+        // Para sentencias principales, agrupar por nombre_sentencia
+        claveAgrupacion = `sentencia_${p.nombre_sentencia || p.nombre}`;
+      } else if (p.sentencia_detalle_orden_padre_id) {
+        // Para componentes de sentencia
+        claveAgrupacion = `componente_${p.sentencia_detalle_orden_padre_id}_${p.producto_id}_${p.sabor_id || 'null'}_${p.tamano_id || 'null'}_${p.ingrediente_id || 'null'}`;
+      } else {
+        // Para productos normales
+        claveAgrupacion = `producto_${p.producto_id}_${p.sabor_id || 'null'}_${p.tamano_id || 'null'}_${p.ingrediente_id || 'null'}`;
+      }
+      
+      if (!productosAgrupados[claveAgrupacion]) {
+        productosAgrupados[claveAgrupacion] = {
+          ...p,
+          cantidad_original: 0,
+          cantidad_cancelada: 0,
+          registros: []
+        };
+      }
+      
+      productosAgrupados[claveAgrupacion].registros.push(p);
+      
+      if (p.cantidad > 0) {
+        productosAgrupados[claveAgrupacion].cantidad_original += p.cantidad;
+      } else {
+        productosAgrupados[claveAgrupacion].cantidad_cancelada += Math.abs(p.cantidad);
+      }
+      
+      // Actualizar cantidad neta
+      productosAgrupados[claveAgrupacion].cantidad_neta = 
+        productosAgrupados[claveAgrupacion].cantidad_original - 
+        productosAgrupados[claveAgrupacion].cantidad_cancelada;
+    });
+
+    // Convertir a arrays para procesamiento
+    const productosConNetos = Object.values(productosAgrupados);
+    
+    const sentenciasPrincipales = productosConNetos.filter(
         p => p.es_sentencia_principal
     );
-    // console.log("Sentencias Principales detectadas:", sentenciasPrincipales);
+    console.log("Sentencias Principales agrupadas:", sentenciasPrincipales);
 
-    const componentesPorSentencia = orden.productos.reduce((acc, p) => {
+    const componentesPorSentencia = productosConNetos.reduce((acc, p) => {
         if (p.sentencia_detalle_orden_padre_id) {
             if (!acc[p.sentencia_detalle_orden_padre_id]) {
                 acc[p.sentencia_detalle_orden_padre_id] = [];
@@ -315,12 +421,12 @@ export default function GestionOrden({ id }) {
         }
         return acc;
     }, {});
-    // console.log("Componentes por Sentencia:", componentesPorSentencia);
+    console.log("Componentes por Sentencia agrupados:", componentesPorSentencia);
 
-    const productosNormales = orden.productos.filter(
+    const productosNormales = productosConNetos.filter(
         p => !p.es_sentencia_principal && !p.sentencia_detalle_orden_padre_id
     );
-    // console.log("Productos Normales:", productosNormales);
+    console.log("Productos Normales agrupados:", productosNormales);
 
     // Paleta de colores para diferenciar sentencias
     const coloresSentencias = [
@@ -349,10 +455,10 @@ export default function GestionOrden({ id }) {
         };
     });
 
-    const renderProductoItem = (p, esComponente = false, infoSentencia = null) => {
+    const renderProductoItem = (p, esComponente = false, infoSentencia = null, sentenciaCancelada = false) => {
         // Determinar si el item está efectivamente cancelado para la UI
-        // Un item original (precio_unitario > 0) se considera cancelado si su cantidad_neta <= 0
-        const estaCanceladoUI = p.cantidad_neta <= 0 && p.precio_unitario > 0;
+        // Para productos agrupados, verificar la cantidad_neta calculada
+        const estaCanceladoUI = p.cantidad_neta <= 0 || sentenciaCancelada;
 
         return (
             <li 
@@ -367,6 +473,11 @@ export default function GestionOrden({ id }) {
                     <div>
                         <p className={`font-bold ${estaCanceladoUI ? 'line-through text-gray-400' : ''}`}>
                             {p.nombre} x{p.cantidad_neta} — ${parseFloat(p.precio_unitario).toFixed(2)}
+                            {p.cantidad_cancelada > 0 && !estaCanceladoUI && (
+                                <span className="ml-2 text-xs text-orange-400">
+                                    (Original: {p.cantidad_original}, Cancelado: {p.cantidad_cancelada})
+                                </span>
+                            )}
                             {p.es_para_llevar && (
                                 <span className="ml-2 text-xs bg-amarillo text-negro px-2 py-0.5 rounded font-bold">
                                     🛍️ Para llevar
@@ -412,27 +523,37 @@ export default function GestionOrden({ id }) {
                         )}
 
                         {/* Estado del item */}
-                        {estaCanceladoUI && <span className="text-red-400 text-xs ml-2">CANCELADO</span>}
+                        {estaCanceladoUI && p.es_sentencia_principal && <span className="text-red-400 text-xs ml-2">SENTENCIA CANCELADA</span>}
+                        {estaCanceladoUI && !p.es_sentencia_principal && <span className="text-red-400 text-xs ml-2">CANCELADO</span>}
                         {p.preparado && !estaCanceladoUI && <span className="text-green-400 text-xs ml-2">PREPARADO</span>}
                         {p.entregado && !estaCanceladoUI && <span className="text-blue-400 text-xs ml-2">ENTREGADO</span>}
                     </div>
                     <div>
-                        {/* Solo se pueden cancelar items que no sean sentencias principales directamente por ahora, 
-                            y que no estén cancelados ni preparados */}
-                        {!p.es_sentencia_principal && !estaCanceladoUI && !p.preparado && p.cantidad_neta > 0 && (
+                        {/* Para sentencias principales, mostrar botón de cancelar sentencia completa solo si no está cancelada */}
+                        {p.es_sentencia_principal && !estaCanceladoUI && !p.preparado && p.cantidad_neta > 0 && !sentenciaCancelada && (
+                            <button
+                                onClick={() => {
+                                    if (confirm("¿Deseas cancelar la sentencia completa con todos sus componentes?")) {
+                                        const sentenciaParaCancelar = {
+                                            ...p,
+                                            cantidad: p.cantidad_neta,
+                                            es_cancelacion_sentencia_completa: true
+                                        };
+                                        iniciarCancelacionSentencia(sentenciaParaCancelar);
+                                    }
+                                }}
+                                className="bg-red-800 text-white text-xs px-2 py-1 rounded"
+                            >
+                                Cancelar Sentencia
+                            </button>
+                        )}
+                        {/* Para productos normales (no componentes de sentencia), permitir cancelación individual */}
+                        {!p.es_sentencia_principal && !p.sentencia_detalle_orden_padre_id && !estaCanceladoUI && !p.preparado && p.cantidad_neta > 0 && (
                              <button
                                 onClick={() => {
-                                    // La función iniciarCancelacion espera un producto con "producto_id"
-                                    // y una "cantidad" que es la cantidad original positiva.
-                                    // Nuestro "p" aquí tiene "cantidad_neta".
-                                    // Necesitamos reconstruir un objeto similar al que esperaba iniciarCancelacion.
-                                    // La clave es que 'iniciarCancelacion' probablemente deba ser más inteligente
-                                    // o le pasamos los datos que necesita para calcular la 'cantidad_disponible'.
-                                    // Por ahora, simplificaremos asumiendo que cancelar opera sobre el item tal como está.
-                                    // La lógica de 'cantidad_disponible' en iniciarCancelacion debe revisarse con la nueva estructura.
                                     const productoParaCancelar = {
-                                        ...p, // Contiene id_detalle_original, producto_id, sabor_id, etc.
-                                        cantidad: p.cantidad_neta // La cantidad actual neta que se puede cancelar
+                                        ...p,
+                                        cantidad: p.cantidad_neta
                                     };
                                     iniciarCancelacion(productoParaCancelar);
                                 }}
@@ -441,13 +562,23 @@ export default function GestionOrden({ id }) {
                                 Cancelar
                             </button>
                         )}
+                        {/* Para componentes de sentencia, mostrar estado apropiado */}
+                        {p.sentencia_detalle_orden_padre_id && !estaCanceladoUI && !p.preparado && !sentenciaCancelada && (
+                            <span className="text-xs text-gray-400">
+                                Parte de sentencia
+                            </span>
+                        )}
+                        {p.sentencia_detalle_orden_padre_id && sentenciaCancelada && (
+                            <span className="text-xs text-red-400">
+                                Cancelado con sentencia
+                            </span>
+                        )}
                         {/* Mensaje si no es cancelable */}
-                        {(!p.es_sentencia_principal && (estaCanceladoUI || p.preparado) && p.cantidad_neta > 0) && (
+                        {(estaCanceladoUI || p.preparado) && p.cantidad_neta > 0 && (
                             <span className="text-xs text-gray-400">
                                 {estaCanceladoUI ? 'Cancelado' : 'No cancelable'}
                             </span>
                         )}
-                         {/* Para sentencias principales, podríamos tener un botón de "Cancelar Sentencia Completa" si se implementa esa lógica */}
                     </div>
                 </div>
             </li>
@@ -459,11 +590,14 @@ export default function GestionOrden({ id }) {
             {/* Renderizar Sentencias Principales y sus Componentes */}
             {sentenciasPrincipales.map(sp => {
                 const infoSentencia = sentenciasConIndice[sp.id_detalle_original];
+                // Verificar si la sentencia está cancelada
+                const sentenciaCancelada = sp.cantidad_neta <= 0 && sp.precio_unitario > 0;
+                
                 return (
                     <div key={`sp-div-${sp.id_detalle_original}`}>
-                        {renderProductoItem(sp, false)}
+                        {renderProductoItem(sp, false, null, sentenciaCancelada)}
                         {(componentesPorSentencia[sp.id_detalle_original] || []).map(comp => 
-                            renderProductoItem(comp, true, infoSentencia)
+                            renderProductoItem(comp, true, infoSentencia, sentenciaCancelada)
                         )}
                     </div>
                 );

@@ -10,7 +10,6 @@ export default function CrearOrden() {
     const [numPersonas, setNumPersonas] = useState(1);
     
     const [productosSeleccionados, setProductosSeleccionados] = useState([]);
-    const [mostrarProductSelector, setMostrarProductSelector] = useState(false);
 
     // Estado para código promocional
     const [codigoPromocional, setCodigoPromocional] = useState("");
@@ -32,7 +31,6 @@ export default function CrearOrden() {
 
     const handleProductsSelected = (productos) => {
         setProductosSeleccionados(productos);
-        setMostrarProductSelector(false);
     };
 
     // Función para validar código promocional
@@ -180,16 +178,6 @@ export default function CrearOrden() {
         }
     };
 
-    if (mostrarProductSelector) {
-        return (
-            <ProductSelector
-                onProductsSelected={handleProductsSelected}
-                onClose={() => setMostrarProductSelector(false)}
-                initialProducts={productosSeleccionados}
-            />
-        );
-    }
-
     return (
         <div className="space-y-8">
             <h2 className="text-lg font-bold text-amarillo">Datos del Cliente</h2>
@@ -322,6 +310,14 @@ export default function CrearOrden() {
                 )}
             </div>
             
+            {/* Selector de productos */}
+            <ProductSelector
+                onProductsSelected={handleProductsSelected}
+                onClose={() => window.location.href = "/ordenes"}
+                initialProducts={productosSeleccionados}
+                hideProductSummary={true}
+            />
+            
             {/* Lista de productos seleccionados */}
             <div className="space-y-3 my-6">
                 {productosSeleccionados.length > 0 && (
@@ -452,13 +448,6 @@ export default function CrearOrden() {
                     </div>
                 )}
             </div>
-
-            <button
-                onClick={() => setMostrarProductSelector(true)}
-                className="w-full bg-amarillo text-negro py-3 rounded font-bold hover:bg-yellow-500"
-            >
-                Agregar Productos
-            </button>
 
             <div className="flex justify-between">
                 <span>Subtotal:</span>

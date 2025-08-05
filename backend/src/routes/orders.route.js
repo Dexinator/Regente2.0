@@ -56,6 +56,7 @@ router.get("/:id/resumen", getOrderSummary);
 router.put("/:id/close", closeOrderById);
 router.post("/:id/productos", addProducts);
 router.post("/:id/cancelar", cancelarProducto); // Cancelar productos
+router.post("/:id/cancelar-sentencia", cancelarProducto); // Cancelar sentencia completa
 router.get("/:id", fetchOrderById);        // Una orden con detalles (debe ir AL FINAL)
 
 /*
