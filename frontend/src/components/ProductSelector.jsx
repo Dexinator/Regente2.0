@@ -507,6 +507,11 @@ export default function ProductSelector({
         precioTotal += ingrediente_precio;
       }
       
+      // Agregar $10 si es para llevar
+      if (esParaLlevar) {
+        precioTotal += 10;
+      }
+      
       setProductosSeleccionados(prev => [
         ...prev, 
         { 
@@ -515,7 +520,8 @@ export default function ProductSelector({
           precio_original: productoEditandoNotas.precio,
           precio: precioTotal,
           notas: notas.trim() || null,
-          es_para_llevar: esParaLlevar
+          es_para_llevar: esParaLlevar,
+          para_llevar_precio: esParaLlevar ? 10 : 0
         }
       ]);
     }
@@ -1233,6 +1239,9 @@ export default function ProductSelector({
               className="w-5 h-5 rounded border-amarillo text-amarillo focus:ring-amarillo"
             />
             <span className="font-bold">🛍️ Para llevar</span>
+            <span className="bg-amarillo text-negro px-2 py-1 rounded-full text-xs font-bold ml-auto">
+              +$10.00
+            </span>
           </label>
         </div>
         
@@ -1279,11 +1288,6 @@ export default function ProductSelector({
               <div className="flex-1">
                 <p className="font-bold">
                   {prod.nombre}
-                  {prod.es_para_llevar && (
-                    <span className="ml-2 text-xs bg-amarillo text-negro px-2 py-0.5 rounded font-bold">
-                      🛍️ Para llevar
-                    </span>
-                  )}
                 </p>
                 {prod.esSentencia && (
                   <p className="text-xs text-amarillo font-normal">(Sentencia)</p>
@@ -1316,6 +1320,13 @@ export default function ProductSelector({
                     {parseFloat(prod.ingrediente_precio) > 0 && (
                       <span className="text-amarillo">+${parseFloat(prod.ingrediente_precio).toFixed(2)}</span>
                     )}
+                  </div>
+                )}
+                
+                {prod.es_para_llevar && (
+                  <div className="flex justify-between mt-1">
+                    <span>🛍️ Para llevar</span>
+                    <span className="text-amarillo">+$10.00</span>
                   </div>
                 )}
                 
@@ -1402,11 +1413,6 @@ export default function ProductSelector({
           <h2 className="text-lg font-bold text-amarillo">
             {showCustomerName && customerName ? `${customerName} - Seleccionar productos` : "Seleccionar productos"}
           </h2>
-          {esParaLlevar && (
-            <span className="bg-amarillo/20 text-amarillo px-2 py-1 rounded text-sm font-bold">
-              🛍️ Para Llevar
-            </span>
-          )}
         </div>
         
         <button

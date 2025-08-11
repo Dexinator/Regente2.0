@@ -565,8 +565,11 @@ export const getOrderResumen = async (orden_id) => {
     // Los componentes de sentencia se tratan como productos individuales con variantes.
     let claveUnica;
     if (row.es_sentencia_principal) {
-        // Las sentencias principales nunca se agrupan
-        claveUnica = `sentencia_principal_${row.detalle_orden_id}`;
+        // Agrupar sentencias principales por nombre y descripción para combinar original y cancelación
+        // Esto agrupa correctamente la sentencia original con su cancelación
+        const nombreKey = row.nombre_promocion || row.nombre || 'sin_nombre';
+        const descripcionKey = row.descripcion_promocion || 'sin_descripcion';
+        claveUnica = `sentencia_principal_${nombreKey}_${descripcionKey}`;
     } else if (row.sentencia_detalle_orden_padre_id) {
         // Componentes de sentencia: incluir el padre en la clave para no agrupar entre diferentes sentencias
         claveUnica = `comp_sentencia_${row.sentencia_detalle_orden_padre_id}_prod_${row.producto_id}_sabor_${row.sabor_id || 'null'}_tam_${row.tamano_id || 'null'}_ing_${row.ingrediente_id || 'null'}`;
@@ -599,6 +602,7 @@ export const getOrderResumen = async (orden_id) => {
         nombre_promocion: row.nombre_promocion,
         descripcion_promocion: row.descripcion_promocion,
         categoria_producto: row.categoria_producto,
+        es_para_llevar: row.es_para_llevar,
         es_cancelacion_item: false // Para marcar si el item agrupado es en sí una cancelación total
       });
     }
@@ -607,7 +611,9 @@ export const getOrderResumen = async (orden_id) => {
     prodAgrupado.cantidad_neta += row.cantidad; // Suma cantidades (positivas y negativas)
     // El preparado se considera true si alguna de sus instancias está preparada (esto podría necesitar revisión según la lógica de negocio)
     if(row.preparado) prodAgrupado.preparado = true;
-    if(row.entregado) prodAgrupado.entregado = true; 
+    if(row.entregado) prodAgrupado.entregado = true;
+    // Mantener es_para_llevar si alguna instancia lo tiene
+    if(row.es_para_llevar) prodAgrupado.es_para_llevar = true; 
   }
   
   mapaProductos.forEach(prod => {
@@ -617,10 +623,11 @@ export const getOrderResumen = async (orden_id) => {
     if (prod.cantidad_neta <= 0 && prod.precio_unitario > 0) {
         prod.es_cancelacion_item = true; // El item en sí ha sido completamente cancelado o más
     }
-    // Solo añadir a productos procesados si la cantidad neta es diferente de cero, o si es una sentencia principal (para mostrarla incluso si sus items se cancelan)
-    // O si es un registro de cancelación que queremos mostrar (esto último depende de la UI deseada)
-    // Por ahora, mostramos todo lo que tenga cantidad neta != 0 o sea sentencia principal.
-    if (prod.cantidad_neta !== 0 || prod.es_sentencia_principal) {
+    // Incluir productos en los siguientes casos:
+    // 1. Cantidad neta diferente de cero (productos activos o parcialmente cancelados)
+    // 2. Sentencias principales (incluso si están canceladas, para mostrarlas con indicador)
+    // 3. Productos cancelados (es_cancelacion_item = true) para mostrarlos con indicador visual
+    if (prod.cantidad_neta !== 0 || prod.es_sentencia_principal || prod.es_cancelacion_item) {
         productosProcesados.push(prod);
     }
   });
@@ -1039,9 +1046,10 @@ export const cancelarSentenciaCompleta = async (orden_id, sentencia_detalle_orde
     }
 
     // Actualizar el total de la orden
+    // Las cancelaciones tienen precio negativo, así que el cálculo debe ser directo
     const totalResult = await client.query(
       `SELECT 
-        SUM(cantidad * precio_unitario) as nuevo_total_bruto
+        SUM(cantidad * ABS(precio_unitario)) as nuevo_total_bruto
        FROM detalles_orden 
        WHERE orden_id = $1`,
       [orden_id]

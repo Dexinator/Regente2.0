@@ -10,7 +10,9 @@
       "Bash(docker-compose:*)",
       "Bash(docker run:*)",
       "Bash(cp:*)",
-      "Bash(docker cp:*)"
+      "Bash(docker cp:*)",
+      "Bash(PGPASSWORD=root psql -h localhost -U root -d regente -c \"\\dt\")",
+      "Bash(cat:*)"
     ],
     "deny": []
   }

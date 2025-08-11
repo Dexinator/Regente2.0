@@ -65,7 +65,8 @@ export default function AgregarProducto({ orden_id }) {
               es_parte_sentencia: p.es_parte_sentencia || false,
               nombre_sentencia: p.esSentencia ? p.nombre : null,
               descripcion_sentencia: p.esSentencia ? p.descripcion : null,
-              es_para_llevar: p.es_para_llevar || false
+              es_para_llevar: p.es_para_llevar || false,
+              para_llevar_precio: p.para_llevar_precio || 0
             };
             
             console.log("Enviando producto:", productoData);
