@@ -717,9 +717,9 @@ export const getProductosPorPreparar = async () => {
         d.sentencia_detalle_orden_padre_id,
         SUM(d.cantidad) AS cantidad_neta, -- Suma algebraica (positivos - negativos)
         MIN(CASE WHEN d.cantidad > 0 THEN d.tiempo_creacion END) AS tiempo_creacion_original,
-        -- Recolectar todos los IDs de detalles positivos (para marcar como preparados)
-        ARRAY_AGG(d.id) FILTER (WHERE d.cantidad > 0 AND d.preparado = FALSE) AS detalle_ids,
-        -- Información de cancelaciones
+        -- Recolectar todos los IDs de detalles positivos (para marcar como preparados) - ORDENADOS para consistencia
+        ARRAY_AGG(d.id ORDER BY d.id) FILTER (WHERE d.cantidad > 0 AND d.preparado = FALSE) AS detalle_ids,
+        -- Información de cancelaciones - ORDENADAS por tiempo para consistencia
         ARRAY_AGG(
           CASE 
             WHEN d.cantidad < 0 THEN 
@@ -729,10 +729,11 @@ export const getProductosPorPreparar = async () => {
                 'tiempo', d.tiempo_creacion
               )
           END
+          ORDER BY d.tiempo_creacion
         ) FILTER (WHERE d.cantidad < 0) AS cancelaciones_json,
         MAX(CASE WHEN d.cantidad < 0 THEN d.tiempo_creacion END) AS ultima_cancelacion,
-        -- Recolectar notas de productos positivos
-        STRING_AGG(DISTINCT d.notas, '; ') FILTER (WHERE d.cantidad > 0 AND d.notas IS NOT NULL AND d.notas != '') AS notas_combinadas,
+        -- Recolectar notas de productos positivos - ORDENADAS para consistencia
+        STRING_AGG(DISTINCT d.notas, '; ' ORDER BY d.notas) FILTER (WHERE d.cantidad > 0 AND d.notas IS NOT NULL AND d.notas != '') AS notas_combinadas,
         BOOL_OR(d.es_para_llevar) AS es_para_llevar
       FROM detalles_orden d
       WHERE d.preparado = FALSE 
