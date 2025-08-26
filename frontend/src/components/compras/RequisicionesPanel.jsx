@@ -392,10 +392,10 @@ export default function RequisicionesPanel() {
                       {insumosFiltrados.length > 0 && (
                         <div className="absolute z-10 w-full mt-1 bg-negro border border-gray-700 rounded shadow-lg max-h-60 overflow-y-auto">
                           {insumosFiltrados.map((insumo) => (
-                            <button
+                            <div
                               key={insumo.id}
-                              type="button"
-                              onClick={() => {
+                              onMouseDown={(e) => {
+                                e.preventDefault();
                                 setFormItemData({
                                   ...formItemData,
                                   insumo_id: insumo.id.toString(),
@@ -404,14 +404,14 @@ export default function RequisicionesPanel() {
                                 setBusquedaInsumo(insumo.nombre);
                                 setInsumosFiltrados([]);
                               }}
-                              className="w-full text-left p-2 hover:bg-vino/30 border-b border-gray-800 last:border-0"
+                              className="w-full text-left p-2 hover:bg-vino/30 border-b border-gray-800 last:border-0 cursor-pointer"
                             >
                               <div className="text-white">{insumo.nombre}</div>
                               <div className="text-sm text-gray-400">
                                 {insumo.categoria && `Categoría: ${insumo.categoria} `}
                                 {insumo.marca && `| Marca: ${insumo.marca}`}
                               </div>
-                            </button>
+                            </div>
                           ))}
                         </div>
                       )}
@@ -608,10 +608,10 @@ export default function RequisicionesPanel() {
                       {insumosFiltradosDetalle.length > 0 && (
                         <div className="absolute z-10 w-full mt-1 bg-negro border border-gray-700 rounded shadow-lg max-h-60 overflow-y-auto">
                           {insumosFiltradosDetalle.map((insumo) => (
-                            <button
+                            <div
                               key={insumo.id}
-                              type="button"
-                              onClick={() => {
+                              onMouseDown={(e) => {
+                                e.preventDefault();
                                 setFormItemData({
                                   ...formItemData,
                                   insumo_id: insumo.id.toString(),
@@ -620,14 +620,14 @@ export default function RequisicionesPanel() {
                                 setBusquedaInsumoDetalle(insumo.nombre);
                                 setInsumosFiltradosDetalle([]);
                               }}
-                              className="w-full text-left p-2 hover:bg-vino/30 border-b border-gray-800 last:border-0"
+                              className="w-full text-left p-2 hover:bg-vino/30 border-b border-gray-800 last:border-0 cursor-pointer"
                             >
                               <div className="text-white">{insumo.nombre}</div>
                               <div className="text-sm text-gray-400">
                                 {insumo.categoria && `Categoría: ${insumo.categoria} `}
                                 {insumo.marca && `| Marca: ${insumo.marca}`}
                               </div>
-                            </button>
+                            </div>
                           ))}
                         </div>
                       )}
