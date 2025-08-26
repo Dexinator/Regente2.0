@@ -66,6 +66,9 @@ export const updateProveedor = async (id, data) => {
     }
   }
 
+  // Si activo no viene definido, mantener el valor actual
+  const activoValue = activo !== undefined ? activo : true;
+
   const query = `
     UPDATE proveedores 
     SET nombre = $1, rfc = $2, direccion = $3, 
@@ -74,7 +77,7 @@ export const updateProveedor = async (id, data) => {
     RETURNING *
   `;
   
-  const values = [nombre, rfc, direccion, telefono, email, contacto_nombre, activo, JSON.stringify(dias_compra), id];
+  const values = [nombre, rfc, direccion, telefono, email, contacto_nombre, activoValue, JSON.stringify(dias_compra), id];
   const result = await pool.query(query, values);
   return result.rows[0] || null;
 };

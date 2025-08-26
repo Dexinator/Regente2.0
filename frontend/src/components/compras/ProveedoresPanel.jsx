@@ -21,7 +21,8 @@ export default function ProveedoresPanel() {
     telefono: "",
     email: "",
     contacto_nombre: "",
-    dias_compra: []
+    dias_compra: [],
+    activo: true
   });
 
   useEffect(() => {
@@ -106,6 +107,9 @@ export default function ProveedoresPanel() {
   };
 
   const editarProveedor = (proveedor) => {
+    console.log("Editando proveedor:", proveedor);
+    console.log("Valor de activo:", proveedor.activo, typeof proveedor.activo);
+    
     setProveedorEditando(proveedor);
     setFormData({
       nombre: proveedor.nombre,
@@ -114,7 +118,8 @@ export default function ProveedoresPanel() {
       telefono: proveedor.telefono || "",
       email: proveedor.email || "",
       contacto_nombre: proveedor.contacto_nombre || "",
-      dias_compra: proveedor.dias_compra || []
+      dias_compra: proveedor.dias_compra || [],
+      activo: proveedor.activo === true || proveedor.activo === "t" || proveedor.activo === 1
     });
     setMostrarFormulario(true);
   };
@@ -142,7 +147,8 @@ export default function ProveedoresPanel() {
       telefono: "",
       email: "",
       contacto_nombre: "",
-      dias_compra: []
+      dias_compra: [],
+      activo: true
     });
     setMostrarFormulario(false);
   };

@@ -1,1001 +1,219 @@
-﻿id,nombre,descripcion,categoria,unidad_medida_default,fecha_alta,activo,marca,cantidad_por_unidad,,,,,Precio
-1,1 Lt. Botella,Botella para llevar pulque,Desechables,pieza,15/5/2025,t,Por definir,1,,,,,
-2,Vaso liso 1 lt,Vaso de uso y p llevar,Desechables,bolsa,16/5/2025,t,Reyma,1,,,,,61
-3,1/2 Lt. Botella,Botella para llevar pulque,Desechables,pieza,17/5/2025,t,Por definir,1,,,,,
-4,Vaso Liso 1/2 Lt,Vaso de uso y p llevar,Desechables,bolsa,18/5/2025,t,Reyma,1,,,,,
-5,2 Lt. Botella,Botella para llevar pulque,Desechables,pieza,19/5/2025,t,Por definir,1,,,,,
-6,420 Beer,Cerveza Cannabica,Cerveza Artesanal,6 Piezas,20/5/2025,t,Por definir,1,,,,,
-7,Cabeza de Lomo,Carne base de la carne árabe,Proteínas,Kg,21/5/2025,t,Por definir,1,,,,,
-8,Aceite 5Lts,Galón de 5 Lts,Suministros,Litro,22/5/2025,t,Impperial,1,,,,,5 litris imperial 168
-9,Aceitunas,Por definir,Botana,Por definir,23/5/2025,t,Por definir,1,,,,,
-10,Agua Botella,Por definir,Bebidas y Gaseosas,pza,25/5/2025,t,Por definir,1,,,,,
-11,Agua embotellada,Por definir,Bebidas y Gaseosas,pieza,26/5/2025,t,Por definir,1,,,,,
-12,Agua Mineral Botella 355 Ml,Por definir,Bebidas y Gaseosas,pieza,27/5/2025,t,Por definir,1,,,,,
-13,Aguamiel,Por definir,Pulquería,Kg,28/5/2025,t,Por definir,1,,,,,
-14,Ajo,Por definir,Frutas y Verduras,Kg,29/5/2025,t,Por definir,1,,,,,125
-15,Albahaca,Por definir,Especias y Condimientos,Kg,30/5/2025,t,Por definir,1,,,,,
-16,Apio,Por definir,Frutas y Verduras,Por definir,31/5/2025,t,Por definir,1,,,,,
-17,Arándano,Por definir,Frutas y Verduras,Kg,1/6/2025,t,Por definir,1,,,,,130
-18,Azucar,Por definir,Especias y Condimientos,Kg,2/6/2025,t,Por definir,1,,,,,19
-19,Bicarbonato,Por definir,Especias y Condimientos,Kg,3/6/2025,t,Por definir,1,,,,,36
-20,Bolsa de té,Por definir,Bebidas y Gaseosas,pieza,4/6/2025,t,Por definir,1,,,,,
-21,Bolsa Hielo,Por definir,Bebidas y Gaseosas,Kg,5/6/2025,t,Por definir,1,,,,,
-22,Bolsas P/ Salsa,Por definir,Desechables,Kg,6/6/2025,t,Por definir,1,,,,,
-22,Tarugos,Dulces de chamoy,Dulces,kg,12/6/2025,t,Por definir,1,,,,,
-23,Salsa Botanera,Galón de 4 Lts,Suministros,unidad,7/6/2025,t,La Botanera,1,,,,,La bota era galón 4lts 79.50
-24,Chile de Árbol,Por definir,Especias y Condimientos,Kg,8/6/2025,f,Por definir,1,,,,,140
-25,Chile Chiltepín,Por definir,Especias y Condimientos,Kg,9/6/2025,f,Por definir,1,,,,,
-26,Chile Chipotle,Por definir,Especias y Condimientos,Kg,10/6/2025,t,Por definir,1,,,,,166
-27,Chile Habanero,Por definir,Frutas y Verduras,Kg,11/6/2025,t,Por definir,1,,,,,85
-28,Chile Poblano,Por definir,Frutas y Verduras,Kg,12/6/2025,t,Por definir,1,,,,,30
-29,Chile en Polvo,Por definir,Suministros,Kg,13/6/2025,t,Por definir,1,,,,,Tajín 80
-30,Chile Xalapeño,Tambien conocido como cuaresmeño,Frutas y Verduras,Kg,14/6/2025,t,Por definir,1,,,,,24
-31,Cacahuate crudo,Por definir,Especias y Condimientos,Kg,15/6/2025,t,Por definir,1,,,,,42
-32,Cacahuate Enchilado c/ Ajo,2x Bolsa de 500gr,Botana,Kg,16/6/2025,t,Por definir,1,,,,,39 1/2kg
-33,Cacao,Por definir,Especias y Condimientos,Kg,17/6/2025,t,Por definir,1,,,,,
-34,Café en Grano,Por definir,Especias y Condimientos,Kg,18/6/2025,t,Por definir,1,,,,,
-35,Café Soluble,Por definir,Especias y Condimientos,Kg,19/6/2025,t,Por definir,1,,,,,
-36,Mezcal Canábico lt,precio por litro,Mezcal,Lt,20/6/2025,t,Por definir,1,,,,,
-37,Canela,Por definir,Especias y Condimientos,Kg,21/6/2025,t,Por definir,1,,,,,400
-38,Carbón,Por definir,Suministros,Kg,22/6/2025,t,Por definir,1,,,,,18
-39,Cardamomo,Por definir,Especias y Condimientos,Kg,23/6/2025,t,Por definir,1,,,,,
-40,Carne Árabe,Carne de cerdo marinada con especias y cocinada,Alimentos Preparados,kg,24/6/2025,t,David Loro,1,,,,,
-41,Abierta de Cerdo,Por definir,Proteínas,Kg,25/6/2025,t,Por definir,1,,,,,
-42,Carta Blanca,Por definir,Cerveza Comercial,pieza,26/6/2025,t,Por definir,1,,,,,
-43,Cebolla,Por definir,Frutas y Verduras,Kg,29/6/2025,t,Por definir,1,,,,,14
-44,Champiñón,Por definir,Proteínas,Kg,30/6/2025,f,Por definir,1,,,,,95
-45,Chapulines,Por definir,Proteínas,Kg,1/7/2025,t,Por definir,1,,,,,
-46,Charales,Por definir,Proteínas,Kg,2/7/2025,t,Por definir,1,,,,,
-47,Chicharrín de harina cuadrado,base de Chicharrín preparado,Bases,pieza,3/7/2025,t,Por definir,1,,,,,41
-48,Chocolate abuelita Caja,Caja c/ 6 oz,Suministros,unidad,4/7/2025,t,Abuelita,1,,,,,99 con 6pz
-49,Chorizo Argentino,Por definir,Proteínas,Kg,5/7/2025,t,Por definir,1,,,,,
-50,Churritos c/ Ajo,2x Bolsa de 500gr,Botana,Kg,6/7/2025,t,Por definir,1,,,,,42 500gr
-51,Cloro,Por definir,Limpieza,Lt,7/7/2025,t,A granel,1,,,,,
-52,Coca-Cola Retornable 3 Lts,Por definir,Bebidas y Gaseosas,pieza,8/7/2025,t,Por definir,1,,,,,
-53,Coca-Cola Botella 355 Ml,Por definir,Bebidas y Gaseosas,pieza,9/7/2025,t,Por definir,1,,,,,
-54,Colorantes,Por definir,Suministros,Kg,11/7/2025,t,Por definir,1,,,,,
-55,Comino,Por definir,Especias y Condimientos,Kg,12/7/2025,t,Por definir,1,,,,,150
-56,Contenedor Molletes PlÃ¡stico,Por definir,Desechables,pieza,13/7/2025,t,Por definir,1,,,,,
-57,Corona,Por definir,Cerveza Comercial,24 Piezas,14/7/2025,t,Por definir,1,,,,,
-58,Destilado pulque ,Por definir,Bebidas Artesanales,Por definir,17/7/2025,t,Por definir,1,,,,,
-59,Detergente en Polvo,Por definir,Limpieza,Kg,18/7/2025,t,Roma,1,,,,,
-60,Dulces Tehuanos,Por definir,Dulces,bolsa,19/7/2025,t,Por definir,1,,,,,
-61,Elote,Por definir,Frutas y Verduras,pieza,20/7/2025,t,Por definir,1,,,,,7.5
-62,Epazote,Por definir,Especias y Condimientos,Kg,21/7/2025,t,Por definir,1,,,,,
-63,Esencia de Arándano,Por definir,Suministros,Kg,22/7/2025,t,Por definir,1,,,,,
-64,Esencia de Uva,Por definir,Suministros,Kg,23/7/2025,t,Por definir,1,,,,,
-65,Mezcal Espadín 42°,Por definir,Mezcal,Lt,24/7/2025,t,Por definir,1,,,,,
-66,Mezcal Espadín 49°,Por definir,Mezcal,Lt,25/7/2025,t,Por definir,1,,,,,
-67,Fibra Metalica,Por definir,Limpieza,Pieza,26/7/2025,t,Por definir,1,,,,,10
-68,Finca las Moras ,Vino,Bebidas y Gaseosas,6 Piezas,27/7/2025,t,Por definir,1,,,,,
-69,Frijol Negro,Por definir,Proteínas,Kg,29/7/2025,t,Michigan,1,,,,,33
-70,Frijoles Refritos,Frijoles negros hervidos y refritos.,Alimentos Preparados,l,30/7/2025,t,David Loro,1,,,,,
-71,Fruta Curado Carta,Por definir,Frutas y Verduras,Kg,31/7/2025,t,Por definir,1,,,,,
-72,Fruta Curado Especial,Por definir,Frutas y Verduras,Kg,1/8/2025,t,Por definir,1,,,,,
-73,Fruta Mezcal,Por definir,Frutas y Verduras,Kg,2/8/2025,t,Por definir,1,,,,,
-74,Fruta Curado Temporada,Fruta de la que se compra mucha a bajo precio para que funja como el sabor del curado de temporada,Frutas y Verduras,Kg,3/8/2025,t,Por definir,1,,,,,
-75,Galleta animalito,Por definir,Suministros,Gr,4/8/2025,t,Por definir,1,,,,,41
-76,Gas,Por definir,Suministros,mes,5/8/2025,t,Por definir,1,,,,,
-77,Pulpa de Guanábana ,Por definir,Especias y Condimientos,Kg,6/8/2025,t,Por definir,1,,,,,83
-78,Heroica Mutante,Por definir,Cerveza Artesanal,pieza,7/8/2025,t,Por definir,1,,,,,
-79,Hierbabuena,Por definir,Especias y Condimientos,Kg,8/8/2025,t,Por definir,1,,,,,
-80,Hoja de Aguacate,Por definir,Especias y Condimientos,Kg,9/8/2025,t,Por definir,1,,,,,
-81,Hoja de Pimienta,Por definir,Especias y Condimientos,Kg,10/8/2025,t,Por definir,1,,,,,
-82,Huitlacoche,Por definir,Proteínas,Kg,11/8/2025,t,Por definir,1,,,,,45
-83,Huitlacoche Cocinado,Huitlachoche refrito,Alimentos Preparados,kg,12/8/2025,t,David Loro,1,,,,,
-84,Imperial Stout,Por definir,Cerveza Artesanal,pieza,13/8/2025,t,Por definir,1,,,,,
-85,Jabón Manos,Por definir,Limpieza,Lt,14/8/2025,t,A granel,1,,,,,
-86,Jabón Trastes,Por definir,Limpieza,Lt,15/8/2025,t,A granel,1,,,,,
-87,Jarabes,Por definir,Suministros,Kg,16/8/2025,t,Por definir,1,,,,,
-88,Jitomate,Por definir,Frutas y Verduras,Kg,17/8/2025,t,Por definir,1,,,,,16
-89,Jugo Maggi 800ml,Botella 800ml,Suministros,unidad,18/8/2025,t,Maggi,1,,,,,800ml  230
-90,Laurel,Por definir,Especias y Condimientos,Kg,19/8/2025,t,Por definir,1,,,,,
-91,Lavanda,Por definir,Especias y Condimientos,Kg,20/8/2025,t,Por definir,1,,,,,
-92,Leche Alpura Deslactosada,Caja individual,Lácteos,Lt,21/8/2025,t,Alpura,1,,,,,Lt alpura deslac 26
-93,Lechuga China,Por definir,Frutas y Verduras,Pieza,23/8/2025,t,Por definir,1,,,,,China 20
-94,Leviatán,Por definir,Cerveza Artesanal,pieza,24/8/2025,t,Por definir,1,,,,,
+﻿id,nombre,descripcion,categoria,unidad_medida_default,fecha_alta,activo,marca,cantidad_por_unidad
+1,1 Lt. Botella,Botella para llevar pulque,Desechables,pieza,15/5/2025,t,Por definir,1
+2,Vaso liso 1 lt,Vaso de uso y p llevar,Desechables,bolsa,16/5/2025,t,Reyma,1
+3,1/2 Lt. Botella,Botella para llevar pulque,Desechables,pieza,17/5/2025,t,Por definir,1
+4,Vaso Liso 1/2 Lt,Vaso de uso y p llevar,Desechables,bolsa,18/5/2025,t,Reyma,1
+5,2 Lt. Botella,Botella para llevar pulque,Desechables,pieza,19/5/2025,t,Por definir,1
+6,420 Beer,Cerveza Cannabica,Cerveza Artesanal,6 Piezas,20/5/2025,t,Por definir,1
+7,Cabeza de Lomo,Carne base de la carne árabe,Proteínas,Kg,21/5/2025,t,Por definir,1
+8,Aceite 5Lts,Galón de 5 Lts,Suministros,Litro,22/5/2025,t,Impperial,1
+9,Aceitunas,Por definir,Botana,Por definir,23/5/2025,t,Por definir,1
+10,Agua Botella,Por definir,Bebidas y Gaseosas,pza,25/5/2025,t,Por definir,1
+11,Agua embotellada,Por definir,Bebidas y Gaseosas,pieza,26/5/2025,t,Por definir,1
+12,Agua Mineral Botella 355 Ml,Por definir,Bebidas y Gaseosas,pieza,27/5/2025,t,Por definir,1
+13,Aguamiel,Por definir,Pulquería,Kg,28/5/2025,t,Por definir,1
+14,Ajo,Por definir,Frutas y Verduras,Kg,29/5/2025,t,Por definir,1
+15,Albahaca,Por definir,Especias y Condimientos,Kg,30/5/2025,t,Por definir,1
+16,Apio,Por definir,Frutas y Verduras,Por definir,31/5/2025,t,Por definir,1
+17,Arándano,Por definir,Frutas y Verduras,Kg,1/6/2025,t,Por definir,1
+18,Azucar,Por definir,Especias y Condimientos,Kg,2/6/2025,t,Por definir,1
+19,Bicarbonato,Por definir,Especias y Condimientos,Kg,3/6/2025,t,Por definir,1
+20,Bolsa de té,Por definir,Bebidas y Gaseosas,pieza,4/6/2025,t,Por definir,1
+21,Bolsa Hielo,Por definir,Bebidas y Gaseosas,Kg,5/6/2025,t,Por definir,1
+22,Bolsas P/ Salsa,Por definir,Desechables,Kg,6/6/2025,t,Por definir,1
+22,Tarugos,Dulces de chamoy,Dulces,kg,12/6/2025,t,Por definir,1
+23,Salsa Botanera,Galón de 4 Lts,Suministros,unidad,7/6/2025,t,La Botanera,1
+24,Chile de Árbol,Por definir,Especias y Condimientos,Kg,8/6/2025,f,Por definir,1
+25,Chile Chiltepín,Por definir,Especias y Condimientos,Kg,9/6/2025,f,Por definir,1
+26,Chile Chipotle,Por definir,Especias y Condimientos,Kg,10/6/2025,t,Por definir,1
+27,Chile Habanero,Por definir,Frutas y Verduras,Kg,11/6/2025,t,Por definir,1
+28,Chile Poblano,Por definir,Frutas y Verduras,Kg,12/6/2025,t,Por definir,1
+29,Chile en Polvo,Por definir,Suministros,Kg,13/6/2025,t,Por definir,1
+30,Chile Xalapeño,Tambien conocido como cuaresmeño,Frutas y Verduras,Kg,14/6/2025,t,Por definir,1
+31,Cacahuate crudo,Por definir,Especias y Condimientos,Kg,15/6/2025,t,Por definir,1
+32,Cacahuate Enchilado c/ Ajo,2x Bolsa de 500gr,Botana,Kg,16/6/2025,t,Por definir,1
+33,Cacao,Por definir,Especias y Condimientos,Kg,17/6/2025,t,Por definir,1
+34,Café en Grano,Por definir,Especias y Condimientos,Kg,18/6/2025,t,Por definir,1
+35,Café Soluble,Por definir,Especias y Condimientos,Kg,19/6/2025,t,Por definir,1
+36,Mezcal Canábico lt,precio por litro,Mezcal,Lt,20/6/2025,t,Por definir,1
+37,Canela,Por definir,Especias y Condimientos,Kg,21/6/2025,t,Por definir,1
+38,Carbón,Por definir,Suministros,Kg,22/6/2025,t,Por definir,1
+39,Cardamomo,Por definir,Especias y Condimientos,Kg,23/6/2025,t,Por definir,1
+40,Carne Árabe,Carne de cerdo marinada con especias y cocinada,Alimentos Preparados,kg,24/6/2025,t,David Loro,1
+41,Abierta de Cerdo,Por definir,Proteínas,Kg,25/6/2025,t,Por definir,1
+42,Carta Blanca,Por definir,Cerveza Comercial,pieza,26/6/2025,t,Por definir,1
+43,Cebolla,Por definir,Frutas y Verduras,Kg,29/6/2025,t,Por definir,1
+44,Champiñón,Por definir,Proteínas,Kg,30/6/2025,f,Por definir,1
+45,Chapulines,Por definir,Proteínas,Kg,1/7/2025,t,Por definir,1
+46,Charales,Por definir,Proteínas,Kg,2/7/2025,t,Por definir,1
+47,Chicharrín de harina cuadrado,base de Chicharrín preparado,Bases,pieza,3/7/2025,t,Por definir,1
+48,Chocolate abuelita Caja,Caja c/ 6 oz,Suministros,unidad,4/7/2025,t,Abuelita,1
+49,Chorizo Argentino,Por definir,Proteínas,Kg,5/7/2025,t,Por definir,1
+50,Churritos c/ Ajo,2x Bolsa de 500gr,Botana,Kg,6/7/2025,t,Por definir,1
+51,Cloro,Por definir,Limpieza,Lt,7/7/2025,t,A granel,1
+52,Coca-Cola Retornable 3 Lts,Por definir,Bebidas y Gaseosas,pieza,8/7/2025,t,Por definir,1
+53,Coca-Cola Botella 355 Ml,Por definir,Bebidas y Gaseosas,pieza,9/7/2025,t,Por definir,1
+54,Colorantes,Por definir,Suministros,Kg,11/7/2025,t,Por definir,1
+55,Comino,Por definir,Especias y Condimientos,Kg,12/7/2025,t,Por definir,1
+56,Contenedor Molletes PlÃ¡stico,Por definir,Desechables,pieza,13/7/2025,t,Por definir,1
+57,Corona,Por definir,Cerveza Comercial,24 Piezas,14/7/2025,t,Por definir,1
+58,Destilado pulque ,Por definir,Bebidas Artesanales,Por definir,17/7/2025,t,Por definir,1
+59,Detergente en Polvo,Por definir,Limpieza,Kg,18/7/2025,t,Roma,1
+60,Dulces Tehuanos,Por definir,Dulces,bolsa,19/7/2025,t,Por definir,1
+61,Elote,Por definir,Frutas y Verduras,pieza,20/7/2025,t,Por definir,1
+62,Epazote,Por definir,Especias y Condimientos,Kg,21/7/2025,t,Por definir,1
+63,Esencia de Arándano,Por definir,Suministros,Kg,22/7/2025,t,Por definir,1
+64,Esencia de Uva,Por definir,Suministros,Kg,23/7/2025,t,Por definir,1
+65,Mezcal Espadín 42°,Por definir,Mezcal,Lt,24/7/2025,t,Por definir,1
+66,Mezcal Espadín 49°,Por definir,Mezcal,Lt,25/7/2025,t,Por definir,1
+67,Fibra Metalica,Por definir,Limpieza,Pieza,26/7/2025,t,Por definir,1
+68,Finca las Moras ,Vino,Bebidas y Gaseosas,6 Piezas,27/7/2025,t,Por definir,1
+69,Frijol Negro,Por definir,Proteínas,Kg,29/7/2025,t,Michigan,1
+70,Frijoles Refritos,Frijoles negros hervidos y refritos.,Alimentos Preparados,l,30/7/2025,t,David Loro,1
+71,Fruta Curado Carta,Por definir,Frutas y Verduras,Kg,31/7/2025,t,Por definir,1
+72,Fruta Curado Especial,Por definir,Frutas y Verduras,Kg,1/8/2025,t,Por definir,1
+73,Fruta Mezcal,Por definir,Frutas y Verduras,Kg,2/8/2025,t,Por definir,1
+74,Fruta Curado Temporada,Fruta de la que se compra mucha a bajo precio para que funja como el sabor del curado de temporada,Frutas y Verduras,Kg,3/8/2025,t,Por definir,1
+75,Galleta animalito,Por definir,Suministros,Gr,4/8/2025,t,Por definir,1
+76,Gas,Por definir,Suministros,mes,5/8/2025,t,Por definir,1
+77,Pulpa de Guanábana ,Por definir,Especias y Condimientos,Kg,6/8/2025,t,Por definir,1
+78,Heroica Mutante,Por definir,Cerveza Artesanal,pieza,7/8/2025,t,Por definir,1
+79,Hierbabuena,Por definir,Especias y Condimientos,Kg,8/8/2025,t,Por definir,1
+80,Hoja de Aguacate,Por definir,Especias y Condimientos,Kg,9/8/2025,t,Por definir,1
+81,Hoja de Pimienta,Por definir,Especias y Condimientos,Kg,10/8/2025,t,Por definir,1
+82,Huitlacoche,Por definir,Proteínas,Kg,11/8/2025,t,Por definir,1
+83,Huitlacoche Cocinado,Huitlachoche refrito,Alimentos Preparados,kg,12/8/2025,t,David Loro,1
+84,Imperial Stout,Por definir,Cerveza Artesanal,pieza,13/8/2025,t,Por definir,1
+85,Jabón Manos,Por definir,Limpieza,Lt,14/8/2025,t,A granel,1
+86,Jabón Trastes,Por definir,Limpieza,Lt,15/8/2025,t,A granel,1
+87,Jarabes,Por definir,Suministros,Kg,16/8/2025,t,Por definir,1
+88,Jitomate,Por definir,Frutas y Verduras,Kg,17/8/2025,t,Por definir,1
+89,Jugo Maggi 800ml,Botella 800ml,Suministros,unidad,18/8/2025,t,Maggi,1
+90,Laurel,Por definir,Especias y Condimientos,Kg,19/8/2025,t,Por definir,1
+91,Lavanda,Por definir,Especias y Condimientos,Kg,20/8/2025,t,Por definir,1
+92,Leche Alpura Deslactosada,Caja individual,Lácteos,Lt,21/8/2025,t,Alpura,1
+93,Lechuga China,Por definir,Frutas y Verduras,Pieza,23/8/2025,t,Por definir,1
+94,Leviatán,Por definir,Cerveza Artesanal,pieza,24/8/2025,t,Por definir,1
 95,Licor Blanco 50lts.,"Licor de Caña de Mahuixtlán, Veracruz.
-",Bebidas Artesanales,Lt,25/8/2025,t,El Cañero,1,,,,,
-96,Limón C/Semilla,Por definir,Frutas y Verduras,Kg,26/8/2025,t,Por definir,1,,,,,20
-97,Limón S/Semilla,Por definir,Frutas y Verduras,Kg,27/8/2025,t,Por definir,1,,,,,12
-98,Limpiador Aromatizante,Por definir,Limpieza,Lt,28/8/2025,t,A granel,1,,,,,
-99,Mamey,Por definir,Frutas y Verduras,Kg,13/7/2025,t,Por definir,1,,,,,
-100,Luz,Por definir,Pagos,Mes,30/8/2025,t,Por definir,1,,,,,
-101,Manteca,Por definir,Suministros,Kg,31/8/2025,t,Por definir,1,,,,,45
-102,Manzana,Por definir,Frutas y Verduras,Kg,1/9/2025,t,Por definir,1,,,,,
-103,Mayo Vegana,Por definir,Suministros,Lt,2/9/2025,t,Por definir,1,,,,,
-104,Mayonesa McCormick con Jugo de Limones 3.4 Kg,Envase de 3.4kg,Suministros,Lt,3/9/2025,t,McCormick,1,,,,,288
-105,Miel,Por definir,Suministros,Lt,5/9/2025,t,Por definir,1,,,,,Lt 110
-106,Minerva Ipa,Por definir,Cerveza Artesanal,pieza,7/9/2025,t,Por definir,1,,,,,
-107,Minerva Stout,Por definir,Cerveza Artesanal,pieza,8/9/2025,t,Por definir,1,,,,,
-108,Mezcal Mitre Espadín,Por definir,Mezcal,Ml,9/9/2025,t,Por definir,1,,,,,
-109,Negra Modelo,Por definir,Cerveza Comercial,12 Piezas,10/9/2025,t,Por definir,1,,,,,
-110,Nopal,Por definir,Frutas y Verduras,pieza,12/9/2025,t,Por definir,1,,,,,2 pz
-111,Ocote,Por definir,Suministros,Pieza,14/9/2025,t,Por definir,1,,,,,
-112,Oregano,Por definir,Especias y Condimientos,gr,15/9/2025,t,Por definir,1,,,,,
-113,Pacífico Clara,Por definir,Cerveza Comercial,24 Piezas,16/9/2025,t,Por definir,1,,,,,
-114,Papel Estrasa Rosa,Color Rosa,Desechables,unidad,20/9/2025,t,Por definir,1,,,,,30 rosa
-115,Papel Higienico,Por definir,Desechables,Pieza,21/9/2025,t,Kirkland,1,,,,,
-116,Paprika,Por definir,Especias y Condimientos,Kg,22/9/2025,t,Por definir,1,,,,,110
-117,Mezcal de Pechuga 50°,Por definir,Mezcal,Lt,23/9/2025,t,Por definir,1,,,,,
-118,Pepita de Calabaza,Por definir,Especias y Condimientos,Kg,24/9/2025,t,Por definir,1,,,,,140
-119,Perejil,Por definir,Especias y Condimientos,Kg,25/9/2025,t,Por definir,1,,,,,
-120,Pericón,Por definir,Especias y Condimientos,Kg,26/9/2025,t,Por definir,1,,,,,
-121,Piloncillo,Por definir,Especias y Condimientos,Kg,27/9/2025,t,Por definir,1,,,,,33
-122,Pimienta Negra,Por definir,Especias y Condimientos,Kg,28/9/2025,t,Por definir,1,,,,,200
-123,Piña,Por definir,Frutas y Verduras,pieza,29/9/2025,t,Por definir,1,,,,,
-124,Pipian,Por definir,Proteínas,Kg,30/9/2025,t,Por definir,1,,,,,
-125,Pipián Tostado,Pepita de calabaza tostada y molida en molcajete con sal.,Alimentos Preparados,gr,1/10/2025,t,Por definir,1,,,,,
-126,Plátano Horneado,Plátano macho horneado,Alimentos Preparados,gr,2/10/2025,t,Por definir,1,,,,,
-127,Plátano Macho,Por definir,Frutas y Verduras,Kg,3/10/2025,t,Por definir,1,,,,,21
-128,Plátano Tabasco,Por definir,Frutas y Verduras,kg,4/10/2025,t,Por definir,1,,,,,26
-129,Pollo Crudo (pierna y muslo),Por definir,Proteínas,Kg,5/10/2025,t,Por definir,1,,,,,Pierna muslo 91 pechuga 123
-130,Pollo DLC,Pierna y muslo de pollo macerado en especias y hervido.,Alimentos Preparados,Kg,6/10/2025,t,David Loro,1,,,,,
-131,Porter,Por definir,Cerveza Artesanal,pieza,7/10/2025,t,Por definir,1,,,,,
-132,Pulque,Por definir,Pulquería,Lt,8/10/2025,t,Por definir,1,,,,,
-133,Queso Añejo,Por definir,Lácteos,Kg,9/10/2025,t,Por definir,1,,,,,125
-134,Queso Gouda Connosur,Por definir,Lácteos,Kg,10/10/2025,t,Cono sur,1,,,,,
-135,Queso de Hebra,Por definir,Lácteos,Kg,11/10/2025,t,Por definir,1,,,,,125
-136,Q. Manchego,Por definir,Lácteos,Kg,12/10/2025,t,Por definir,1,,,,,
-137,Queso P/Nachos Biolac,Imitación de queso liquido,Lácteos,Lt,14/10/2025,t,Biolac,1,,,,,36
-138,Q. Parmesano,Por definir,Lácteos,Kg,15/10/2025,t,Reggianito St. Clément,1,,,,,
-139,Q. Vegano,Por definir,Lácteos,gr,16/10/2025,t,Por definir,1,,,,,
-140,Reservado,Vino,Bebidas y Gaseosas,pieza,17/10/2025,t,Por definir,1,,,,,
-141,Semilla Cilantro,Por definir,Especias y Condimientos,Kg,19/10/2025,t,Por definir,1,,,,,75
-142,Sal,Por definir,Especias y Condimientos,Kg,20/10/2025,t,Por definir,1,,,,,12
-143,Salsa inglesa  980ml,Botella 980ml,Suministros,unidad,22/10/2025,t,Crosse & Blackwell,1,,,,,980ml 165
-144,Salsa Verde,Salsa de la casa,Alimentos Preparados,Kg,23/10/2025,t,Por definir,1,,,,,
-145,Sangría Casera Refresco,Por definir,Bebidas y Gaseosas,piezas,24/10/2025,t,Sangría Casera,1,,,,,
-146,Semilla de Cilantro,Por definir,Especias y Condimientos,Kg,25/10/2025,t,Por definir,1,,,,,
-147,Servilleta Familiar Café,Unidad de 400pz,Desechables,unidad,26/10/2025,t,Familiar,1,,,,,25
-148,Sirena,Por definir,Cerveza Artesanal,pieza,27/10/2025,t,Por definir,1,,,,,
-149,Stella Artois,Por definir,Cerveza Comercial,24 Piezas,28/10/2025,t,Por definir,1,,,,,
-150,Chile En Polvo Tajin,Por definir,Suministros,gr,30/10/2025,t,Tajin,1,,,,,
-151,Tapas Lt Reyma,Por definir,Desechables,bolsa,31/10/2025,t,Reyma,1,,,,,36
-152,Tequesquite,Por definir,Especias y Condimientos,Kg,1/11/2025,t,Por definir,1,,,,,
-153,Tlalitos,Por definir,Proteínas,Kg,2/11/2025,t,Por definir,1,,,,,140
-154,Toalla Interdoblada Institucional,Por definir,Desechables,Pieza,4/11/2025,t,Greymoon,1,,,,,
-155,Tocino Ahumado,Por definir,Proteínas,Kg,5/11/2025,t,Por definir,1,,,,,
-156,Tomillo,Por definir,Especias y Condimientos,gr,6/11/2025,t,Por definir,1,,,,,
-157,Torito de Guanabana,Por definir,Bebidas Artesanales,pieza,7/11/2025,t,Por definir,1,,,,,
-158,Torito de Jobo,Por definir,Bebidas Artesanales,pieza,8/11/2025,t,Por definir,1,,,,,
-159,Torta de Agua,Base de los molletes,Bases,pieza,9/11/2025,t,Por definir,1,,,,,
-160,Tortillas,Por definir,Bases,Kg,10/11/2025,t,Por definir,1,,,,,
-161,Tostadas,Por definir,Bases,Pieza,11/11/2025,t,Very,1,,,,,24
-162,Totopos,Por definir,Bases,gr,12/11/2025,t,Very,1,,,,,24
-163,Trabajo Cocinero,Por definir,Pagos,Mes,13/11/2025,t,Por definir,1,,,,,
-164,Tutti Frutti Refresco,Por definir,Bebidas y Gaseosas,pieza,14/11/2025,t,Por definir,1,,,,,
-165,Vainilla 500ml,Botella 500ml,Suministros,unidad,15/11/2025,t,Sayes,1,,,,,500ml 27 vainilla sayes 
-166,Victoria,Por definir,Cerveza Comercial,24 Piezas,16/11/2025,t,Por definir,1,,,,,
-167,Vinagre Blanco 1lt,Por definir,Especias y Condimientos,Lt,19/11/2025,t,Clemente,1,,,,,Clemente 18 1lt
-168,Vinagre Manzana,Por definir,Especias y Condimientos,Lt,20/11/2025,t,Por definir,1,,,,,
-169,Vino Caja Lt,Vino,Bebidas y Gaseosas,Lt,21/11/2025,t,Don Simón,1,,,,,
-170,Cilantro,Por definir,Frutas y Verduras,Kg,22/11/2025,t,Por definir,1,,,,,
-171,Ingredientes Molletes Sencillos,Por definir,Por definir,pieza,23/11/2025,t,Por definir,1,,,,,
-172,Pollo Crudo (Pechuga),Por definir,Proteínas,Kg,24/11/2025,t,Por definir,1,,,,,123
-173,Chicharrón Natural,tlalitos cortado ,Alimentos Preparados,Kg,25/11/2025,t,Por definir,1,,,,,
-174,Maíz Palomero,Por definir,Especias y Condimientos,Kg,26/11/2025,t,Por definir,1,,,,,22
-175,Finca las Moras Malbec,Vino,Bebidas y Gaseosas,6 Piezas,27/11/2025,t,Por definir,1,,,,,
-176,Reservado Merlot,Vino,Bebidas y Gaseosas,pieza,29/11/2025,t,Por definir,1,,,,,
-177,Reservado Rosado,Vino,Bebidas y Gaseosas,pza,30/11/2025,t,Por definir,1,,,,,
-178,Promedio Vino,Por definir,Por definir,ml,2/12/2025,t,Por definir,1,,,,,
-179,Ingrediente Promedio,Por definir,Por definir,Kg,3/12/2025,t,Por definir,1,,,,,
-180,Champiñón Cocinado,Champiñones cocinados con especias,Alimentos Preparados,Kg,4/12/2025,f,Por definir,1,,,,,
-181,Chileatole,Chileatole casero,Alimentos Preparados,Kg,5/12/2025,t,Por definir,1,,,,,
-182,Refresco promedio,Por definir,Por definir,piezas,6/12/2025,t,Por definir,1,,,,,
-183,Prefermento Temporada,Por definir,Por definir,ml,7/12/2025,t,Por definir,1,,,,,
-184,Prefermento Carta,Por definir,Por definir,ml,8/12/2025,t,Por definir,1,,,,,
-185,Prefermento Especial,Por definir,Por definir,ml,9/12/2025,t,Por definir,1,,,,,
-186,Licor 96% ,"Licor de Caña de grado de 96% traido de Tlacotalpan, Ver.",Bebidas Artesanales,Lt,3/7/2025,t,Por definir,1,,,,,
-187,Champiñones Cocinados,Champiñones cocinados en especias.,Alimentos Preparados,unidad,3/7/2025,t,Por definir,1,,,,,
-188,Chorizo Argentino Cocinado,Chorizo argentino cocinado con especias.,Alimentos Preparados,unidad,3/7/2025,t,Por definir,1,,,,,
-189,Agua Garrafón,Agua de garrafon,Bebidas y Gaseosas,unidad,3/7/2025,t,Por definir,1,,,,,
-190,Agua Garrafón Extra,Garrafón extra caro,Bebidas y Gaseosas,unidad,3/7/2025,t,Por definir,1,,,,,
-191,Tepache,Tepache preparado en casa.,Alimentos Preparados,Lt,3/7/2025,t,Por definir,1,,,,,
-192,Contenedor Nachos Plástico,Contenedor Nachos Plástico,Desechables,unidad,3/7/2025,t,Por definir,1,,,,,
-193,Jaleas de Tejocote,Hechas artesanalmente en el centro de Puebla. Compradas a granel en dulcerÃ­a del centro,Dulces,kg,3/7/2025,t,Por definir,1,,,,,
-194,Chipiletas,,Dulces,unidad,3/7/2025,t,Por definir,1,,,,,
-195,Internet,,Pagos,unidad,3/7/2025,t,Por definir,1,,,,,
-196,"Agua, Drenaje y Saneamiento",,Pagos,unidad,3/7/2025,t,Por definir,1,,,,,
-197,Refrendo Licencia de Funcionamiento,,Pagos,unidad,3/7/2025,t,Por definir,1,,,,,
-198,Carpeta de Protección Civil,,Pagos,unidad,3/7/2025,t,Por definir,1,,,,,
-199,Pulpa de Maracuyá,,Especias y Condimientos,Lt,3/7/2025,t,Por definir,1,,,,,
-200,Chicharrón Chile y Cebolla,Tlalito cortado con chile y cebolla,Alimentos Preparados,kg,12/7/2025,t,Por definir,1,,,,,
-202,Azucar Moscabado,Por definir,Especias y Condimientos,Kg,13/7/2025,t,Dominó,1,,,,,44 kg domino
-203,Pulque de Punta,,Pulquería,Lt,13/7/2025,t,Por definir,1,,,,,
-204,Coca-Cola Lata 355 Ml,Por definir,Bebidas y Gaseosas,Pieza,13/7/2025,t,Por definir,1,,,,,
-205,Agua Mineral 2 Lts,Por definir,Bebidas y Gaseosas,Pieza,13/7/2025,t,Por definir,1,,,,,
-206,Hidromiel,Por definir,Cerveza Artesanal,pieza,13/7/2025,t,Por definir,1,,,,,
-207,Hidromiel de Café,Por definir,Cerveza Artesanal,pieza,13/7/2025,t,Por definir,1,,,,,
-208,Mantarraya,Por definir,Cerveza Artesanal,pieza,13/7/2025,t,Por definir,1,,,,,
-209,Agua de Garrafón con Envase,Por definir,Bebidas y Gaseosas,pieza,15/7/2025,t,Por definir,1,,,,,
-210,Mezcal Canábico Mayoreo,Precio mayoreo,Mezcal,Lt,7/21/2025,t,Por definir,1,,,,,
-211,Chistorra,Por definir,Proteínas,Kg,7/21/2025,t,Por definir,1,,,,,
-212,Licor Blanco & Envase 50lts.,"Licor de Caña de grado de 96% traido de Mahuixtlán, Ver.",Bebidas Artesanales,Lt,7/24/2025,t,El Cañero,1,,,,,
-213,Transporte de Insumos,Costo pagado por transportar insumos hacia EPN,Suministros,unidad,7/24/2025,t,Por definir,1,,,,,
-214,Guantes Latex,Por definir,Limpieza,Pieza,7/24/2025,t,Genérico,1,,,,,
-215,Esponja,Por definir,Limpieza,Pieza,7/24/2025,t,Genérico,1,,,,,
-216,Estropajo Loza,Por definir,Limpieza,Pieza,7/24/2025,t,Genérico,1,,,,,
-217,Queso p/Nachos Rancherito,Imitación de queso liquido,Lácteos,Lt,7/24/2025,t,Rancherito,1,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
+",Bebidas Artesanales,Lt,25/8/2025,t,El Cañero,1
+96,Limón C/Semilla,Por definir,Frutas y Verduras,Kg,26/8/2025,t,Por definir,1
+97,Limón S/Semilla,Por definir,Frutas y Verduras,Kg,27/8/2025,t,Por definir,1
+98,Limpiador Aromatizante,Por definir,Limpieza,Lt,28/8/2025,t,A granel,1
+99,Mamey,Por definir,Frutas y Verduras,Kg,13/7/2025,t,Por definir,1
+100,Luz,Por definir,Pagos,Mes,30/8/2025,t,Por definir,1
+101,Manteca,Por definir,Suministros,Kg,31/8/2025,t,Por definir,1
+102,Manzana,Por definir,Frutas y Verduras,Kg,1/9/2025,t,Por definir,1
+103,Mayo Vegana,Por definir,Suministros,Lt,2/9/2025,t,Por definir,1
+104,Mayonesa McCormick con Jugo de Limones 3.4 Kg,Envase de 3.4kg,Suministros,Lt,3/9/2025,t,McCormick,1
+105,Miel,Por definir,Suministros,Lt,5/9/2025,t,Por definir,1
+106,Minerva Ipa,Por definir,Cerveza Artesanal,pieza,7/9/2025,t,Por definir,1
+107,Minerva Stout,Por definir,Cerveza Artesanal,pieza,8/9/2025,t,Por definir,1
+108,Mezcal Mitre Espadín,Por definir,Mezcal,Ml,9/9/2025,t,Por definir,1
+109,Negra Modelo,Por definir,Cerveza Comercial,12 Piezas,10/9/2025,t,Por definir,1
+110,Nopal,Por definir,Frutas y Verduras,pieza,12/9/2025,t,Por definir,1
+111,Ocote,Por definir,Suministros,Pieza,14/9/2025,t,Por definir,1
+112,Oregano,Por definir,Especias y Condimientos,gr,15/9/2025,t,Por definir,1
+113,Pacífico Clara,Por definir,Cerveza Comercial,24 Piezas,16/9/2025,t,Por definir,1
+114,Papel Estrasa Rosa,Color Rosa,Desechables,unidad,20/9/2025,t,Por definir,1
+115,Papel Higienico,Por definir,Desechables,Pieza,21/9/2025,t,Kirkland,1
+116,Paprika,Por definir,Especias y Condimientos,Kg,22/9/2025,t,Por definir,1
+117,Mezcal de Pechuga 50°,Por definir,Mezcal,Lt,23/9/2025,t,Por definir,1
+118,Pepita de Calabaza,Por definir,Especias y Condimientos,Kg,24/9/2025,t,Por definir,1
+119,Perejil,Por definir,Especias y Condimientos,Kg,25/9/2025,t,Por definir,1
+120,Pericón,Por definir,Especias y Condimientos,Kg,26/9/2025,t,Por definir,1
+121,Piloncillo,Por definir,Especias y Condimientos,Kg,27/9/2025,t,Por definir,1
+122,Pimienta Negra,Por definir,Especias y Condimientos,Kg,28/9/2025,t,Por definir,1
+123,Piña,Por definir,Frutas y Verduras,pieza,29/9/2025,t,Por definir,1
+124,Pipian,Por definir,Proteínas,Kg,30/9/2025,t,Por definir,1
+125,Pipián Tostado,Pepita de calabaza tostada y molida en molcajete con sal.,Alimentos Preparados,gr,1/10/2025,t,Por definir,1
+126,Plátano Horneado,Plátano macho horneado,Alimentos Preparados,gr,2/10/2025,t,Por definir,1
+127,Plátano Macho,Por definir,Frutas y Verduras,Kg,3/10/2025,t,Por definir,1
+128,Plátano Tabasco,Por definir,Frutas y Verduras,kg,4/10/2025,t,Por definir,1
+129,Pollo Crudo (pierna y muslo),Por definir,Proteínas,Kg,5/10/2025,t,Por definir,1
+130,Pollo DLC,Pierna y muslo de pollo macerado en especias y hervido.,Alimentos Preparados,Kg,6/10/2025,t,David Loro,1
+131,Porter,Por definir,Cerveza Artesanal,pieza,7/10/2025,t,Por definir,1
+132,Pulque,Por definir,Pulquería,Lt,8/10/2025,t,Por definir,1
+133,Queso Añejo,Por definir,Lácteos,Kg,9/10/2025,t,Por definir,1
+134,Queso Gouda Connosur,Por definir,Lácteos,Kg,10/10/2025,t,Cono sur,1
+135,Queso de Hebra,Por definir,Lácteos,Kg,11/10/2025,t,Por definir,1
+136,Q. Manchego,Por definir,Lácteos,Kg,12/10/2025,t,Por definir,1
+137,Queso P/Nachos Biolac,Imitación de queso liquido,Lácteos,Lt,14/10/2025,t,Biolac,1
+138,Q. Parmesano,Por definir,Lácteos,Kg,15/10/2025,t,Reggianito St. Clément,1
+139,Q. Vegano,Por definir,Lácteos,gr,16/10/2025,t,Por definir,1
+140,Reservado,Vino,Bebidas y Gaseosas,pieza,17/10/2025,t,Por definir,1
+141,Semilla Cilantro,Por definir,Especias y Condimientos,Kg,19/10/2025,t,Por definir,1
+142,Sal,Por definir,Especias y Condimientos,Kg,20/10/2025,t,Por definir,1
+143,Salsa inglesa  980ml,Botella 980ml,Suministros,unidad,22/10/2025,t,Crosse & Blackwell,1
+144,Salsa Verde,Salsa de la casa,Alimentos Preparados,Kg,23/10/2025,t,Por definir,1
+145,Sangría Casera Refresco,Por definir,Bebidas y Gaseosas,piezas,24/10/2025,t,Sangría Casera,1
+146,Semilla de Cilantro,Por definir,Especias y Condimientos,Kg,25/10/2025,t,Por definir,1
+147,Servilleta Familiar Café,Unidad de 400pz,Desechables,unidad,26/10/2025,t,Familiar,1
+148,Sirena,Por definir,Cerveza Artesanal,pieza,27/10/2025,t,Por definir,1
+149,Stella Artois,Por definir,Cerveza Comercial,24 Piezas,28/10/2025,t,Por definir,1
+150,Chile En Polvo Tajin,Por definir,Suministros,gr,30/10/2025,t,Tajin,1
+151,Tapas Lt Reyma,Por definir,Desechables,bolsa,31/10/2025,t,Reyma,1
+152,Tequesquite,Por definir,Especias y Condimientos,Kg,1/11/2025,t,Por definir,1
+153,Tlalitos,Por definir,Proteínas,Kg,2/11/2025,t,Por definir,1
+154,Toalla Interdoblada Institucional,Por definir,Desechables,Pieza,4/11/2025,t,Greymoon,1
+155,Tocino Ahumado,Por definir,Proteínas,Kg,5/11/2025,t,Por definir,1
+156,Tomillo,Por definir,Especias y Condimientos,gr,6/11/2025,t,Por definir,1
+157,Torito de Guanabana,Por definir,Bebidas Artesanales,pieza,7/11/2025,t,Por definir,1
+158,Torito de Jobo,Por definir,Bebidas Artesanales,pieza,8/11/2025,t,Por definir,1
+159,Torta de Agua,Base de los molletes,Bases,pieza,9/11/2025,t,Por definir,1
+160,Tortillas,Por definir,Bases,Kg,10/11/2025,t,Por definir,1
+161,Tostadas,Por definir,Bases,Pieza,11/11/2025,t,Very,1
+162,Totopos,Por definir,Bases,gr,12/11/2025,t,Very,1
+163,Trabajo Cocinero,Por definir,Pagos,Mes,13/11/2025,t,Por definir,1
+164,Tutti Frutti Refresco,Por definir,Bebidas y Gaseosas,pieza,14/11/2025,t,Por definir,1
+165,Vainilla 500ml,Botella 500ml,Suministros,unidad,15/11/2025,t,Sayes,1
+166,Victoria,Por definir,Cerveza Comercial,24 Piezas,16/11/2025,t,Por definir,1
+167,Vinagre Blanco 1lt,Por definir,Especias y Condimientos,Lt,19/11/2025,t,Clemente,1
+168,Vinagre Manzana,Por definir,Especias y Condimientos,Lt,20/11/2025,t,Por definir,1
+169,Vino Caja Lt,Vino,Bebidas y Gaseosas,Lt,21/11/2025,t,Don Simón,1
+170,Cilantro,Por definir,Frutas y Verduras,Kg,22/11/2025,t,Por definir,1
+171,Ingredientes Molletes Sencillos,Por definir,Por definir,pieza,23/11/2025,t,Por definir,1
+172,Pollo Crudo (Pechuga),Por definir,Proteínas,Kg,24/11/2025,t,Por definir,1
+173,Chicharrón Natural,tlalitos cortado ,Alimentos Preparados,Kg,25/11/2025,t,Por definir,1
+174,Maíz Palomero,Por definir,Especias y Condimientos,Kg,26/11/2025,t,Por definir,1
+175,Finca las Moras Malbec,Vino,Bebidas y Gaseosas,6 Piezas,27/11/2025,t,Por definir,1
+176,Reservado Merlot,Vino,Bebidas y Gaseosas,pieza,29/11/2025,t,Por definir,1
+177,Reservado Rosado,Vino,Bebidas y Gaseosas,pza,30/11/2025,t,Por definir,1
+178,Promedio Vino,Por definir,Por definir,ml,2/12/2025,t,Por definir,1
+179,Ingrediente Promedio,Por definir,Por definir,Kg,3/12/2025,t,Por definir,1
+180,Champiñón Cocinado,Champiñones cocinados con especias,Alimentos Preparados,Kg,4/12/2025,f,Por definir,1
+181,Chileatole,Chileatole casero,Alimentos Preparados,Kg,5/12/2025,t,Por definir,1
+182,Refresco promedio,Por definir,Por definir,piezas,6/12/2025,t,Por definir,1
+183,Prefermento Temporada,Por definir,Por definir,ml,7/12/2025,t,Por definir,1
+184,Prefermento Carta,Por definir,Por definir,ml,8/12/2025,t,Por definir,1
+185,Prefermento Especial,Por definir,Por definir,ml,9/12/2025,t,Por definir,1
+186,Licor 96% ,"Licor de Caña de grado de 96% traido de Tlacotalpan, Ver.",Bebidas Artesanales,Lt,3/7/2025,t,Por definir,1
+187,Champiñones Cocinados,Champiñones cocinados en especias.,Alimentos Preparados,unidad,3/7/2025,t,Por definir,1
+188,Chorizo Argentino Cocinado,Chorizo argentino cocinado con especias.,Alimentos Preparados,unidad,3/7/2025,t,Por definir,1
+189,Agua Garrafón,Agua de garrafon,Bebidas y Gaseosas,unidad,3/7/2025,t,Por definir,1
+190,Agua Garrafón Extra,Garrafón extra caro,Bebidas y Gaseosas,unidad,3/7/2025,t,Por definir,1
+191,Tepache,Tepache preparado en casa.,Alimentos Preparados,Lt,3/7/2025,t,Por definir,1
+192,Contenedor Nachos Plástico,Contenedor Nachos Plástico,Desechables,unidad,3/7/2025,t,Por definir,1
+193,Jaleas de Tejocote,Hechas artesanalmente en el centro de Puebla. Compradas a granel en dulcerÃ­a del centro,Dulces,kg,3/7/2025,t,Por definir,1
+194,Chipiletas,,Dulces,unidad,3/7/2025,t,Por definir,1
+195,Internet,,Pagos,unidad,3/7/2025,t,Por definir,1
+196,"Agua, Drenaje y Saneamiento",,Pagos,unidad,3/7/2025,t,Por definir,1
+197,Refrendo Licencia de Funcionamiento,,Pagos,unidad,3/7/2025,t,Por definir,1
+198,Carpeta de Protección Civil,,Pagos,unidad,3/7/2025,t,Por definir,1
+199,Pulpa de Maracuyá,,Especias y Condimientos,Lt,3/7/2025,t,Por definir,1
+200,Chicharrón Chile y Cebolla,Tlalito cortado con chile y cebolla,Alimentos Preparados,kg,12/7/2025,t,Por definir,1
+202,Azucar Moscabado,Por definir,Especias y Condimientos,Kg,13/7/2025,t,Dominó,1
+203,Pulque de Punta,,Pulquería,Lt,13/7/2025,t,Por definir,1
+204,Coca-Cola Lata 355 Ml,Por definir,Bebidas y Gaseosas,Pieza,13/7/2025,t,Por definir,1
+205,Agua Mineral 2 Lts,Por definir,Bebidas y Gaseosas,Pieza,13/7/2025,t,Por definir,1
+206,Hidromiel,Por definir,Cerveza Artesanal,pieza,13/7/2025,t,Por definir,1
+207,Hidromiel de Café,Por definir,Cerveza Artesanal,pieza,13/7/2025,t,Por definir,1
+208,Mantarraya,Por definir,Cerveza Artesanal,pieza,13/7/2025,t,Por definir,1
+209,Agua de Garrafón con Envase,Por definir,Bebidas y Gaseosas,pieza,15/7/2025,t,Por definir,1
+210,Mezcal Canábico Mayoreo,Precio mayoreo,Mezcal,Lt,7/21/2025,t,Por definir,1
+211,Chistorra,Por definir,Proteínas,Kg,7/21/2025,t,Por definir,1
+212,Licor Blanco & Envase 50lts.,"Licor de Caña de grado de 96% traido de Mahuixtlán, Ver.",Bebidas Artesanales,Lt,7/24/2025,t,El Cañero,1
+213,Transporte de Insumos,Costo pagado por transportar insumos hacia EPN,Suministros,unidad,7/24/2025,t,Por definir,1
+214,Guantes Latex,Por definir,Limpieza,Pieza,7/24/2025,t,Genérico,1
+215,Esponja,Por definir,Limpieza,Pieza,7/24/2025,t,Genérico,1
+216,Estropajo Loza,Por definir,Limpieza,Pieza,7/24/2025,t,Genérico,1
+217,Queso p/Nachos Rancherito,Imitación de queso liquido,Lácteos,Lt,7/24/2025,t,Rancherito,1
