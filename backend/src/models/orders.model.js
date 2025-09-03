@@ -249,7 +249,19 @@ export const createOrder = async ({ preso_id, nombre_cliente, empleado_id, produ
       ]);
     }
     
-    // 4. Actualizar totales en la orden
+    // 4. Marcar automáticamente como preparados los productos de categorías "Solo Barra"
+    const categoriasBarraQuery = `
+      UPDATE detalles_orden 
+      SET preparado = true, empleado_id = $2
+      WHERE orden_id = $1
+      AND producto_id IN (
+        SELECT id FROM productos 
+        WHERE categoria IN ('Cerveza', 'Cerveza Artesanal', 'Mezcal', 'Otras Bebidas', 'Botana')
+      )
+    `;
+    await client.query(categoriasBarraQuery, [orden_id, empleado_id]);
+    
+    // 5. Actualizar totales en la orden
     const total_final_con_descuento = porcentaje_descuento_total > 0 
       ? Math.round((total_bruto * factor_descuento) * 100) / 100
       : total_bruto;
@@ -478,6 +490,19 @@ export const addProductsToOrder = async (orden_id, productos, empleado_id) => {
       ]);
     }
 
+    // Marcar automáticamente como preparados los productos de categorías "Solo Barra"
+    const categoriasBarraQuery = `
+      UPDATE detalles_orden 
+      SET preparado = true, empleado_id = $2
+      WHERE orden_id = $1
+      AND producto_id IN (
+        SELECT id FROM productos 
+        WHERE categoria IN ('Cerveza', 'Cerveza Artesanal', 'Mezcal', 'Otras Bebidas', 'Botana')
+      )
+      AND preparado = false
+    `;
+    await client.query(categoriasBarraQuery, [orden_id, empleado_id]);
+    
     // Recalcular el total bruto de la orden (siempre suma todos los productos)
     await client.query(`
       WITH totales AS (

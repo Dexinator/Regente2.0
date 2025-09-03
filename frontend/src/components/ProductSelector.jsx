@@ -507,9 +507,12 @@ export default function ProductSelector({
         precioTotal += ingrediente_precio;
       }
       
-      // Agregar $10 si es para llevar
-      if (esParaLlevar) {
-        precioTotal += 10;
+      // Agregar $10 si es para llevar (excepto para productos de categoría Pulque)
+      const esPulque = productoEditandoNotas.categoria === "Pulque";
+      const costoParaLlevar = esParaLlevar && !esPulque ? 10 : 0;
+      
+      if (costoParaLlevar > 0) {
+        precioTotal += costoParaLlevar;
       }
       
       setProductosSeleccionados(prev => [
@@ -521,7 +524,7 @@ export default function ProductSelector({
           precio: precioTotal,
           notas: notas.trim() || null,
           es_para_llevar: esParaLlevar,
-          para_llevar_precio: esParaLlevar ? 10 : 0
+          para_llevar_precio: costoParaLlevar
         }
       ]);
     }
@@ -795,7 +798,11 @@ export default function ProductSelector({
       sabor_id: sabor.id,
       sabor_nombre: sabor.nombre,
       sabor_categoria_nombre: sabor.categoria_nombre,
-      sabor_precio_adicional: parseFloat(sabor.precio_adicional || 0)
+      sabor_precio_adicional: parseFloat(sabor.precio_adicional || 0),
+      // Incluir el tamaño predefinido de la sentencia si existe
+      tamano_id: producto.tamano_id || null,
+      tamano_nombre: producto.tamano_nombre || null,
+      tamano_precio_adicional: parseFloat(producto.tamano_precio || 0)
     };
 
     if (producto.tamano_id === null && producto.requiere_tamano) {
@@ -1239,9 +1246,11 @@ export default function ProductSelector({
               className="w-5 h-5 rounded border-amarillo text-amarillo focus:ring-amarillo"
             />
             <span className="font-bold">🛍️ Para llevar</span>
-            <span className="bg-amarillo text-negro px-2 py-1 rounded-full text-xs font-bold ml-auto">
-              +$10.00
-            </span>
+            {productoSeleccionado?.categoria !== "Pulque" && (
+              <span className="bg-amarillo text-negro px-2 py-1 rounded-full text-xs font-bold ml-auto">
+                +$10.00
+              </span>
+            )}
           </label>
         </div>
         
@@ -1326,7 +1335,9 @@ export default function ProductSelector({
                 {prod.es_para_llevar && (
                   <div className="flex justify-between mt-1">
                     <span>🛍️ Para llevar</span>
-                    <span className="text-amarillo">+$10.00</span>
+                    {prod.para_llevar_precio > 0 && (
+                      <span className="text-amarillo">+${prod.para_llevar_precio.toFixed(2)}</span>
+                    )}
                   </div>
                 )}
                 
