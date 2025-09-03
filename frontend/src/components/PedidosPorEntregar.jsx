@@ -94,15 +94,23 @@ export default function PedidosPorEntregar() {
         ingrediente_nombre: item.ingrediente_nombre,
         notas: item.notas,
         es_para_llevar: item.es_para_llevar || false,
-        tiempo_preparacion: new Date(item.tiempo_preparacion).toLocaleTimeString('es-ES', {
-          hour: '2-digit',
-          minute: '2-digit'
-        })
+        tiempo_preparacion: item.tiempo_preparacion ? 
+          new Date(item.tiempo_preparacion).toLocaleTimeString('es-ES', {
+            hour: '2-digit',
+            minute: '2-digit'
+          }) : 
+          new Date(item.tiempo_creacion).toLocaleTimeString('es-ES', {
+            hour: '2-digit',
+            minute: '2-digit'
+          })
       });
       
       // Actualizamos el tiempo de preparación más reciente
-      if (new Date(item.tiempo_preparacion) > ordenes[ordenKey].tiempo_preparacion) {
-        ordenes[ordenKey].tiempo_preparacion = new Date(item.tiempo_preparacion);
+      const tiempoParaComparar = item.tiempo_preparacion ? 
+        new Date(item.tiempo_preparacion) : 
+        new Date(item.tiempo_creacion);
+      if (tiempoParaComparar > ordenes[ordenKey].tiempo_preparacion) {
+        ordenes[ordenKey].tiempo_preparacion = tiempoParaComparar;
       }
     });
     
