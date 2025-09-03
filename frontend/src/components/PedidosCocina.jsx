@@ -86,6 +86,8 @@ export default function PedidosCocina() {
       // Procesar el producto con datos ya calculados del backend
       const productoProcessado = {
         ...item,
+        // Mantener el tiempo original para ordenamiento estable
+        tiempo_original: item.tiempo_creacion,
         // Convertir detalle_ids de string PostgreSQL array a JS array
         detalle_ids: item.detalle_ids ? 
           (typeof item.detalle_ids === 'string' ? 
@@ -108,6 +110,17 @@ export default function PedidosCocina() {
       
       // Añadir el producto al bloque correspondiente
       bloquesTiempo[bloqueKey].productos.push(productoProcessado);
+    });
+    
+    // Ordenar productos dentro de cada bloque por tiempo original y detalle_id
+    Object.keys(bloquesTiempo).forEach(key => {
+      bloquesTiempo[key].productos.sort((a, b) => {
+        // Primero ordenar por tiempo original
+        const tiempoComparacion = new Date(a.tiempo_original) - new Date(b.tiempo_original);
+        if (tiempoComparacion !== 0) return tiempoComparacion;
+        // Si tienen el mismo tiempo, ordenar por el primer detalle_id para mantener orden estable
+        return a.detalle_ids[0] - b.detalle_ids[0];
+      });
     });
     
     // Convertimos el objeto a un array, ordenado por tiempo

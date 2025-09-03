@@ -634,9 +634,41 @@ export const getOrderResumen = async (orden_id) => {
 
     const prodAgrupado = mapaProductos.get(claveUnica);
     prodAgrupado.cantidad_neta += row.cantidad; // Suma cantidades (positivas y negativas)
-    // El preparado se considera true si alguna de sus instancias está preparada (esto podría necesitar revisión según la lógica de negocio)
-    if(row.preparado) prodAgrupado.preparado = true;
-    if(row.entregado) prodAgrupado.entregado = true;
+    
+    // Para determinar si está preparado: 
+    // - Inicializar contadores si no existen
+    if (!prodAgrupado.hasOwnProperty('cantidad_preparada')) {
+      prodAgrupado.cantidad_preparada = 0;
+      prodAgrupado.cantidad_total_positiva = 0;
+    }
+    if (!prodAgrupado.hasOwnProperty('cantidad_entregada')) {
+      prodAgrupado.cantidad_entregada = 0;
+    }
+    
+    // Solo contar cantidades positivas (no cancelaciones)
+    if (row.cantidad > 0) {
+      prodAgrupado.cantidad_total_positiva += row.cantidad;
+      
+      // Si este registro está preparado, sumar a cantidad_preparada
+      if (row.preparado) {
+        prodAgrupado.cantidad_preparada += row.cantidad;
+      }
+      
+      // Si este registro está entregado, sumar a cantidad_entregada
+      if (row.entregado) {
+        prodAgrupado.cantidad_entregada += row.cantidad;
+      }
+    }
+    
+    // El producto agrupado está completamente preparado solo si TODAS las unidades positivas están preparadas
+    // No si solo alguna está preparada
+    prodAgrupado.preparado = (prodAgrupado.cantidad_total_positiva > 0 && 
+                              prodAgrupado.cantidad_preparada === prodAgrupado.cantidad_total_positiva);
+    
+    // Lo mismo para entregado
+    prodAgrupado.entregado = (prodAgrupado.cantidad_total_positiva > 0 && 
+                              prodAgrupado.cantidad_entregada === prodAgrupado.cantidad_total_positiva);
+    
     // Mantener es_para_llevar si alguna instancia lo tiene
     if(row.es_para_llevar) prodAgrupado.es_para_llevar = true; 
   }

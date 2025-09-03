@@ -148,40 +148,46 @@ export default function GestionOrden({ id }) {
 
   // Función para iniciar el proceso de cancelación de un producto
   const iniciarCancelacion = (producto) => {
-    // Solo podemos cancelar productos reales, no cancelaciones, y no preparados
-    if (!producto.es_cancelacion && !producto.preparado) {
-      // Buscar todas las cancelaciones para este producto específico (mismo sabor, tamaño, ingrediente)
-      let cantidadCancelada = 0;
-      
-      if (Array.isArray(orden.productos)) {
-        // Filtrar cancelaciones para el mismo producto con las mismas características
-        orden.productos.forEach(p => {
-          if (p.es_cancelacion && 
-              p.producto_id === producto.producto_id && 
-              p.sabor_id === producto.sabor_id && 
-              p.tamano_id === producto.tamano_id && 
-              p.ingrediente_id === producto.ingrediente_id) {
-            // Las cantidades canceladas son negativas, convertirlas a positivas para el cálculo
-            cantidadCancelada += Math.abs(p.cantidad);
-          }
-        });
-      }
-      
-      // Calcular cantidad real disponible para cancelar
-      const cantidadDisponible = Math.max(0, producto.cantidad - cantidadCancelada);
-      
-      // Guardar la cantidad disponible en el producto
-      const productoConDisponible = {
-        ...producto,
-        cantidad_disponible: cantidadDisponible
-      };
-      
-      setProductoACancelar(productoConDisponible);
-      setCantidadACancelar(cantidadDisponible > 0 ? 1 : 0);
-      setMostrarCancelacion(true);
-    } else if (producto.preparado) {
-      alert("No se puede cancelar un producto que ya está preparado.");
+    // Permitir cancelar productos que no estén completamente preparados
+    const cantidadPreparada = producto.cantidad_preparada || 0;
+    const cantidadTotal = producto.cantidad_neta || producto.cantidad || 0;
+    
+    // Si el producto está completamente preparado, no se puede cancelar
+    if (producto.preparado && cantidadPreparada >= cantidadTotal) {
+      alert("No se puede cancelar un producto que ya está completamente preparado.");
+      return;
     }
+    
+    // Buscar todas las cancelaciones para este producto específico (mismo sabor, tamaño, ingrediente)
+    let cantidadCancelada = 0;
+    
+    if (Array.isArray(orden.productos)) {
+      // Filtrar cancelaciones para el mismo producto con las mismas características
+      orden.productos.forEach(p => {
+        if (p.es_cancelacion && 
+            p.producto_id === producto.producto_id && 
+            p.sabor_id === producto.sabor_id && 
+            p.tamano_id === producto.tamano_id && 
+            p.ingrediente_id === producto.ingrediente_id) {
+          // Las cantidades canceladas son negativas, convertirlas a positivas para el cálculo
+          cantidadCancelada += Math.abs(p.cantidad);
+        }
+      });
+    }
+    
+    // Calcular cantidad real disponible para cancelar (total - cancelada - preparada)
+    const cantidadDisponible = Math.max(0, cantidadTotal - cantidadCancelada - cantidadPreparada);
+    
+    // Guardar la cantidad disponible en el producto
+    const productoConDisponible = {
+      ...producto,
+      cantidad_disponible: cantidadDisponible,
+      cantidad_preparada: cantidadPreparada
+    };
+    
+    setProductoACancelar(productoConDisponible);
+    setCantidadACancelar(cantidadDisponible > 0 ? 1 : 0);
+    setMostrarCancelacion(true);
   };
 
   // Función para iniciar el proceso de cancelación de una sentencia completa
@@ -524,6 +530,12 @@ export default function GestionOrden({ id }) {
                         {estaCanceladoUI && !p.es_sentencia_principal && !sentenciaCompletaCancelada && (
                             <span className="text-red-400 text-xs ml-2">CANCELADO</span>
                         )}
+                        {/* Mostrar información de preparación parcial */}
+                        {p.cantidad_preparada > 0 && p.cantidad_preparada < p.cantidad_neta && !estaCanceladoUI && (
+                            <span className="text-yellow-400 text-xs ml-2">
+                                PREPARADO: {p.cantidad_preparada}/{p.cantidad_neta}
+                            </span>
+                        )}
                         {p.preparado && !estaCanceladoUI && <span className="text-green-400 text-xs ml-2">PREPARADO</span>}
                         {p.entregado && !estaCanceladoUI && <span className="text-blue-400 text-xs ml-2">ENTREGADO</span>}
                     </div>
@@ -539,7 +551,9 @@ export default function GestionOrden({ id }) {
                         )}
                         
                         {/* Solo se pueden cancelar productos individuales que NO sean parte de una sentencia */}
-                        {!p.es_sentencia_principal && !p.sentencia_detalle_orden_padre_id && !estaCanceladoUI && !p.preparado && p.cantidad_neta > 0 && (
+                        {/* Ahora permitimos cancelar si hay unidades no preparadas (cantidad_neta - cantidad_preparada > 0) */}
+                        {!p.es_sentencia_principal && !p.sentencia_detalle_orden_padre_id && !estaCanceladoUI && 
+                         p.cantidad_neta > 0 && (!p.preparado || (p.cantidad_preparada !== undefined && p.cantidad_preparada < p.cantidad_neta)) && (
                              <button
                                 onClick={() => {
                                     const productoParaCancelar = {
@@ -879,9 +893,14 @@ export default function GestionOrden({ id }) {
             
             <p className="mb-4">
               <span className="font-bold">Disponible para cancelar:</span> {productoACancelar.cantidad_disponible} unidades
-              {productoACancelar.cantidad_disponible < productoACancelar.cantidad && (
-                <span className="text-xs text-red-300 ml-2">
-                  (Ya se han cancelado {productoACancelar.cantidad - productoACancelar.cantidad_disponible} unidades previamente)
+              {productoACancelar.cantidad_preparada > 0 && (
+                <span className="text-xs text-yellow-300 block mt-1">
+                  ({productoACancelar.cantidad_preparada} unidades ya preparadas no se pueden cancelar)
+                </span>
+              )}
+              {productoACancelar.cantidad_disponible < (productoACancelar.cantidad_neta || productoACancelar.cantidad) - (productoACancelar.cantidad_preparada || 0) && (
+                <span className="text-xs text-red-300 block mt-1">
+                  (Algunas unidades ya fueron canceladas previamente)
                 </span>
               )}
             </p>
