@@ -70,11 +70,16 @@ export default function PedidosPorEntregar() {
       
       if (!ordenes[ordenKey]) {
         // Inicializamos los datos de la orden
+        // Si no hay tiempo_preparacion (productos de barra), usamos tiempo_creacion
+        const tiempoInicial = item.tiempo_preparacion ? 
+          new Date(item.tiempo_preparacion) : 
+          new Date(item.tiempo_creacion);
+        
         ordenes[ordenKey] = {
           orden_id: item.orden_id,
           cliente: item.cliente || "Cliente sin nombre",
           preso_id: item.preso_id,
-          tiempo_preparacion: new Date(item.tiempo_preparacion),
+          tiempo_preparacion: tiempoInicial,
           productos: []
         };
       }
