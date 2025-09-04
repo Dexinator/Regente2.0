@@ -12,7 +12,8 @@
       "Bash(cp:*)",
       "Bash(docker cp:*)",
       "Bash(PGPASSWORD=root psql -h localhost -U root -d regente -c \"\\dt\")",
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "Read(//tmp/**)"
     ],
     "deny": []
   }
