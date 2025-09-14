@@ -5,9 +5,11 @@ import pool from "../config/db.js";
  */
 export const getAllCompras = async (filters = {}) => {
   const { proveedor_id, fecha_inicio, fecha_fin } = filters;
-  
+
   let query = `
-    SELECT c.*, p.nombre as proveedor_nombre, e.nombre as usuario_nombre,
+    SELECT c.*,
+    COALESCE(p.nombre, c.origen_compra, 'Sin especificar') as proveedor_nombre,
+    e.nombre as usuario_nombre,
     (SELECT COUNT(*) FROM items_compra WHERE compra_id = c.id) as total_items,
     (SELECT SUM(subtotal) FROM items_compra WHERE compra_id = c.id) as total_calculado
     FROM compras c
@@ -52,7 +54,9 @@ export const getAllCompras = async (filters = {}) => {
 export const getCompraById = async (id) => {
   // Obtener la compra
   const compraQuery = `
-    SELECT c.*, p.nombre as proveedor_nombre, e.nombre as usuario_nombre
+    SELECT c.*,
+    COALESCE(p.nombre, c.origen_compra, 'Sin especificar') as proveedor_nombre,
+    e.nombre as usuario_nombre
     FROM compras c
     LEFT JOIN proveedores p ON c.proveedor_id = p.id
     LEFT JOIN empleados e ON c.usuario_id = e.id
@@ -95,65 +99,135 @@ export const getCompraById = async (id) => {
  * Crea una nueva compra con sus items
  */
 export const createCompra = async (data) => {
-  const { 
-    proveedor_id, 
-    usuario_id, 
+  const {
+    proveedor_id,
+    origen_compra,
+    usuario_id,
     total,
     metodo_pago,
     solicito_factura,
     numero_factura,
     notas,
-    items 
+    fecha_compra,
+    items
   } = data;
-  
+
   const client = await pool.connect();
-  
+
   try {
     await client.query('BEGIN');
-    
+
     // Insertar la compra
     const compraQuery = `
-      INSERT INTO compras 
-      (proveedor_id, usuario_id, total, metodo_pago, solicito_factura, numero_factura, notas) 
-      VALUES ($1, $2, $3, $4, $5, $6, $7) 
+      INSERT INTO compras
+      (proveedor_id, origen_compra, usuario_id, total, metodo_pago, solicito_factura, numero_factura, notas, fecha_compra)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
       RETURNING *
     `;
-    
+
     const compraValues = [
-      proveedor_id, 
-      usuario_id, 
-      total, 
-      metodo_pago, 
+      proveedor_id || null,
+      origen_compra || null,
+      usuario_id,
+      total,
+      metodo_pago,
       solicito_factura || false,
       numero_factura,
-      notas
+      notas,
+      fecha_compra || new Date()
     ];
-    
+
     const compraResult = await client.query(compraQuery, compraValues);
     const compraId = compraResult.rows[0].id;
-    
+
     // Insertar los items de la compra
     for (const item of items) {
+      // Si no se especificó requisicion_item_id, buscar automáticamente coincidencias
+      let requisicionItemId = item.requisicion_item_id;
+
+      if (!requisicionItemId && proveedor_id) {
+        // Buscar items de requisición pendientes que coincidan con este insumo y proveedor
+        const requisicionMatch = await client.query(`
+          SELECT ir.id
+          FROM items_requisicion ir
+          JOIN requisiciones r ON ir.requisicion_id = r.id
+          JOIN insumo_proveedor ip ON ip.insumo_id = ir.insumo_id
+          WHERE ir.insumo_id = $1
+            AND ip.proveedor_id = $2
+            AND ir.completado = false
+            AND ir.cantidad <= $3
+          ORDER BY r.fecha_solicitud
+          LIMIT 1
+        `, [item.insumo_id, proveedor_id, item.cantidad]);
+
+        if (requisicionMatch.rows.length > 0) {
+          requisicionItemId = requisicionMatch.rows[0].id;
+        }
+      }
+
+      // Insertar el item de compra
       const itemQuery = `
-        INSERT INTO items_compra 
-        (compra_id, insumo_id, requisicion_item_id, precio_unitario, cantidad, unidad) 
-        VALUES ($1, $2, $3, $4, $5, $6)
+        INSERT INTO items_compra
+        (compra_id, insumo_id, requisicion_item_id, precio_unitario, cantidad, unidad, subtotal)
+        VALUES ($1, $2, $3, $4, $5, $6, $7)
       `;
-      
+
+      const subtotal = item.precio_unitario * item.cantidad;
       const itemValues = [
-        compraId, 
-        item.insumo_id, 
-        item.requisicion_item_id || null,
+        compraId,
+        item.insumo_id,
+        requisicionItemId,
         item.precio_unitario,
         item.cantidad,
-        item.unidad
+        item.unidad,
+        subtotal
       ];
-      
+
       await client.query(itemQuery, itemValues);
+
+      // Si se vinculó con una requisición, marcarla como completada
+      if (requisicionItemId) {
+        await client.query(
+          'UPDATE items_requisicion SET completado = true WHERE id = $1',
+          [requisicionItemId]
+        );
+
+        // Verificar si todos los items de la requisición están completados
+        const checkRequisicion = await client.query(`
+          SELECT r.id,
+            COUNT(ir.id) as total_items,
+            COUNT(CASE WHEN ir.completado THEN 1 END) as items_completados
+          FROM requisiciones r
+          JOIN items_requisicion ir ON ir.requisicion_id = r.id
+          WHERE r.id = (SELECT requisicion_id FROM items_requisicion WHERE id = $1)
+          GROUP BY r.id
+        `, [requisicionItemId]);
+
+        if (checkRequisicion.rows.length > 0) {
+          const req = checkRequisicion.rows[0];
+          if (req.total_items === req.items_completados) {
+            // Marcar la requisición como completada
+            await client.query(
+              'UPDATE requisiciones SET completada = true, fecha_completada = NOW() WHERE id = $1',
+              [req.id]
+            );
+          }
+        }
+      }
+
+      // Actualizar inventario si existe
+      await client.query(`
+        INSERT INTO inventario (insumo_id, cantidad_actual, ultima_actualizacion)
+        VALUES ($1, $2, NOW())
+        ON CONFLICT (insumo_id)
+        DO UPDATE SET
+          cantidad_actual = inventario.cantidad_actual + $2,
+          ultima_actualizacion = NOW()
+      `, [item.insumo_id, item.cantidad]);
     }
-    
+
     await client.query('COMMIT');
-    
+
     // Obtener la compra completa con sus items
     return await getCompraById(compraId);
   } catch (error) {
@@ -168,13 +242,16 @@ export const createCompra = async (data) => {
  * Actualiza una compra existente
  */
 export const updateCompra = async (id, data) => {
-  const { 
-    proveedor_id, 
+  const {
+    proveedor_id,
+    origen_compra,
     total,
     metodo_pago,
     solicito_factura,
     numero_factura,
-    notas
+    notas,
+    fecha_compra,
+    items
   } = data;
   
   // Verificar si la compra existe
@@ -195,10 +272,16 @@ export const updateCompra = async (id, data) => {
   
   if (proveedor_id !== undefined) {
     updates.push(` proveedor_id = $${paramIndex}`);
-    params.push(proveedor_id);
+    params.push(proveedor_id || null);
     paramIndex++;
   }
-  
+
+  if (origen_compra !== undefined) {
+    updates.push(` origen_compra = $${paramIndex}`);
+    params.push(origen_compra || null);
+    paramIndex++;
+  }
+
   if (total !== undefined) {
     updates.push(` total = $${paramIndex}`);
     params.push(total);
@@ -228,17 +311,97 @@ export const updateCompra = async (id, data) => {
     params.push(notas);
     paramIndex++;
   }
-  
-  if (updates.length === 0) {
+
+  if (fecha_compra !== undefined) {
+    updates.push(` fecha_compra = $${paramIndex}`);
+    params.push(fecha_compra);
+    paramIndex++;
+  }
+
+  // Si se proporcionan items, actualizar los items de la compra
+  if (items && Array.isArray(items)) {
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+
+      // Primero actualizar los campos básicos de la compra si hay alguno
+      if (updates.length > 0) {
+        query += updates.join(',');
+        query += ` WHERE id = $${paramIndex}`;
+        params.push(id);
+        await client.query(query, params);
+      }
+
+      // Eliminar items existentes de la compra
+      await client.query('DELETE FROM items_compra WHERE compra_id = $1', [id]);
+
+      // Insertar los nuevos items
+      for (const item of items) {
+        // Buscar automáticamente coincidencias con requisiciones si no se especificó
+        let requisicionItemId = item.requisicion_item_id;
+
+        if (!requisicionItemId && proveedor_id) {
+          const requisicionMatch = await client.query(`
+            SELECT ir.id
+            FROM items_requisicion ir
+            JOIN requisiciones r ON ir.requisicion_id = r.id
+            JOIN insumo_proveedor ip ON ip.insumo_id = ir.insumo_id
+            WHERE ir.insumo_id = $1
+              AND ip.proveedor_id = $2
+              AND ir.completado = false
+              AND ir.cantidad <= $3
+            ORDER BY r.fecha_solicitud
+            LIMIT 1
+          `, [item.insumo_id, proveedor_id, item.cantidad]);
+
+          if (requisicionMatch.rows.length > 0) {
+            requisicionItemId = requisicionMatch.rows[0].id;
+          }
+        }
+
+        const itemQuery = `
+          INSERT INTO items_compra
+          (compra_id, insumo_id, requisicion_item_id, precio_unitario, cantidad, unidad, subtotal)
+          VALUES ($1, $2, $3, $4, $5, $6, $7)
+        `;
+
+        const subtotal = item.precio_unitario * item.cantidad;
+        await client.query(itemQuery, [
+          id,
+          item.insumo_id,
+          requisicionItemId,
+          item.precio_unitario,
+          item.cantidad,
+          item.unidad,
+          subtotal
+        ]);
+
+        // Marcar requisición como completada si aplica
+        if (requisicionItemId) {
+          await client.query(
+            'UPDATE items_requisicion SET completado = true WHERE id = $1',
+            [requisicionItemId]
+          );
+        }
+      }
+
+      await client.query('COMMIT');
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
+  } else if (updates.length > 0) {
+    // Si no hay items pero sí otros campos para actualizar
+    query += updates.join(',');
+    query += ` WHERE id = $${paramIndex} RETURNING *`;
+    params.push(id);
+    await pool.query(query, params);
+  } else {
     throw new Error('No se proporcionaron campos para actualizar');
   }
-  
-  query += updates.join(',');
-  query += ` WHERE id = $${paramIndex} RETURNING *`;
-  params.push(id);
-  
-  const result = await pool.query(query, params);
-  
+
   // Obtener la compra completa con sus items
   return await getCompraById(id);
 };

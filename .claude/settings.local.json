@@ -1,20 +1,10 @@
 {
   "permissions": {
     "allow": [
-      "Bash(npm run query:*)",
-      "Bash(PGPASSWORD=root psql -h localhost -U root -d regente -c \"SELECT id, nombre, precio, categoria_id, disponible FROM productos LIMIT 5;\")",
       "Bash(docker exec:*)",
-      "Bash(grep:*)",
-      "Bash(ls:*)",
-      "Bash(docker logs:*)",
-      "Bash(docker-compose:*)",
-      "Bash(docker run:*)",
-      "Bash(cp:*)",
-      "Bash(docker cp:*)",
-      "Bash(PGPASSWORD=root psql -h localhost -U root -d regente -c \"\\dt\")",
-      "Bash(cat:*)",
-      "Read(//tmp/**)"
+      "Bash(awk:*)"
     ],
-    "deny": []
+    "deny": [],
+    "ask": []
   }
 }

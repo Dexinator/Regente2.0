@@ -61,21 +61,30 @@ export const fetchCompraById = async (req, res) => {
  * Crea una nueva compra
  */
 export const addCompra = async (req, res) => {
-  const { 
-    proveedor_id, 
-    usuario_id, 
+  const {
+    proveedor_id,
+    origen_compra,
+    usuario_id,
     total,
     metodo_pago,
     solicito_factura,
     numero_factura,
     notas,
-    items 
+    fecha_compra,
+    items
   } = req.body;
 
-  // Validar campos requeridos
-  if (!proveedor_id || !usuario_id || !total || !metodo_pago) {
-    return res.status(400).json({ 
-      error: 'proveedor_id, usuario_id, total y metodo_pago son obligatorios' 
+  // Validar campos requeridos - proveedor_id ya no es obligatorio
+  if (!usuario_id || !total || !metodo_pago) {
+    return res.status(400).json({
+      error: 'usuario_id, total y metodo_pago son obligatorios'
+    });
+  }
+
+  // Validar que se proporcione proveedor_id u origen_compra
+  if (!proveedor_id && !origen_compra) {
+    return res.status(400).json({
+      error: 'Debe especificar un proveedor o el origen de la compra'
     });
   }
 
@@ -85,16 +94,18 @@ export const addCompra = async (req, res) => {
 
   try {
     const nuevaCompra = await createCompra({
-      proveedor_id, 
-      usuario_id, 
+      proveedor_id,
+      origen_compra,
+      usuario_id,
       total,
       metodo_pago,
       solicito_factura,
       numero_factura,
       notas,
+      fecha_compra,
       items
     });
-    
+
     res.status(201).json(nuevaCompra);
   } catch (error) {
     console.error('Error al crear compra:', error);
@@ -107,23 +118,29 @@ export const addCompra = async (req, res) => {
  */
 export const editCompra = async (req, res) => {
   const { id } = req.params;
-  const { 
-    proveedor_id, 
+  const {
+    proveedor_id,
+    origen_compra,
     total,
     metodo_pago,
     solicito_factura,
     numero_factura,
-    notas
+    notas,
+    fecha_compra,
+    items
   } = req.body;
 
   try {
     const compraActualizada = await updateCompra(id, {
-      proveedor_id, 
+      proveedor_id,
+      origen_compra,
       total,
       metodo_pago,
       solicito_factura,
       numero_factura,
-      notas
+      notas,
+      fecha_compra,
+      items
     });
 
     res.json(compraActualizada);

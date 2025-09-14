@@ -2,15 +2,19 @@ import { useState } from "react";
 import ProveedoresPanel from "./ProveedoresPanel";
 import InsumosPanel from "./InsumosPanel";
 import RequisicionesPanel from "./RequisicionesPanel";
-import ComprasListado from "./ComprasListado";
+import RegistroCompras from "./RegistroCompras";
 import ComprasDelDia from "./ComprasDelDia";
+import RecetasPanel from "./RecetasPanel";
+import InventarioPanel from "./InventarioPanel";
 
 export default function ComprasPanel() {
-  const [seccionActiva, setSeccionActiva] = useState("compras-del-dia");
+  const [seccionActiva, setSeccionActiva] = useState("inventario");
 
   const secciones = [
+    { id: "inventario", nombre: "Inventario" },
+    { id: "recetas", nombre: "Recetas" },
+    { id: "registro-compras", nombre: "Registro de Compras" },
     { id: "compras-del-dia", nombre: "Compras del Día" },
-    { id: "compras", nombre: "Historial de Compras" },
     { id: "requisiciones", nombre: "Requisiciones" },
     { id: "insumos", nombre: "Insumos" },
     { id: "proveedores", nombre: "Proveedores" },
@@ -41,8 +45,10 @@ export default function ComprasPanel() {
 
       {/* Contenido de la sección activa */}
       <div className="bg-negro/30 p-4 rounded-lg">
+        {seccionActiva === "inventario" && <InventarioPanel />}
+        {seccionActiva === "recetas" && <RecetasPanel />}
+        {seccionActiva === "registro-compras" && <RegistroCompras />}
         {seccionActiva === "compras-del-dia" && <ComprasDelDia />}
-        {seccionActiva === "compras" && <ComprasListado />}
         {seccionActiva === "requisiciones" && <RequisicionesPanel />}
         {seccionActiva === "insumos" && <InsumosPanel />}
         {seccionActiva === "proveedores" && <ProveedoresPanel />}

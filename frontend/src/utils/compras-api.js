@@ -136,16 +136,36 @@ export const getCompraById = async (id) => {
 };
 
 export const createCompra = async (data) => {
+  // Asegurar que la fecha esté en el formato correcto
+  if (data.fecha_compra) {
+    data.fecha_compra = new Date(data.fecha_compra).toISOString();
+  }
+  // Limpiar campos según el tipo de compra
+  const cleanedData = {
+    ...data,
+    proveedor_id: data.proveedor_id === 'otro' ? null : data.proveedor_id,
+    origen_compra: data.proveedor_id === 'otro' ? data.origen_compra : null
+  };
   return await fetchApi("/compras", {
     method: "POST",
-    body: JSON.stringify(data),
+    body: JSON.stringify(cleanedData),
   });
 };
 
 export const updateCompra = async (id, data) => {
+  // Asegurar que la fecha esté en el formato correcto si se proporciona
+  if (data.fecha_compra) {
+    data.fecha_compra = new Date(data.fecha_compra).toISOString();
+  }
+  // Limpiar campos según el tipo de compra
+  const cleanedData = {
+    ...data,
+    proveedor_id: data.proveedor_id === 'otro' ? null : data.proveedor_id,
+    origen_compra: data.proveedor_id === 'otro' ? data.origen_compra : null
+  };
   return await fetchApi(`/compras/${id}`, {
     method: "PUT",
-    body: JSON.stringify(data),
+    body: JSON.stringify(cleanedData),
   });
 };
 
