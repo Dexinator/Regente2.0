@@ -33,11 +33,13 @@ export const getAllInventario = async (filters = {}) => {
         AND ai.atendida = false
       ) as alertas_activas,
       (
-        SELECT AVG(ic.precio_unitario)
-        FROM items_compra ic
-        WHERE ic.insumo_id = inv.insumo_id
-        ORDER BY ic.id DESC
-        LIMIT 3
+        SELECT AVG(precio_unitario) FROM (
+          SELECT precio_unitario
+          FROM items_compra ic
+          WHERE ic.insumo_id = inv.insumo_id
+          ORDER BY ic.id DESC
+          LIMIT 3
+        ) ultimos_precios
       ) as precio_promedio
     FROM inventario inv
     JOIN insumos i ON inv.insumo_id = i.id
@@ -93,8 +95,7 @@ export const getAllInventario = async (filters = {}) => {
     CASE
       WHEN inv.cantidad_actual <= 0 THEN 1
       WHEN inv.cantidad_actual <= inv.stock_minimo THEN 2
-      WHEN inv.cantidad_actual <= inv.punto_reorden THEN 3
-      ELSE 4
+      ELSE 3
     END,
     i.nombre, inv.unidad`;
 
@@ -243,11 +244,13 @@ export const getEstadisticasInventario = async () => {
       (
         SELECT SUM(inv2.cantidad_actual * COALESCE(
           (
-            SELECT AVG(ic.precio_unitario)
-            FROM items_compra ic
-            WHERE ic.insumo_id = inv2.insumo_id
-            ORDER BY ic.id DESC
-            LIMIT 3
+            SELECT AVG(precio_unitario) FROM (
+              SELECT precio_unitario
+              FROM items_compra ic
+              WHERE ic.insumo_id = inv2.insumo_id
+              ORDER BY ic.id DESC
+              LIMIT 3
+            ) ultimos_precios
           ), 0
         ))
         FROM inventario inv2

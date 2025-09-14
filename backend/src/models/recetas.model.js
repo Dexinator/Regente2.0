@@ -13,7 +13,7 @@ export const getAllRecetas = async (filters = {}) => {
       SELECT
         r.*,
         p.nombre as producto_nombre,
-        p.categoria_id,
+        p.categoria,
         COUNT(ri.id) as num_ingredientes
       FROM recetas r
       JOIN productos p ON r.producto_id = p.id
@@ -29,13 +29,13 @@ export const getAllRecetas = async (filters = {}) => {
       paramCount++;
     }
 
-    if (filters.categoria_id) {
-      query += ` AND p.categoria_id = $${paramCount}`;
-      params.push(filters.categoria_id);
+    if (filters.categoria) {
+      query += ` AND p.categoria = $${paramCount}`;
+      params.push(filters.categoria);
       paramCount++;
     }
 
-    query += ` GROUP BY r.id, p.nombre, p.categoria_id ORDER BY p.nombre`;
+    query += ` GROUP BY r.id, p.nombre, p.categoria ORDER BY p.nombre`;
 
     const result = await pool.query(query, params);
     return result.rows;
@@ -55,7 +55,7 @@ export const getRecetaById = async (id) => {
       SELECT
         r.*,
         p.nombre as producto_nombre,
-        p.categoria_id
+        p.categoria
       FROM recetas r
       JOIN productos p ON r.producto_id = p.id
       WHERE r.id = $1

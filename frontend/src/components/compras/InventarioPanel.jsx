@@ -220,7 +220,7 @@ export default function InventarioPanel() {
           <div className="bg-green-900/50 p-4 rounded-lg text-center">
             <p className="text-gray-400 text-sm">Valor Total</p>
             <p className="text-xl font-bold text-green-200">
-              ${(estadisticas.valor_total_inventario || 0).toFixed(2)}
+              ${(Number(estadisticas.valor_total_inventario) || 0).toFixed(2)}
             </p>
           </div>
         </div>
