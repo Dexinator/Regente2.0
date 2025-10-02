@@ -320,11 +320,14 @@ export const calcularCostoReceta = async (recetaId) => {
         i.nombre as insumo_nombre,
         COALESCE(
           (
-            SELECT AVG(ic.precio_unitario)
-            FROM items_compra ic
-            WHERE ic.insumo_id = ri.insumo_id
-            ORDER BY ic.id DESC
-            LIMIT 3
+            SELECT AVG(precio_unitario)
+            FROM (
+              SELECT ic.precio_unitario
+              FROM items_compra ic
+              WHERE ic.insumo_id = ri.insumo_id
+              ORDER BY ic.id DESC
+              LIMIT 3
+            ) ultimas_compras
           ), 0
         ) as precio_promedio
       FROM receta_ingredientes ri
