@@ -520,38 +520,40 @@ export default function RegistroCompras() {
               </div>
             )}
 
-            <div className="grid grid-cols-1 md:grid-cols-5 gap-3 items-end">
-              <div>
-                <label className="block text-white mb-1">Buscar Insumo *</label>
-                <div className="relative">
-                  <input
-                    type="text"
-                    value={busquedaInsumo}
-                    onChange={(e) => setBusquedaInsumo(e.target.value)}
-                    placeholder="Nombre, categoría o marca..."
-                    className="w-full bg-negro border border-gray-700 rounded p-2 text-white"
-                  />
+            {/* Campo de búsqueda de insumo - ancho completo */}
+            <div className="mb-3">
+              <label className="block text-white mb-1">Buscar Insumo *</label>
+              <div className="relative">
+                <input
+                  type="text"
+                  value={busquedaInsumo}
+                  onChange={(e) => setBusquedaInsumo(e.target.value)}
+                  placeholder="Nombre, categoría o marca..."
+                  className="w-full bg-negro border border-gray-700 rounded p-2 text-white"
+                />
 
-                  {insumosFiltrados.length > 0 && (
-                    <div className="absolute z-10 w-full mt-1 bg-negro border border-gray-700 rounded shadow-lg max-h-60 overflow-y-auto">
-                      {insumosFiltrados.map(insumo => (
-                        <div
-                          key={insumo.id}
-                          onClick={() => seleccionarInsumo(insumo)}
-                          className="p-2 hover:bg-vino/30 cursor-pointer border-b border-gray-800 last:border-0"
-                        >
-                          <div className="text-white">{insumo.nombre}</div>
-                          <div className="text-sm text-gray-400">
-                            {insumo.categoria && `${insumo.categoria} `}
-                            {insumo.marca && `| ${insumo.marca}`}
-                          </div>
+                {insumosFiltrados.length > 0 && (
+                  <div className="absolute z-10 w-full mt-1 bg-negro border border-gray-700 rounded shadow-lg max-h-60 overflow-y-auto">
+                    {insumosFiltrados.map(insumo => (
+                      <div
+                        key={insumo.id}
+                        onClick={() => seleccionarInsumo(insumo)}
+                        className="p-2 hover:bg-vino/30 cursor-pointer border-b border-gray-800 last:border-0"
+                      >
+                        <div className="text-white">{insumo.nombre}</div>
+                        <div className="text-sm text-gray-400">
+                          {insumo.categoria && `${insumo.categoria} `}
+                          {insumo.marca && `| ${insumo.marca}`}
                         </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
+            </div>
 
+            {/* Campos de cantidad, unidad, precio y botón */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-3 items-end">
               <div>
                 <label className="block text-white mb-1">Cantidad *</label>
                 <input

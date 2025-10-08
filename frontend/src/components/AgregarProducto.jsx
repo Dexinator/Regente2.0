@@ -58,9 +58,10 @@ export default function AgregarProducto({ orden_id }) {
               tamano_id: p.tamano_id || null,
               ingrediente_id: p.ingrediente_id || null,
               notas: p.notas || null,
-              
+
               // --- Campos específicos para Sentencias ---
-              sentencia_id: p.sentencia_id || null, 
+              sentencia_id: p.sentencia_id || null,
+              sentencia_instance_id: p.sentencia_instance_id || null,
               es_sentencia_principal: p.esSentencia || false,
               es_parte_sentencia: p.es_parte_sentencia || false,
               nombre_sentencia: p.esSentencia ? p.nombre : null,
@@ -68,7 +69,7 @@ export default function AgregarProducto({ orden_id }) {
               es_para_llevar: p.es_para_llevar || false,
               para_llevar_precio: p.para_llevar_precio || 0
             };
-            
+
             console.log("Enviando producto:", productoData);
             return productoData;
           })

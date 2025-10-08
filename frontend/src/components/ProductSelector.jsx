@@ -589,27 +589,31 @@ export default function ProductSelector({
     if (producto.tipo === "grupo_variantes_pendientes" && producto.productos) {
       console.log("Recibido grupo de productos con variantes pendientes:", producto);
       setMostrarSelectorSentencias(false);
-      procesarProductoConVariantesPendientes(producto.productos, 0, producto.sentencia_id);
+      procesarProductoConVariantesPendientes(producto.productos, 0, producto.sentencia_id, producto.sentencia_instance_id);
       return;
     }
     
     if (producto.esSentencia) {
-      const yaExiste = productosSeleccionados.find(p => 
-        p.esSentencia && p.sentencia_id === producto.sentencia_id
+      const yaExiste = productosSeleccionados.find(p =>
+        p.esSentencia &&
+        p.sentencia_id === producto.sentencia_id &&
+        p.sentencia_instance_id === producto.sentencia_instance_id
       );
-      
+
       if (yaExiste) {
-        setProductosSeleccionados(prev => 
-          prev.map(p => 
-            p.esSentencia && p.sentencia_id === producto.sentencia_id
-              ? { ...p, cantidad: p.cantidad + producto.cantidad } 
+        setProductosSeleccionados(prev =>
+          prev.map(p =>
+            p.esSentencia &&
+            p.sentencia_id === producto.sentencia_id &&
+            p.sentencia_instance_id === producto.sentencia_instance_id
+              ? { ...p, cantidad: p.cantidad + producto.cantidad }
               : p
           )
         );
       } else {
         setProductosSeleccionados(prev => [
-          ...prev, 
-          { 
+          ...prev,
+          {
             ...producto,
             cantidad: producto.cantidad || 1
           }
@@ -619,34 +623,36 @@ export default function ProductSelector({
     }
     
     if (producto.es_parte_sentencia) {
-      const yaExiste = productosSeleccionados.find(p => 
-        p.id === producto.id && 
+      const yaExiste = productosSeleccionados.find(p =>
+        p.id === producto.id &&
         p.es_parte_sentencia &&
         p.sentencia_id === producto.sentencia_id &&
-        p.sabor_id === producto.sabor_id && 
-        p.tamano_id === producto.tamano_id && 
+        p.sentencia_instance_id === producto.sentencia_instance_id &&
+        p.sabor_id === producto.sabor_id &&
+        p.tamano_id === producto.tamano_id &&
         p.ingrediente_id === producto.ingrediente_id &&
         ((p.notas || "") === (producto.notas || ""))
       );
-      
+
       if (yaExiste) {
-        setProductosSeleccionados(prev => 
-          prev.map(p => 
-            p.id === producto.id && 
+        setProductosSeleccionados(prev =>
+          prev.map(p =>
+            p.id === producto.id &&
             p.es_parte_sentencia &&
             p.sentencia_id === producto.sentencia_id &&
-            p.sabor_id === producto.sabor_id && 
-            p.tamano_id === producto.tamano_id && 
+            p.sentencia_instance_id === producto.sentencia_instance_id &&
+            p.sabor_id === producto.sabor_id &&
+            p.tamano_id === producto.tamano_id &&
             p.ingrediente_id === producto.ingrediente_id &&
             ((p.notas || "") === (producto.notas || ""))
-              ? { ...p, cantidad: p.cantidad + producto.cantidad } 
+              ? { ...p, cantidad: p.cantidad + producto.cantidad }
               : p
           )
         );
       } else {
         setProductosSeleccionados(prev => [
-          ...prev, 
-          { 
+          ...prev,
+          {
             ...producto,
             cantidad: producto.cantidad || 1
           }
@@ -701,29 +707,29 @@ export default function ProductSelector({
     }
   };
 
-  const procesarProductoConVariantesPendientes = async (productos, indice, sentenciaId) => {
+  const procesarProductoConVariantesPendientes = async (productos, indice, sentenciaId, sentenciaInstanceId) => {
     if (indice >= productos.length) {
       console.log("Todos los productos con variantes pendientes han sido procesados");
       return;
     }
-    
+
     const productoActual = productos[indice];
     console.log(`Procesando producto con variantes pendientes ${indice + 1} de ${productos.length}:`, productoActual);
-    
+
     const productoId = productoActual.producto_id || productoActual.id;
     if (!productoId) {
       console.error("Error: No se encontró ID de producto:", productoActual);
-      procesarProductoConVariantesPendientes(productos, indice + 1, sentenciaId);
+      procesarProductoConVariantesPendientes(productos, indice + 1, sentenciaId, sentenciaInstanceId);
       return;
     }
-    
+
     const productoConPreciosNumericos = {
       ...productoActual,
       precio_adicional: parseFloat(productoActual.precio_adicional || 0),
       tamano_precio: parseFloat(productoActual.tamano_precio || 0),
       ingrediente_precio: parseFloat(productoActual.ingrediente_precio || 0)
     };
-    
+
     setProductoSeleccionado({
       ...productoConPreciosNumericos,
       id: productoId,
@@ -732,6 +738,7 @@ export default function ProductSelector({
       categoria: productoActual.producto_categoria || productoActual.categoria,
       es_parte_sentencia: true,
       sentencia_id: sentenciaId,
+      sentencia_instance_id: sentenciaInstanceId,
       indice_procesamiento: indice,
       productos_pendientes: productos
     });
@@ -778,11 +785,12 @@ export default function ProductSelector({
       precio: 0,
       es_parte_sentencia: true,
       sentencia_id: sentenciaId,
+      sentencia_instance_id: sentenciaInstanceId,
       cantidad: productoActual.cantidad || 1
     };
-    
+
     agregarProductosDeSentencia(productoFinal);
-    procesarProductoConVariantesPendientes(productos, indice + 1, sentenciaId);
+    procesarProductoConVariantesPendientes(productos, indice + 1, sentenciaId, sentenciaInstanceId);
   };
 
   const seleccionarSaborSentencia = async (sabor, producto) => {
@@ -867,23 +875,25 @@ export default function ProductSelector({
       precio_original: producto.precio_original || 0,
       es_parte_sentencia: true,
       sentencia_id: producto.sentencia_id,
+      sentencia_instance_id: producto.sentencia_instance_id,
       cantidad: producto.cantidad || 1,
       ...variantesCompletasParaProducto
     };
-    
+
     if (producto.indice_procesamiento !== undefined && producto.productos_pendientes) {
       agregarProductosDeSentencia(productoCompleto);
-      
+
       setProductoSeleccionado(null);
       setSaborSeleccionado(null);
       setSeleccionSabores(false);
       setSeleccionTamano(false);
       setSeleccionIngrediente(false);
-      
+
       procesarProductoConVariantesPendientes(
         producto.productos_pendientes,
         producto.indice_procesamiento + 1,
-        producto.sentencia_id
+        producto.sentencia_id,
+        producto.sentencia_instance_id
       );
     } else {
       agregarProductosDeSentencia(productoCompleto);

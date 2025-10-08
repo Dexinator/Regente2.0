@@ -169,7 +169,7 @@ export const createOrder = async ({ preso_id, nombre_cliente, empleado_id, produ
     const factor_descuento = (100 - porcentaje_descuento_total) / 100;
 
     let total_bruto = 0;
-    const mapaSentenciasCreadas = {}; // Key: payload sentencia_id, Value: detalles_orden.id de la sentencia principal
+    const mapaSentenciasCreadas = {}; // Key: sentencia_instance_id (UUID temporal del frontend), Value: detalles_orden.id de la sentencia principal
 
     // 2. Primera pasada: Insertar Sentencias Principales
     const sentenciasPrincipalesItems = productos.filter(p => p.es_sentencia_principal);
@@ -195,7 +195,8 @@ export const createOrder = async ({ preso_id, nombre_cliente, empleado_id, produ
         spItem.descripcion_sentencia,
         spItem.es_para_llevar || false
       ]);
-      mapaSentenciasCreadas[spItem.sentencia_id] = rDetalleSentencia.rows[0].id;
+      // Usar sentencia_instance_id como key única para esta instancia específica
+      mapaSentenciasCreadas[spItem.sentencia_instance_id] = rDetalleSentencia.rows[0].id;
     }
 
     // 3. Segunda pasada: Insertar Productos Normales y Componentes de Sentencia
@@ -206,10 +207,10 @@ export const createOrder = async ({ preso_id, nombre_cliente, empleado_id, produ
 
       // Calcular la cantidad real del producto
       let cantidadReal = prodItem.cantidad || 1;
-      
+
       // Si es parte de una sentencia, multiplicar por la cantidad de la sentencia
-      if (prodItem.es_parte_sentencia && prodItem.sentencia_id) {
-        const sentenciaPrincipal = sentenciasPrincipalesItems.find(sp => sp.sentencia_id === prodItem.sentencia_id);
+      if (prodItem.es_parte_sentencia && prodItem.sentencia_instance_id) {
+        const sentenciaPrincipal = sentenciasPrincipalesItems.find(sp => sp.sentencia_instance_id === prodItem.sentencia_instance_id);
         if (sentenciaPrincipal) {
           cantidadReal = (prodItem.cantidad || 1) * (sentenciaPrincipal.cantidad || 1);
         }
@@ -218,10 +219,10 @@ export const createOrder = async ({ preso_id, nombre_cliente, empleado_id, produ
       total_bruto += (prodItem.precio_unitario || 0) * cantidadReal;
       let sentenciaDetalleOrdenPadreId = null;
 
-      if (prodItem.es_parte_sentencia && prodItem.sentencia_id) {
-        sentenciaDetalleOrdenPadreId = mapaSentenciasCreadas[prodItem.sentencia_id];
+      if (prodItem.es_parte_sentencia && prodItem.sentencia_instance_id) {
+        sentenciaDetalleOrdenPadreId = mapaSentenciasCreadas[prodItem.sentencia_instance_id];
         if (!sentenciaDetalleOrdenPadreId) {
-          console.error(`Error de consistencia: No se encontró el detalle padre para la sentencia_id ${prodItem.sentencia_id} del producto ${prodItem.producto_id || 'N/A'} en orden ${orden_id}`);
+          console.error(`Error de consistencia: No se encontró el detalle padre para la sentencia_instance_id ${prodItem.sentencia_instance_id} del producto ${prodItem.producto_id || 'N/A'} en orden ${orden_id}`);
         }
       }
 
@@ -410,7 +411,7 @@ export const addProductsToOrder = async (orden_id, productos, empleado_id) => {
     const factor_descuento = (100 - porcentaje_descuento_total) / 100;
 
     let total_bruto = 0;
-    const mapaSentenciasCreadas = {}; // Key: payload sentencia_id, Value: detalles_orden.id de la sentencia principal
+    const mapaSentenciasCreadas = {}; // Key: sentencia_instance_id (UUID temporal del frontend), Value: detalles_orden.id de la sentencia principal
 
     // 1. Primera pasada: Insertar Sentencias Principales
     const sentenciasPrincipalesItems = productos.filter(p => p.es_sentencia_principal);
@@ -436,7 +437,8 @@ export const addProductsToOrder = async (orden_id, productos, empleado_id) => {
         spItem.descripcion_sentencia,
         spItem.es_para_llevar || false
       ]);
-      mapaSentenciasCreadas[spItem.sentencia_id] = rDetalleSentencia.rows[0].id;
+      // Usar sentencia_instance_id como key única para esta instancia específica
+      mapaSentenciasCreadas[spItem.sentencia_instance_id] = rDetalleSentencia.rows[0].id;
     }
 
     // 2. Segunda pasada: Insertar Productos Normales y Componentes de Sentencia
@@ -447,10 +449,10 @@ export const addProductsToOrder = async (orden_id, productos, empleado_id) => {
 
       // Calcular la cantidad real del producto
       let cantidadReal = prodItem.cantidad || 1;
-      
+
       // Si es parte de una sentencia, multiplicar por la cantidad de la sentencia
-      if (prodItem.es_parte_sentencia && prodItem.sentencia_id) {
-        const sentenciaPrincipal = sentenciasPrincipalesItems.find(sp => sp.sentencia_id === prodItem.sentencia_id);
+      if (prodItem.es_parte_sentencia && prodItem.sentencia_instance_id) {
+        const sentenciaPrincipal = sentenciasPrincipalesItems.find(sp => sp.sentencia_instance_id === prodItem.sentencia_instance_id);
         if (sentenciaPrincipal) {
           cantidadReal = (prodItem.cantidad || 1) * (sentenciaPrincipal.cantidad || 1);
         }
@@ -459,10 +461,10 @@ export const addProductsToOrder = async (orden_id, productos, empleado_id) => {
       total_bruto += (prodItem.precio_unitario || 0) * cantidadReal;
       let sentenciaDetalleOrdenPadreId = null;
 
-      if (prodItem.es_parte_sentencia && prodItem.sentencia_id) {
-        sentenciaDetalleOrdenPadreId = mapaSentenciasCreadas[prodItem.sentencia_id];
+      if (prodItem.es_parte_sentencia && prodItem.sentencia_instance_id) {
+        sentenciaDetalleOrdenPadreId = mapaSentenciasCreadas[prodItem.sentencia_instance_id];
         if (!sentenciaDetalleOrdenPadreId) {
-          console.error(`Error de consistencia: No se encontró el detalle padre para la sentencia_id ${prodItem.sentencia_id} del producto ${prodItem.producto_id || 'N/A'} en orden ${orden_id}`);
+          console.error(`Error de consistencia: No se encontró el detalle padre para la sentencia_instance_id ${prodItem.sentencia_instance_id} del producto ${prodItem.producto_id || 'N/A'} en orden ${orden_id}`);
         }
       }
 
@@ -590,11 +592,9 @@ export const getOrderResumen = async (orden_id) => {
     // Los componentes de sentencia se tratan como productos individuales con variantes.
     let claveUnica;
     if (row.es_sentencia_principal) {
-        // Agrupar sentencias principales por nombre y descripción para combinar original y cancelación
-        // Esto agrupa correctamente la sentencia original con su cancelación
-        const nombreKey = row.nombre_promocion || row.nombre || 'sin_nombre';
-        const descripcionKey = row.descripcion_promocion || 'sin_descripcion';
-        claveUnica = `sentencia_principal_${nombreKey}_${descripcionKey}`;
+        // Cada sentencia principal es única por su detalle_orden_id
+        // No agrupar múltiples instancias de la misma sentencia
+        claveUnica = `sentencia_principal_${row.detalle_orden_id}`;
     } else if (row.sentencia_detalle_orden_padre_id) {
         // Componentes de sentencia: incluir el padre en la clave para no agrupar entre diferentes sentencias
         claveUnica = `comp_sentencia_${row.sentencia_detalle_orden_padre_id}_prod_${row.producto_id}_sabor_${row.sabor_id || 'null'}_tam_${row.tamano_id || 'null'}_ing_${row.ingrediente_id || 'null'}`;
@@ -764,14 +764,13 @@ export const getProductosPorPreparar = async () => {
   const query = `
     WITH productos_agrupados AS (
       -- Agrupar productos con sus variantes y calcular cantidades netas
-      SELECT 
+      SELECT
         MIN(d.id) AS primer_detalle_id, -- Para mantener referencia al primer detalle
         d.orden_id,
         d.producto_id,
         d.sabor_id,
         d.tamano_id,
         d.ingrediente_id,
-        d.sentencia_detalle_orden_padre_id,
         SUM(d.cantidad) AS cantidad_neta, -- Suma algebraica (positivos - negativos)
         MIN(CASE WHEN d.cantidad > 0 THEN d.tiempo_creacion END) AS tiempo_creacion_original,
         -- Recolectar todos los IDs de detalles positivos (para marcar como preparados) - ORDENADOS para consistencia
@@ -795,9 +794,8 @@ export const getProductosPorPreparar = async () => {
       FROM detalles_orden d
       WHERE d.preparado = FALSE 
         AND d.es_sentencia_principal = FALSE
-      GROUP BY 
-        d.orden_id, d.producto_id, d.sabor_id, d.tamano_id, 
-        d.ingrediente_id, d.sentencia_detalle_orden_padre_id
+      GROUP BY
+        d.orden_id, d.producto_id, d.sabor_id, d.tamano_id, d.ingrediente_id
     ),
     productos_con_info AS (
       SELECT 
@@ -824,7 +822,8 @@ export const getProductosPorPreparar = async () => {
       LEFT JOIN sabores t ON pg.tamano_id = t.id
       LEFT JOIN sabores i ON pg.ingrediente_id = i.id
       LEFT JOIN categorias_variantes cvi ON i.categoria_id = cvi.id
-      LEFT JOIN detalles_orden sp ON pg.sentencia_detalle_orden_padre_id = sp.id AND sp.es_sentencia_principal = TRUE
+      LEFT JOIN detalles_orden d_first ON pg.primer_detalle_id = d_first.id
+      LEFT JOIN detalles_orden sp ON d_first.sentencia_detalle_orden_padre_id = sp.id AND sp.es_sentencia_principal = TRUE
     )
     SELECT 
       detalle_ids,
@@ -1051,24 +1050,30 @@ export const cancelarSentenciaCompleta = async (orden_id, sentencia_detalle_orde
       throw new Error("Sentencia principal no encontrada.");
     }
 
-    // Verificar que ningún componente esté preparado
-    const componentesPreparados = await client.query(
-      `SELECT COUNT(*) as count FROM detalles_orden 
-       WHERE sentencia_detalle_orden_padre_id = $1 AND preparado = TRUE`,
-      [sentencia_detalle_orden_padre_id]
-    );
-
-    if (parseInt(componentesPreparados.rows[0].count) > 0) {
-      throw new Error("No se puede cancelar la sentencia porque algunos componentes ya están preparados.");
-    }
-
     // Obtener todos los componentes de la sentencia (incluyendo la principal)
     const componentes = await client.query(
-      `SELECT * FROM detalles_orden 
-       WHERE (id = $1 OR sentencia_detalle_orden_padre_id = $1) 
+      `SELECT * FROM detalles_orden
+       WHERE (id = $1 OR sentencia_detalle_orden_padre_id = $1)
        AND precio_unitario >= 0`,
       [sentencia_detalle_orden_padre_id]
     );
+
+    // NUEVO: Despreparar todos los componentes que estén preparados
+    // Esto permite cancelar sentencias con productos de barra que se marcan automáticamente como preparados
+    let componentesDespreprados = 0;
+    for (const componente of componentes.rows) {
+      if (componente.preparado) {
+        await client.query(
+          `UPDATE detalles_orden
+           SET preparado = FALSE, tiempo_preparacion = NULL
+           WHERE id = $1`,
+          [componente.id]
+        );
+        componentesDespreprados++;
+      }
+    }
+
+    console.log(`Cancelación de sentencia - Componentes despreparados: ${componentesDespreprados}/${componentes.rows.length}`);
 
     // Crear registros de cancelación para cada componente
     for (const componente of componentes.rows) {
@@ -1148,7 +1153,8 @@ export const cancelarSentenciaCompleta = async (orden_id, sentencia_detalle_orde
 
     return {
       mensaje: `Sentencia cancelada exitosamente`,
-      total_componentes_cancelados: componentes.rows.length,
+      productos_cancelados: componentes.rows.length,
+      componentes_despreparados: componentesDespreprados,
       nuevo_total_bruto: nuevoTotalBruto,
       nuevo_total: nuevoTotal
     };

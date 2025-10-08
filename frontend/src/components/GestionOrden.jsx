@@ -192,24 +192,25 @@ export default function GestionOrden({ id }) {
 
   // Función para iniciar el proceso de cancelación de una sentencia completa
   const iniciarCancelacionSentencia = async (sentenciaPrincipal) => {
-    // Verificar que ningún componente esté preparado
+    // Obtener componentes de la sentencia
     const componentes = orden.productos.filter(
       p => p.sentencia_detalle_orden_padre_id === sentenciaPrincipal.id_detalle_original
     );
-    
-    const hayComponentesPreparados = componentes.some(c => c.preparado);
-    
+
+    // Verificar si hay componentes preparados (para mostrar advertencia)
+    const componentesPreparados = componentes.filter(c => c.preparado);
+    const hayComponentesPreparados = componentesPreparados.length > 0;
+
+    // Solicitar confirmación con advertencia si hay productos preparados
+    let mensajeConfirmacion = `¿Estás seguro de cancelar la sentencia completa "${sentenciaPrincipal.nombre_promocion || sentenciaPrincipal.nombre}"?\n\n` +
+      `Esto cancelará ${componentes.length + 1} productos (la sentencia y todos sus componentes).`;
+
     if (hayComponentesPreparados) {
-      alert("No se puede cancelar la sentencia porque algunos componentes ya están preparados.");
-      return;
+      mensajeConfirmacion += `\n\n⚠️ ADVERTENCIA: ${componentesPreparados.length} producto(s) ya están preparados y serán despreparados automáticamente antes de cancelar.`;
     }
-    
-    // Solicitar confirmación
-    const confirmar = confirm(
-      `¿Estás seguro de cancelar la sentencia completa "${sentenciaPrincipal.nombre_promocion || sentenciaPrincipal.nombre}"?\n\n` +
-      `Esto cancelará ${componentes.length + 1} productos (la sentencia y todos sus componentes).`
-    );
-    
+
+    const confirmar = confirm(mensajeConfirmacion);
+
     if (!confirmar) return;
     
     try {
@@ -250,8 +251,14 @@ export default function GestionOrden({ id }) {
       }
 
       const resultado = await response.json();
-      alert(`Sentencia cancelada exitosamente: ${resultado.productos_cancelados} productos cancelados`);
-      
+
+      let mensaje = `Sentencia cancelada exitosamente: ${resultado.productos_cancelados} productos cancelados`;
+      if (resultado.componentes_despreparados > 0) {
+        mensaje += `\n\n✅ Se desprepararon automáticamente ${resultado.componentes_despreparados} componente(s) preparado(s)`;
+      }
+
+      alert(mensaje);
+
       // Recargar datos
       await cargarDatos();
       
@@ -540,8 +547,8 @@ export default function GestionOrden({ id }) {
                         {p.entregado && !estaCanceladoUI && <span className="text-blue-400 text-xs ml-2">ENTREGADO</span>}
                     </div>
                     <div>
-                        {/* Botón para cancelar sentencias completas */}
-                        {p.es_sentencia_principal && !estaCanceladoUI && !p.preparado && p.cantidad_neta > 0 && (
+                        {/* Botón para cancelar sentencias completas - AHORA permite cancelar incluso si está preparado */}
+                        {p.es_sentencia_principal && !estaCanceladoUI && p.cantidad_neta > 0 && (
                             <button
                                 onClick={() => iniciarCancelacionSentencia(p)}
                                 className="bg-red-800 text-white text-xs px-2 py-1 rounded"
@@ -549,10 +556,10 @@ export default function GestionOrden({ id }) {
                                 Cancelar Sentencia
                             </button>
                         )}
-                        
+
                         {/* Solo se pueden cancelar productos individuales que NO sean parte de una sentencia */}
                         {/* Ahora permitimos cancelar si hay unidades no preparadas (cantidad_neta - cantidad_preparada > 0) */}
-                        {!p.es_sentencia_principal && !p.sentencia_detalle_orden_padre_id && !estaCanceladoUI && 
+                        {!p.es_sentencia_principal && !p.sentencia_detalle_orden_padre_id && !estaCanceladoUI &&
                          p.cantidad_neta > 0 && (!p.preparado || (p.cantidad_preparada !== undefined && p.cantidad_preparada < p.cantidad_neta)) && (
                              <button
                                 onClick={() => {
@@ -567,18 +574,18 @@ export default function GestionOrden({ id }) {
                                 Cancelar
                             </button>
                         )}
-                        
+
                         {/* Mensaje para componentes de sentencia */}
-                        {!p.es_sentencia_principal && p.sentencia_detalle_orden_padre_id && !estaCanceladoUI && !p.preparado && (
+                        {!p.es_sentencia_principal && p.sentencia_detalle_orden_padre_id && !estaCanceladoUI && (
                             <span className="text-xs text-gray-400 italic">
                                 Parte de sentencia
                             </span>
                         )}
-                        
+
                         {/* Mensaje si no es cancelable */}
-                        {(estaCanceladoUI || p.preparado) && p.cantidad_neta > 0 && (
+                        {estaCanceladoUI && p.cantidad_neta > 0 && (
                             <span className="text-xs text-gray-400">
-                                {estaCanceladoUI ? 'Cancelado' : 'No cancelable'}
+                                Cancelado
                             </span>
                         )}
                     </div>

@@ -191,11 +191,15 @@ export default function SentenciaSelector({ onAddProducts, onClose }) {
   // Función para procesar sentencia directamente con productos
   const procesarSentenciaDirectamente = (productos, sentenciaInfo) => {
     console.log("Procesando sentencia directamente sin confirmación");
-    
+
+    // Generar ID único de instancia para esta sentencia
+    const sentencia_instance_id = `temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
     // Agregar la sentencia como producto principal
     const sentenciaProducto = {
       id: -1,
       sentencia_id: sentenciaInfo.id,
+      sentencia_instance_id: sentencia_instance_id,
       nombre: sentenciaInfo.nombre,
       descripcion: sentenciaInfo.descripcion || "Sentencia",
       precio: sentenciaInfo.precio,
@@ -223,6 +227,7 @@ export default function SentenciaSelector({ onAddProducts, onClose }) {
           nombre: producto.producto_nombre || producto.nombre,
           es_parte_sentencia: true,
           sentencia_id: sentenciaInfo.id,
+          sentencia_instance_id: sentencia_instance_id,
           cantidad: producto.cantidad || 1,
           pendiente_seleccion_variante: true,
           precio_adicional: parseFloat(producto.precio_adicional || 0),
@@ -240,6 +245,7 @@ export default function SentenciaSelector({ onAddProducts, onClose }) {
           precio_original: producto.producto_precio_original || producto.precio_original || producto.precio || 0,
           es_parte_sentencia: true,
           sentencia_id: sentenciaInfo.id,
+          sentencia_instance_id: sentencia_instance_id,
           cantidad: producto.cantidad || 1,
           precio_adicional: parseFloat(producto.precio_adicional || 0),
           tamano_precio: parseFloat(producto.tamano_precio || 0),
@@ -258,7 +264,8 @@ export default function SentenciaSelector({ onAddProducts, onClose }) {
       onAddProducts({
         tipo: "grupo_variantes_pendientes",
         productos: productosConVariantesPendientes,
-        sentencia_id: sentenciaInfo.id
+        sentencia_id: sentenciaInfo.id,
+        sentencia_instance_id: sentencia_instance_id
       });
     }
     
@@ -269,11 +276,15 @@ export default function SentenciaSelector({ onAddProducts, onClose }) {
   // Función para procesar sentencia con opciones seleccionadas
   const procesarSentenciaConOpciones = () => {
     console.log("Procesando sentencia con opciones seleccionadas");
-    
+
+    // Generar ID único de instancia para esta sentencia
+    const sentencia_instance_id = `temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
     // Agregar la sentencia como producto principal
     const sentenciaProducto = {
       id: -1,
       sentencia_id: sentenciaSeleccionada.id,
+      sentencia_instance_id: sentencia_instance_id,
       nombre: sentenciaSeleccionada.nombre,
       descripcion: sentenciaSeleccionada.descripcion || "Sentencia",
       precio: sentenciaSeleccionada.precio,
@@ -301,6 +312,7 @@ export default function SentenciaSelector({ onAddProducts, onClose }) {
           nombre: producto.producto_nombre || producto.nombre,
           es_parte_sentencia: true,
           sentencia_id: sentenciaSeleccionada.id,
+          sentencia_instance_id: sentencia_instance_id,
           cantidad: producto.cantidad || 1,
           pendiente_seleccion_variante: true,
           precio_adicional: parseFloat(producto.precio_adicional || 0),
@@ -317,23 +329,24 @@ export default function SentenciaSelector({ onAddProducts, onClose }) {
           precio_original: producto.producto_precio_original || producto.precio_original || producto.precio || 0,
           es_parte_sentencia: true,
           sentencia_id: sentenciaSeleccionada.id,
+          sentencia_instance_id: sentencia_instance_id,
           cantidad: producto.cantidad || 1,
           precio_adicional: parseFloat(producto.precio_adicional || 0),
           tamano_precio: parseFloat(producto.tamano_precio || 0),
           ingrediente_precio: parseFloat(producto.ingrediente_precio || 0)
         };
-        
+
         onAddProducts(productoParaAgregar);
       }
     });
 
     // Procesar opciones seleccionadas
     Object.values(opcionesSeleccionadas).forEach(producto => {
-      const necesitaSeleccionVariante = 
-        (producto.sabor_id === null && producto.requiere_sabor) || 
-        (producto.tamano_id === null && producto.requiere_tamano) || 
+      const necesitaSeleccionVariante =
+        (producto.sabor_id === null && producto.requiere_sabor) ||
+        (producto.tamano_id === null && producto.requiere_tamano) ||
         (producto.ingrediente_id === null && producto.requiere_ingrediente);
-      
+
       if (necesitaSeleccionVariante) {
         productosConVariantesPendientes.push({
           ...producto,
@@ -344,6 +357,7 @@ export default function SentenciaSelector({ onAddProducts, onClose }) {
           precio_original: producto.producto_precio_original || producto.precio_original || producto.precio || 0,
           es_parte_sentencia: true,
           sentencia_id: sentenciaSeleccionada.id,
+          sentencia_instance_id: sentencia_instance_id,
           cantidad: producto.cantidad || 1,
           pendiente_seleccion_variante: true,
           precio_adicional: parseFloat(producto.precio_adicional || 0),
@@ -360,39 +374,45 @@ export default function SentenciaSelector({ onAddProducts, onClose }) {
           precio_original: producto.producto_precio_original || producto.precio_original || producto.precio || 0,
           es_parte_sentencia: true,
           sentencia_id: sentenciaSeleccionada.id,
+          sentencia_instance_id: sentencia_instance_id,
           cantidad: producto.cantidad || 1,
           precio_adicional: parseFloat(producto.precio_adicional || 0),
           tamano_precio: parseFloat(producto.tamano_precio || 0),
           ingrediente_precio: parseFloat(producto.ingrediente_precio || 0)
         };
-        
+
         onAddProducts(opcionParaAgregar);
       }
     });
     
     // Agregar el producto principal
     onAddProducts(sentenciaProducto);
-    
+
     // Si hay productos con variantes pendientes, procesarlos
     if (productosConVariantesPendientes.length > 0) {
       onAddProducts({
         tipo: "grupo_variantes_pendientes",
         productos: productosConVariantesPendientes,
-        sentencia_id: sentenciaSeleccionada.id
+        sentencia_id: sentenciaSeleccionada.id,
+        sentencia_instance_id: sentencia_instance_id
       });
     }
-    
+
     onClose();
   };
 
   // Función para procesar sentencia sin pasar por confirmación
   const procesarSentenciaSinConfirmacion = () => {
     console.log("Procesando sentencia sin confirmación");
-    
+
+    // Generar ID único de instancia para esta sentencia
+    const sentencia_instance_id = `temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
     // Agregar la sentencia como producto principal
     const sentenciaProducto = {
       id: -1,
       sentencia_id: sentenciaSeleccionada.id,
+      sentencia_instance_id: sentencia_instance_id,
       nombre: sentenciaSeleccionada.nombre,
       descripcion: sentenciaSeleccionada.descripcion || "Sentencia",
       precio: sentenciaSeleccionada.precio,
@@ -420,6 +440,7 @@ export default function SentenciaSelector({ onAddProducts, onClose }) {
           nombre: producto.producto_nombre || producto.nombre,
           es_parte_sentencia: true,
           sentencia_id: sentenciaSeleccionada.id,
+          sentencia_instance_id: sentencia_instance_id,
           cantidad: producto.cantidad || 1,
           pendiente_seleccion_variante: true,
           precio_adicional: parseFloat(producto.precio_adicional || 0),
@@ -437,25 +458,27 @@ export default function SentenciaSelector({ onAddProducts, onClose }) {
           precio_original: producto.producto_precio_original || producto.precio_original || producto.precio || 0,
           es_parte_sentencia: true,
           sentencia_id: sentenciaSeleccionada.id,
+          sentencia_instance_id: sentencia_instance_id,
           cantidad: producto.cantidad || 1,
           precio_adicional: parseFloat(producto.precio_adicional || 0),
           tamano_precio: parseFloat(producto.tamano_precio || 0),
           ingrediente_precio: parseFloat(producto.ingrediente_precio || 0)
         };
-        
+
         onAddProducts(productoParaAgregar);
       }
     });
-    
+
     // Agregar el producto principal
     onAddProducts(sentenciaProducto);
-    
+
     // Si hay productos con variantes pendientes, procesarlos
     if (productosConVariantesPendientes.length > 0) {
       onAddProducts({
         tipo: "grupo_variantes_pendientes",
         productos: productosConVariantesPendientes,
-        sentencia_id: sentenciaSeleccionada.id
+        sentencia_id: sentenciaSeleccionada.id,
+        sentencia_instance_id: sentencia_instance_id
       });
     }
     
