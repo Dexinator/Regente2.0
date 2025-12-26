@@ -165,22 +165,20 @@ export const createCompra = async (data) => {
         }
       }
 
-      // Insertar el item de compra
+      // Insertar el item de compra (subtotal es columna generada automáticamente)
       const itemQuery = `
         INSERT INTO items_compra
-        (compra_id, insumo_id, requisicion_item_id, precio_unitario, cantidad, unidad, subtotal)
-        VALUES ($1, $2, $3, $4, $5, $6, $7)
+        (compra_id, insumo_id, requisicion_item_id, precio_unitario, cantidad, unidad)
+        VALUES ($1, $2, $3, $4, $5, $6)
       `;
 
-      const subtotal = item.precio_unitario * item.cantidad;
       const itemValues = [
         compraId,
         item.insumo_id,
         requisicionItemId,
         item.precio_unitario,
         item.cantidad,
-        item.unidad,
-        subtotal
+        item.unidad
       ];
 
       await client.query(itemQuery, itemValues);
@@ -359,21 +357,20 @@ export const updateCompra = async (id, data) => {
           }
         }
 
+        // Insertar el item (subtotal es columna generada automáticamente)
         const itemQuery = `
           INSERT INTO items_compra
-          (compra_id, insumo_id, requisicion_item_id, precio_unitario, cantidad, unidad, subtotal)
-          VALUES ($1, $2, $3, $4, $5, $6, $7)
+          (compra_id, insumo_id, requisicion_item_id, precio_unitario, cantidad, unidad)
+          VALUES ($1, $2, $3, $4, $5, $6)
         `;
 
-        const subtotal = item.precio_unitario * item.cantidad;
         await client.query(itemQuery, [
           id,
           item.insumo_id,
           requisicionItemId,
           item.precio_unitario,
           item.cantidad,
-          item.unidad,
-          subtotal
+          item.unidad
         ]);
 
         // Marcar requisición como completada si aplica

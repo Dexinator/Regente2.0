@@ -224,7 +224,7 @@ export const getDailySalesWithPaymentMethods = async () => {
 // Ventas por categoría del día
 export const getDailySalesByCategory = async () => {
   const result = await pool.query(`
-    SELECT 
+    SELECT
       pr.categoria,
       SUM(d.cantidad) as cantidad,
       SUM(d.cantidad * d.precio_unitario) as total_ventas
@@ -236,5 +236,301 @@ export const getDailySalesByCategory = async () => {
     GROUP BY pr.categoria
     ORDER BY total_ventas DESC
   `);
+  return result.rows;
+};
+
+// ==========================================
+// REPORTES AVANZADOS - Dashboard Ejecutivo
+// ==========================================
+
+// KPIs principales para un rango de fechas
+export const getDashboardKPIs = async (fechaInicio, fechaFin) => {
+  const result = await pool.query(`
+    SELECT
+      COALESCE(SUM(o.total), 0) as ventas_totales,
+      COUNT(DISTINCT o.orden_id) as total_ordenes,
+      COALESCE(AVG(o.total), 0) as ticket_promedio,
+      COUNT(DISTINCT o.preso_id) as clientes_unicos,
+      COALESCE((SELECT SUM(propina) FROM pagos p
+        JOIN ordenes ord ON p.orden_id = ord.orden_id
+        WHERE ord.fecha BETWEEN $1 AND $2 AND ord.estado = 'cerrada'), 0) as propinas_totales
+    FROM ordenes o
+    WHERE o.fecha BETWEEN $1 AND $2
+      AND o.estado = 'cerrada'
+  `, [fechaInicio, fechaFin]);
+  return result.rows[0];
+};
+
+// Tendencia de ventas por día
+export const getSalesTrend = async (fechaInicio, fechaFin) => {
+  const result = await pool.query(`
+    SELECT
+      DATE(o.fecha) as fecha,
+      COALESCE(SUM(o.total), 0) as ventas,
+      COUNT(DISTINCT o.orden_id) as ordenes
+    FROM ordenes o
+    WHERE o.fecha BETWEEN $1 AND $2
+      AND o.estado = 'cerrada'
+    GROUP BY DATE(o.fecha)
+    ORDER BY fecha
+  `, [fechaInicio, fechaFin]);
+  return result.rows;
+};
+
+// ==========================================
+// REPORTES AVANZADOS - Desempeño Empleados
+// ==========================================
+
+// Desempeño de meseros (ventas y propinas)
+export const getMeserosPerformance = async (fechaInicio, fechaFin) => {
+  const result = await pool.query(`
+    SELECT
+      e.id as empleado_id,
+      e.nombre,
+      COUNT(DISTINCT p.orden_id) as ordenes_cobradas,
+      COALESCE(SUM(p.monto), 0) as total_ventas,
+      COALESCE(SUM(p.propina), 0) as total_propinas,
+      COALESCE(AVG(p.porcentaje_propina), 0) as propina_promedio_pct
+    FROM empleados e
+    LEFT JOIN pagos p ON e.id = p.empleado_id
+    LEFT JOIN ordenes o ON p.orden_id = o.orden_id
+      AND o.fecha BETWEEN $1 AND $2
+      AND o.estado = 'cerrada'
+    WHERE e.rol = 'mesero' AND e.activo = true
+    GROUP BY e.id, e.nombre
+    ORDER BY total_ventas DESC
+  `, [fechaInicio, fechaFin]);
+  return result.rows;
+};
+
+// Órdenes creadas por empleado
+export const getOrdenesCreatedByEmpleado = async (fechaInicio, fechaFin) => {
+  const result = await pool.query(`
+    SELECT
+      e.id as empleado_id,
+      e.nombre,
+      COUNT(DISTINCT o.orden_id) as ordenes_creadas,
+      COALESCE(SUM(o.total), 0) as total_ventas,
+      COUNT(DISTINCT o.preso_id) as clientes_atendidos
+    FROM empleados e
+    LEFT JOIN ordenes o ON e.id = o.empleado_id
+      AND o.fecha BETWEEN $1 AND $2
+      AND o.estado = 'cerrada'
+    WHERE e.rol = 'mesero' AND e.activo = true
+    GROUP BY e.id, e.nombre
+    ORDER BY ordenes_creadas DESC
+  `, [fechaInicio, fechaFin]);
+  return result.rows;
+};
+
+// Desempeño de cocineros
+export const getCocinerosPerformance = async (fechaInicio, fechaFin) => {
+  const result = await pool.query(`
+    SELECT
+      e.id as empleado_id,
+      e.nombre,
+      COUNT(d.id) as productos_preparados,
+      COALESCE(AVG(EXTRACT(EPOCH FROM (d.tiempo_preparacion - d.tiempo_creacion)) / 60), 0) as tiempo_promedio_minutos
+    FROM empleados e
+    LEFT JOIN detalles_orden d ON e.id = d.empleado_id AND d.preparado = true
+    LEFT JOIN ordenes o ON d.orden_id = o.orden_id
+      AND o.fecha BETWEEN $1 AND $2
+    WHERE e.rol = 'cocinero' AND e.activo = true
+    GROUP BY e.id, e.nombre
+    ORDER BY productos_preparados DESC
+  `, [fechaInicio, fechaFin]);
+  return result.rows;
+};
+
+// ==========================================
+// REPORTES AVANZADOS - Análisis de Clientes
+// ==========================================
+
+// Top clientes por gasto total
+export const getTopCustomersBySpending = async (fechaInicio, fechaFin, limite = 10) => {
+  const result = await pool.query(`
+    SELECT
+      p.id as preso_id,
+      p.reg_name as nombre,
+      COUNT(DISTINCT o.orden_id) as total_visitas,
+      COALESCE(SUM(o.total), 0) as total_gastado,
+      COALESCE(AVG(o.total), 0) as ticket_promedio,
+      MAX(o.fecha) as ultima_visita
+    FROM presos p
+    JOIN ordenes o ON p.id = o.preso_id
+    WHERE o.estado = 'cerrada'
+      AND o.fecha BETWEEN $1 AND $2
+    GROUP BY p.id, p.reg_name
+    ORDER BY total_gastado DESC
+    LIMIT $3
+  `, [fechaInicio, fechaFin, limite]);
+  return result.rows;
+};
+
+// Segmentación: clientes nuevos vs recurrentes
+export const getCustomerSegmentation = async (fechaInicio, fechaFin) => {
+  const result = await pool.query(`
+    WITH primera_visita AS (
+      SELECT preso_id, MIN(fecha) as primera
+      FROM ordenes
+      WHERE estado = 'cerrada' AND preso_id IS NOT NULL
+      GROUP BY preso_id
+    )
+    SELECT
+      COUNT(DISTINCT CASE WHEN pv.primera BETWEEN $1 AND $2 THEN o.preso_id END) as clientes_nuevos,
+      COUNT(DISTINCT CASE WHEN pv.primera < $1 THEN o.preso_id END) as clientes_recurrentes,
+      COUNT(DISTINCT o.preso_id) as clientes_totales
+    FROM ordenes o
+    LEFT JOIN primera_visita pv ON o.preso_id = pv.preso_id
+    WHERE o.fecha BETWEEN $1 AND $2
+      AND o.estado = 'cerrada'
+      AND o.preso_id IS NOT NULL
+  `, [fechaInicio, fechaFin]);
+  return result.rows[0];
+};
+
+// Distribución de frecuencia de visitas
+export const getVisitFrequency = async (fechaInicio, fechaFin) => {
+  const result = await pool.query(`
+    SELECT
+      CASE
+        WHEN visitas = 1 THEN '1 visita'
+        WHEN visitas BETWEEN 2 AND 3 THEN '2-3 visitas'
+        WHEN visitas BETWEEN 4 AND 5 THEN '4-5 visitas'
+        ELSE '6+ visitas'
+      END as frecuencia,
+      COUNT(*) as num_clientes
+    FROM (
+      SELECT preso_id, COUNT(*) as visitas
+      FROM ordenes
+      WHERE estado = 'cerrada'
+        AND fecha BETWEEN $1 AND $2
+        AND preso_id IS NOT NULL
+      GROUP BY preso_id
+    ) subq
+    GROUP BY frecuencia
+    ORDER BY
+      CASE frecuencia
+        WHEN '1 visita' THEN 1
+        WHEN '2-3 visitas' THEN 2
+        WHEN '4-5 visitas' THEN 3
+        ELSE 4
+      END
+  `, [fechaInicio, fechaFin]);
+  return result.rows;
+};
+
+// Distribución de clientes por grado (nivel de lealtad)
+export const getGradesDistribution = async () => {
+  const result = await pool.query(`
+    SELECT
+      g.nombre as grado,
+      g.descuento,
+      COUNT(DISTINCT pg.preso_id) as num_clientes
+    FROM grados g
+    LEFT JOIN preso_grado pg ON g.id = pg.grado_id
+    GROUP BY g.id, g.nombre, g.descuento
+    ORDER BY g.descuento DESC
+  `);
+  return result.rows;
+};
+
+// ==========================================
+// REPORTES AVANZADOS - Análisis de Productos
+// ==========================================
+
+// Top productos por ingresos
+export const getTopProductsByRevenue = async (fechaInicio, fechaFin, limite = 10) => {
+  const result = await pool.query(`
+    SELECT
+      p.id as producto_id,
+      p.nombre,
+      p.categoria,
+      SUM(ABS(d.cantidad)) as unidades_vendidas,
+      SUM(ABS(d.cantidad) * d.precio_unitario) as ingresos_totales,
+      p.costo,
+      SUM((d.precio_unitario - COALESCE(p.costo, 0)) * ABS(d.cantidad)) as margen_bruto
+    FROM detalles_orden d
+    JOIN productos p ON d.producto_id = p.id
+    JOIN ordenes o ON d.orden_id = o.orden_id
+    WHERE o.estado = 'cerrada'
+      AND o.fecha BETWEEN $1 AND $2
+      AND d.cantidad > 0
+    GROUP BY p.id, p.nombre, p.categoria, p.costo
+    ORDER BY ingresos_totales DESC
+    LIMIT $3
+  `, [fechaInicio, fechaFin, limite]);
+  return result.rows;
+};
+
+// Ventas por categoría con porcentaje
+export const getCategorySales = async (fechaInicio, fechaFin) => {
+  const result = await pool.query(`
+    WITH total_ventas AS (
+      SELECT COALESCE(SUM(total), 1) as total
+      FROM ordenes
+      WHERE estado = 'cerrada' AND fecha BETWEEN $1 AND $2
+    )
+    SELECT
+      p.categoria,
+      SUM(ABS(d.cantidad)) as unidades_vendidas,
+      SUM(ABS(d.cantidad) * d.precio_unitario) as ingresos_totales,
+      COUNT(DISTINCT d.orden_id) as ordenes_con_categoria,
+      ROUND(SUM(ABS(d.cantidad) * d.precio_unitario) * 100.0 / tv.total, 2) as porcentaje_total
+    FROM detalles_orden d
+    JOIN productos p ON d.producto_id = p.id
+    JOIN ordenes o ON d.orden_id = o.orden_id
+    CROSS JOIN total_ventas tv
+    WHERE o.estado = 'cerrada'
+      AND o.fecha BETWEEN $1 AND $2
+      AND d.cantidad > 0
+    GROUP BY p.categoria, tv.total
+    ORDER BY ingresos_totales DESC
+  `, [fechaInicio, fechaFin]);
+  return result.rows;
+};
+
+// Productos con bajo desempeño
+export const getLowPerformingProducts = async (fechaInicio, fechaFin, limite = 10) => {
+  const result = await pool.query(`
+    SELECT
+      p.id as producto_id,
+      p.nombre,
+      p.categoria,
+      p.precio,
+      COALESCE(SUM(ABS(d.cantidad)), 0) as unidades_vendidas,
+      COALESCE(SUM(ABS(d.cantidad) * d.precio_unitario), 0) as ingresos_totales
+    FROM productos p
+    LEFT JOIN detalles_orden d ON p.id = d.producto_id AND d.cantidad > 0
+    LEFT JOIN ordenes o ON d.orden_id = o.orden_id
+      AND o.estado = 'cerrada'
+      AND o.fecha BETWEEN $1 AND $2
+    WHERE p.precio > 0
+    GROUP BY p.id, p.nombre, p.categoria, p.precio
+    HAVING COALESCE(SUM(ABS(d.cantidad)), 0) > 0
+    ORDER BY unidades_vendidas ASC
+    LIMIT $3
+  `, [fechaInicio, fechaFin, limite]);
+  return result.rows;
+};
+
+// Desempeño de sentencias (combos)
+export const getSentenciasPerformance = async (fechaInicio, fechaFin) => {
+  const result = await pool.query(`
+    SELECT
+      s.id as sentencia_id,
+      s.nombre,
+      s.precio,
+      COUNT(DISTINCT d.id) as veces_vendida,
+      COUNT(DISTINCT d.id) * s.precio as ingresos_totales
+    FROM sentencias s
+    LEFT JOIN detalles_orden d ON s.id = d.sentencia_id AND d.es_sentencia_principal = true
+    LEFT JOIN ordenes o ON d.orden_id = o.orden_id
+      AND o.estado = 'cerrada'
+      AND o.fecha BETWEEN $1 AND $2
+    WHERE s.activa = true
+    GROUP BY s.id, s.nombre, s.precio
+    ORDER BY veces_vendida DESC
+  `, [fechaInicio, fechaFin]);
   return result.rows;
 };

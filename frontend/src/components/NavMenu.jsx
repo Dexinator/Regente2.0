@@ -28,10 +28,10 @@ export default function NavMenu() {
     const validRoutes = {
       "mesero": ["/ordenes", "/entregar", "/cocina"],
       "cocinero": ["/cocina", "/entregar", "/cocinero/compras"],
-      "gerente": ["/reportes/gerente", "/gerente/compras", "/gerente/productos", "/gerente/sentencias", "/gerente/variantes"],
-      "financiero": ["/reportes/financiero"],
-      "admin": ["/admin", "/admin/compras"],
-      "administrador": ["/admin", "/admin/compras"]
+      "gerente": ["/reportes/gerente", "/reportes/avanzado", "/gerente/compras", "/gerente/productos", "/gerente/sentencias", "/gerente/variantes"],
+      "financiero": ["/reportes/financiero", "/reportes/avanzado"],
+      "admin": ["/admin", "/admin/compras", "/reportes/avanzado"],
+      "administrador": ["/admin", "/admin/compras", "/reportes/avanzado"]
     };
 
     // Verificar si el usuario está en una ruta permitida para su rol
@@ -134,13 +134,13 @@ export default function NavMenu() {
           {userRole === "gerente" && (
             <>
               <a href="/reportes/gerente" className="text-white text-xl font-bold py-3 px-6 rounded-full bg-vino w-full max-w-xs text-center">
-                Dashboard
+                Dashboard del Dia
               </a>
-              <a href="/reportes/gerente/ventas" className="text-white text-xl font-bold py-3 px-6 rounded-full bg-vino w-full max-w-xs text-center">
-                Reporte de Ventas
+              <a href="/reportes/avanzado" className="text-white text-xl font-bold py-3 px-6 rounded-full bg-amarillo text-negro w-full max-w-xs text-center">
+                Reportes Avanzados
               </a>
-              <a href="/reportes/gerente/empleados" className="text-white text-xl font-bold py-3 px-6 rounded-full bg-vino w-full max-w-xs text-center">
-                Gestión de Empleados
+              <a href="/gerente/productos" className="text-white text-xl font-bold py-3 px-6 rounded-full bg-vino w-full max-w-xs text-center">
+                Gestion de Productos
               </a>
               <a href="/gerente/compras" className="text-white text-xl font-bold py-3 px-6 rounded-full bg-vino w-full max-w-xs text-center">
                 Sistema de Compras

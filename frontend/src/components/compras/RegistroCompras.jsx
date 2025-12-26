@@ -7,7 +7,8 @@ import {
   deleteCompra,
   getProveedores,
   getInsumos,
-  getItemsRequisicionPendientes
+  getItemsRequisicionPendientes,
+  getInsumosByProveedor
 } from "../../utils/compras-api";
 import { getEmpleadoId } from "../../utils/auth";
 
@@ -24,6 +25,7 @@ export default function RegistroCompras() {
   const [busquedaInsumo, setBusquedaInsumo] = useState("");
   const [insumosFiltrados, setInsumosFiltrados] = useState([]);
   const [itemsRequisicionSugeridos, setItemsRequisicionSugeridos] = useState([]);
+  const [preciosProveedor, setPreciosProveedor] = useState({});
 
   const [formData, setFormData] = useState({
     proveedor_id: "",
@@ -72,11 +74,13 @@ export default function RegistroCompras() {
   }, [busquedaInsumo, insumos]);
 
   useEffect(() => {
-    // Cuando se selecciona un proveedor, buscar items de requisición pendientes
+    // Cuando se selecciona un proveedor, buscar items de requisición pendientes y precios
     if (formData.proveedor_id && formData.proveedor_id !== 'otro') {
       cargarItemsRequisicionSugeridos(formData.proveedor_id);
+      cargarPreciosProveedor(formData.proveedor_id);
     } else {
       setItemsRequisicionSugeridos([]);
+      setPreciosProveedor({});
     }
   }, [formData.proveedor_id]);
 
@@ -131,6 +135,23 @@ export default function RegistroCompras() {
     }
   };
 
+  const cargarPreciosProveedor = async (proveedorId) => {
+    try {
+      const insumosConPrecio = await getInsumosByProveedor(proveedorId);
+      // Crear mapa de insumo_id -> precio_referencia
+      const precios = {};
+      insumosConPrecio.forEach(insumo => {
+        if (insumo.precio_referencia) {
+          precios[insumo.id] = parseFloat(insumo.precio_referencia);
+        }
+      });
+      setPreciosProveedor(precios);
+    } catch (error) {
+      console.error("Error cargando precios del proveedor:", error);
+      setPreciosProveedor({});
+    }
+  };
+
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
     setFormData({
@@ -145,22 +166,29 @@ export default function RegistroCompras() {
       item => item.insumo_id === insumo.id
     );
 
+    // Obtener precio de referencia del proveedor si existe
+    const precioReferencia = preciosProveedor[insumo.id] || 0;
+
     setFormItem({
       ...formItem,
       insumo_id: insumo.id,
       insumo_nombre: insumo.nombre,
       unidad: insumo.unidad_medida_default || "unidad",
       cantidad: itemRequisicion ? itemRequisicion.cantidad : 1,
-      precio_unitario: 0,
+      precio_unitario: precioReferencia,
       requisicion_item_id: itemRequisicion ? itemRequisicion.id : null
     });
 
     setBusquedaInsumo(insumo.nombre);
     setInsumosFiltrados([]);
 
-    // Si hay requisición, mostrar sugerencia
-    if (itemRequisicion) {
+    // Mostrar información relevante
+    if (itemRequisicion && precioReferencia > 0) {
+      setError(`Requisición pendiente: ${itemRequisicion.cantidad} ${itemRequisicion.unidad}. Precio sugerido: $${precioReferencia}`);
+    } else if (itemRequisicion) {
       setError(`Este insumo tiene una requisición pendiente: ${itemRequisicion.cantidad} ${itemRequisicion.unidad}`);
+    } else if (precioReferencia > 0) {
+      setError(`Precio de última compra: $${precioReferencia}`);
     }
   };
 
@@ -329,6 +357,7 @@ export default function RegistroCompras() {
     setBusquedaInsumo("");
     setItemEditando(null);
     setItemsRequisicionSugeridos([]);
+    setPreciosProveedor({});
   };
 
   if (loading && compras.length === 0) {

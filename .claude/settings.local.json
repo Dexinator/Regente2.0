@@ -3,7 +3,13 @@
     "allow": [
       "Bash(docker exec:*)",
       "Bash(awk:*)",
-      "Bash(docker-compose:*)"
+      "Bash(docker-compose:*)",
+      "Bash(docker run -it --rm postgres:16 psql \"postgres://ubhqe0lfihbolj:pddd89437e464417ad74828963b25d2a3e55dd86b679b8b988428bdb7f87fc97b@c7s7ncbk19n97r.cluster-czrs8kj4isg7.us-east-1.rds.amazonaws.com:5432/d881vsgifvt7vm?sslmode=require\")",
+      "Bash(docker run --rm postgres:16 psql \"postgres://ubhqe0lfihbolj:pddd89437e464417ad74828963b25d2a3e55dd86b679b8b988428bdb7f87fc97b@c7s7ncbk19n97r.cluster-czrs8kj4isg7.us-east-1.rds.amazonaws.com:5432/d881vsgifvt7vm?sslmode=require\" -c \"\\dt\")",
+      "Bash(docker run --rm postgres:16 psql \"postgres://ubhqe0lfihbolj:pddd89437e464417ad74828963b25d2a3e55dd86b679b8b988428bdb7f87fc97b@c7s7ncbk19n97r.cluster-czrs8kj4isg7.us-east-1.rds.amazonaws.com:5432/d881vsgifvt7vm?sslmode=require\" -c \"\nSELECT \n    EXTRACT\\(HOUR FROM fecha\\) as hora,\n    COUNT\\(*\\) as ordenes,\n    SUM\\(total\\) as ventas\nFROM ordenes\nWHERE estado = ''cerrada''\nGROUP BY hora\nORDER BY hora\")",
+      "Bash(docker run --rm postgres:16 psql \"postgres://ubhqe0lfihbolj:pddd89437e464417ad74828963b25d2a3e55dd86b679b8b988428bdb7f87fc97b@c7s7ncbk19n97r.cluster-czrs8kj4isg7.us-east-1.rds.amazonaws.com:5432/d881vsgifvt7vm?sslmode=require\" -c \"\nSELECT p.categoria, SUM\\(d.cantidad\\) as unidades, SUM\\(d.cantidad * d.precio_unitario\\) as total\nFROM detalles_orden d \nJOIN productos p ON d.producto_id = p.id\nWHERE d.cantidad > 0\nGROUP BY p.categoria\nORDER BY total DESC\")",
+      "Bash(docker run --rm postgres:16 psql \"postgres://ubhqe0lfihbolj:pddd89437e464417ad74828963b25d2a3e55dd86b679b8b988428bdb7f87fc97b@c7s7ncbk19n97r.cluster-czrs8kj4isg7.us-east-1.rds.amazonaws.com:5432/d881vsgifvt7vm?sslmode=require\" -c \"\nSELECT p.reg_name, COUNT\\(o.orden_id\\) as visitas, SUM\\(o.total\\) as total_gastado, AVG\\(o.total\\) as ticket_promedio\nFROM presos p\nJOIN ordenes o ON p.id = o.preso_id AND o.estado = ''cerrada''\nGROUP BY p.id, p.reg_name\nORDER BY total_gastado DESC\nLIMIT 10\")",
+      "Bash(docker run --rm postgres:16 psql \"postgres://ubhqe0lfihbolj:pddd89437e464417ad74828963b25d2a3e55dd86b679b8b988428bdb7f87fc97b@c7s7ncbk19n97r.cluster-czrs8kj4isg7.us-east-1.rds.amazonaws.com:5432/d881vsgifvt7vm?sslmode=require\" -c \"\nSELECT e.nombre, COUNT\\(p.id\\) as pagos_cobrados, SUM\\(p.propina\\) as total_propinas, AVG\\(p.propina\\) as propina_promedio\nFROM empleados e\nJOIN pagos p ON e.id = p.empleado_id\nWHERE e.rol = ''mesero'' AND e.activo = true\nGROUP BY e.id, e.nombre\nORDER BY total_propinas DESC\")"
     ],
     "deny": [],
     "ask": []
