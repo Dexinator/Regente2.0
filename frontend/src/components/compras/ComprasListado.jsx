@@ -174,9 +174,8 @@ export default function ComprasListado() {
   };
 
   const calcularSubtotal = () => {
-    const precio = parseFloat(formItemData.precio_unitario) || 0;
-    const cantidad = parseFloat(formItemData.cantidad) || 0;
-    return precio * cantidad;
+    // El precio_unitario ahora representa el precio total pagado
+    return parseFloat(formItemData.precio_unitario) || 0;
   };
 
   const handleSubmit = async (e) => {
@@ -525,7 +524,7 @@ export default function ComprasListado() {
                   </div>
                   
                   <div>
-                    <label className="block text-white mb-1">Precio Unitario *</label>
+                    <label className="block text-white mb-1">Precio Total *</label>
                     <input
                       type="number"
                       name="precio_unitario"
@@ -534,6 +533,7 @@ export default function ComprasListado() {
                       min="0.01"
                       step="0.01"
                       required
+                      placeholder="Lo que pagaste"
                       className="w-full bg-negro border border-gray-700 rounded p-2 text-white"
                     />
                   </div>
@@ -594,8 +594,7 @@ export default function ComprasListado() {
                     <tr>
                       <th className="p-2 text-left">Insumo</th>
                       <th className="p-2 text-center">Cantidad</th>
-                      <th className="p-2 text-center">Precio Unit.</th>
-                      <th className="p-2 text-center">Subtotal</th>
+                      <th className="p-2 text-center">Precio Total</th>
                       <th className="p-2 text-center">Requisición</th>
                       <th className="p-2 text-center">Acciones</th>
                     </tr>
@@ -606,9 +605,6 @@ export default function ComprasListado() {
                         <td className="p-2">{item.insumo_nombre}</td>
                         <td className="p-2 text-center">
                           {item.cantidad} {item.unidad}
-                        </td>
-                        <td className="p-2 text-center">
-                          ${parseFloat(item.precio_unitario).toFixed(2)}
                         </td>
                         <td className="p-2 text-center">
                           ${parseFloat(item.subtotal).toFixed(2)}

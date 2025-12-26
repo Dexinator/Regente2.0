@@ -184,11 +184,11 @@ export default function RegistroCompras() {
 
     // Mostrar información relevante
     if (itemRequisicion && precioReferencia > 0) {
-      setError(`Requisición pendiente: ${itemRequisicion.cantidad} ${itemRequisicion.unidad}. Precio sugerido: $${precioReferencia}`);
+      setError(`Requisición pendiente: ${itemRequisicion.cantidad} ${itemRequisicion.unidad}. Precio total sugerido: $${precioReferencia}`);
     } else if (itemRequisicion) {
       setError(`Este insumo tiene una requisición pendiente: ${itemRequisicion.cantidad} ${itemRequisicion.unidad}`);
     } else if (precioReferencia > 0) {
-      setError(`Precio de última compra: $${precioReferencia}`);
+      setError(`Precio total de última compra: $${precioReferencia}`);
     }
   };
 
@@ -239,7 +239,7 @@ export default function RegistroCompras() {
 
   const calcularTotal = () => {
     return formData.items.reduce((total, item) => {
-      return total + (item.precio_unitario * item.cantidad);
+      return total + parseFloat(item.precio_unitario || 0);
     }, 0);
   };
 
@@ -606,13 +606,14 @@ export default function RegistroCompras() {
               </div>
 
               <div>
-                <label className="block text-white mb-1">Precio Unit. *</label>
+                <label className="block text-white mb-1">Precio Total *</label>
                 <input
                   type="number"
                   value={formItem.precio_unitario}
                   onChange={(e) => setFormItem({...formItem, precio_unitario: e.target.value})}
                   min="0.01"
                   step="0.01"
+                  placeholder="Lo que pagaste"
                   className="w-full bg-negro border border-gray-700 rounded p-2 text-white"
                 />
               </div>
@@ -638,8 +639,7 @@ export default function RegistroCompras() {
                       <th className="p-2 text-left">Insumo</th>
                       <th className="p-2 text-center">Cantidad</th>
                       <th className="p-2 text-center">Unidad</th>
-                      <th className="p-2 text-center">Precio Unit.</th>
-                      <th className="p-2 text-center">Subtotal</th>
+                      <th className="p-2 text-center">Precio Total</th>
                       <th className="p-2 text-center">Requisición</th>
                       <th className="p-2 text-center">Acciones</th>
                     </tr>
@@ -650,10 +650,7 @@ export default function RegistroCompras() {
                         <td className="p-2">{item.insumo_nombre}</td>
                         <td className="p-2 text-center">{item.cantidad}</td>
                         <td className="p-2 text-center">{item.unidad}</td>
-                        <td className="p-2 text-center">${item.precio_unitario}</td>
-                        <td className="p-2 text-center">
-                          ${(item.precio_unitario * item.cantidad).toFixed(2)}
-                        </td>
+                        <td className="p-2 text-center">${parseFloat(item.precio_unitario).toFixed(2)}</td>
                         <td className="p-2 text-center">
                           {item.requisicion_item_id ? (
                             <span className="px-2 py-1 rounded text-xs bg-green-900/50 text-green-200">
@@ -692,7 +689,7 @@ export default function RegistroCompras() {
                   </tbody>
                   <tfoot>
                     <tr className="bg-vino/50">
-                      <td colSpan="4" className="p-2 text-right font-bold">TOTAL:</td>
+                      <td colSpan="3" className="p-2 text-right font-bold">TOTAL:</td>
                       <td className="p-2 text-center font-bold text-amarillo">
                         ${calcularTotal().toFixed(2)}
                       </td>

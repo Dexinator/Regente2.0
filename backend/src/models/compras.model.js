@@ -145,20 +145,25 @@ export const createCompra = async (data) => {
       // Si no se especificó requisicion_item_id, buscar automáticamente coincidencias
       let requisicionItemId = item.requisicion_item_id;
 
-      if (!requisicionItemId && proveedor_id) {
-        // Buscar items de requisición pendientes que coincidan con este insumo y proveedor
+      if (!requisicionItemId) {
+        // Buscar items de requisición pendientes que coincidan con este insumo
+        // Prioriza por urgencia (alta > normal > baja) y luego por fecha más antigua
         const requisicionMatch = await client.query(`
           SELECT ir.id
           FROM items_requisicion ir
           JOIN requisiciones r ON ir.requisicion_id = r.id
-          JOIN insumo_proveedor ip ON ip.insumo_id = ir.insumo_id
           WHERE ir.insumo_id = $1
-            AND ip.proveedor_id = $2
             AND ir.completado = false
-            AND ir.cantidad <= $3
-          ORDER BY r.fecha_solicitud
+          ORDER BY
+            CASE ir.urgencia
+              WHEN 'alta' THEN 1
+              WHEN 'normal' THEN 2
+              WHEN 'baja' THEN 3
+              ELSE 4
+            END,
+            r.fecha_solicitud ASC
           LIMIT 1
-        `, [item.insumo_id, proveedor_id, item.cantidad]);
+        `, [item.insumo_id]);
 
         if (requisicionMatch.rows.length > 0) {
           requisicionItemId = requisicionMatch.rows[0].id;
@@ -353,19 +358,25 @@ export const updateCompra = async (id, data) => {
         // Buscar automáticamente coincidencias con requisiciones si no se especificó
         let requisicionItemId = item.requisicion_item_id;
 
-        if (!requisicionItemId && proveedor_id) {
+        if (!requisicionItemId) {
+          // Buscar items de requisición pendientes que coincidan con este insumo
+          // Prioriza por urgencia (alta > normal > baja) y luego por fecha más antigua
           const requisicionMatch = await client.query(`
             SELECT ir.id
             FROM items_requisicion ir
             JOIN requisiciones r ON ir.requisicion_id = r.id
-            JOIN insumo_proveedor ip ON ip.insumo_id = ir.insumo_id
             WHERE ir.insumo_id = $1
-              AND ip.proveedor_id = $2
               AND ir.completado = false
-              AND ir.cantidad <= $3
-            ORDER BY r.fecha_solicitud
+            ORDER BY
+              CASE ir.urgencia
+                WHEN 'alta' THEN 1
+                WHEN 'normal' THEN 2
+                WHEN 'baja' THEN 3
+                ELSE 4
+              END,
+              r.fecha_solicitud ASC
             LIMIT 1
-          `, [item.insumo_id, proveedor_id, item.cantidad]);
+          `, [item.insumo_id]);
 
           if (requisicionMatch.rows.length > 0) {
             requisicionItemId = requisicionMatch.rows[0].id;
@@ -520,33 +531,91 @@ export const deleteCompra = async (id) => {
  */
 export const addItemToCompra = async (compraId, data) => {
   const { insumo_id, requisicion_item_id, precio_unitario, cantidad, unidad } = data;
-  
+
   // Verificar si la compra existe
   const existingCompra = await pool.query(
     'SELECT id FROM compras WHERE id = $1',
     [compraId]
   );
-  
+
   if (existingCompra.rows.length === 0) {
     throw new Error('Compra no encontrada');
   }
-  
+
   const client = await pool.connect();
-  
+
   try {
     await client.query('BEGIN');
-    
+
+    // Si no se especificó requisicion_item_id, buscar automáticamente coincidencias
+    let finalRequisicionItemId = requisicion_item_id;
+
+    if (!finalRequisicionItemId) {
+      // Buscar items de requisición pendientes que coincidan con este insumo
+      // Prioriza por urgencia (alta > normal > baja) y luego por fecha más antigua
+      const requisicionMatch = await client.query(`
+        SELECT ir.id
+        FROM items_requisicion ir
+        JOIN requisiciones r ON ir.requisicion_id = r.id
+        WHERE ir.insumo_id = $1
+          AND ir.completado = false
+        ORDER BY
+          CASE ir.urgencia
+            WHEN 'alta' THEN 1
+            WHEN 'normal' THEN 2
+            WHEN 'baja' THEN 3
+            ELSE 4
+          END,
+          r.fecha_solicitud ASC
+        LIMIT 1
+      `, [insumo_id]);
+
+      if (requisicionMatch.rows.length > 0) {
+        finalRequisicionItemId = requisicionMatch.rows[0].id;
+      }
+    }
+
     // Insertar el nuevo item
     const itemQuery = `
-      INSERT INTO items_compra 
-      (compra_id, insumo_id, requisicion_item_id, precio_unitario, cantidad, unidad) 
+      INSERT INTO items_compra
+      (compra_id, insumo_id, requisicion_item_id, precio_unitario, cantidad, unidad)
       VALUES ($1, $2, $3, $4, $5, $6)
       RETURNING *
     `;
-    
-    const itemValues = [compraId, insumo_id, requisicion_item_id || null, precio_unitario, cantidad, unidad];
+
+    const itemValues = [compraId, insumo_id, finalRequisicionItemId || null, precio_unitario, cantidad, unidad];
     const itemResult = await client.query(itemQuery, itemValues);
-    
+
+    // Si se vinculó con una requisición, marcarla como completada
+    if (finalRequisicionItemId) {
+      await client.query(
+        'UPDATE items_requisicion SET completado = true WHERE id = $1',
+        [finalRequisicionItemId]
+      );
+
+      // Verificar si todos los items de la requisición están completados
+      const checkRequisicion = await client.query(`
+        SELECT r.id,
+          COUNT(ir.id) as total_items,
+          COUNT(CASE WHEN ir.completado THEN 1 END) as items_completados
+        FROM requisiciones r
+        JOIN items_requisicion ir ON ir.requisicion_id = r.id
+        WHERE r.id = (SELECT requisicion_id FROM items_requisicion WHERE id = $1)
+        GROUP BY r.id
+      `, [finalRequisicionItemId]);
+
+      if (checkRequisicion.rows.length > 0) {
+        const req = checkRequisicion.rows[0];
+        if (req.total_items === req.items_completados) {
+          // Marcar la requisición como completada
+          await client.query(
+            'UPDATE requisiciones SET completada = true, fecha_completada = NOW() WHERE id = $1',
+            [req.id]
+          );
+        }
+      }
+    }
+
     // Obtener el item completo con datos del insumo
     const itemCompleto = await client.query(
       `SELECT ic.*, i.nombre as insumo_nombre, i.categoria as insumo_categoria,
