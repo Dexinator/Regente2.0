@@ -213,15 +213,15 @@ export const createCompra = async (data) => {
         }
       }
 
-      // Actualizar inventario si existe
+      // Actualizar inventario (crear o incrementar)
       await client.query(`
-        INSERT INTO inventario (insumo_id, cantidad_actual, ultima_actualizacion)
-        VALUES ($1, $2, NOW())
-        ON CONFLICT (insumo_id)
+        INSERT INTO inventario (insumo_id, cantidad_actual, unidad, ultima_actualizacion)
+        VALUES ($1, $2, $3, NOW())
+        ON CONFLICT (insumo_id, unidad)
         DO UPDATE SET
           cantidad_actual = inventario.cantidad_actual + $2,
           ultima_actualizacion = NOW()
-      `, [item.insumo_id, item.cantidad]);
+      `, [item.insumo_id, item.cantidad, item.unidad]);
     }
 
     await client.query('COMMIT');
@@ -330,6 +330,21 @@ export const updateCompra = async (id, data) => {
         await client.query(query, params);
       }
 
+      // Obtener items existentes para revertir inventario
+      const itemsAnteriores = await client.query(
+        'SELECT insumo_id, cantidad, unidad FROM items_compra WHERE compra_id = $1',
+        [id]
+      );
+
+      // Revertir inventario de items anteriores
+      for (const itemAnterior of itemsAnteriores.rows) {
+        await client.query(`
+          UPDATE inventario
+          SET cantidad_actual = cantidad_actual - $1, ultima_actualizacion = NOW()
+          WHERE insumo_id = $2 AND unidad = $3
+        `, [itemAnterior.cantidad, itemAnterior.insumo_id, itemAnterior.unidad]);
+      }
+
       // Eliminar items existentes de la compra
       await client.query('DELETE FROM items_compra WHERE compra_id = $1', [id]);
 
@@ -380,6 +395,16 @@ export const updateCompra = async (id, data) => {
             [requisicionItemId]
           );
         }
+
+        // Actualizar inventario (crear o incrementar)
+        await client.query(`
+          INSERT INTO inventario (insumo_id, cantidad_actual, unidad, ultima_actualizacion)
+          VALUES ($1, $2, $3, NOW())
+          ON CONFLICT (insumo_id, unidad)
+          DO UPDATE SET
+            cantidad_actual = inventario.cantidad_actual + $2,
+            ultima_actualizacion = NOW()
+        `, [item.insumo_id, item.cantidad, item.unidad]);
       }
 
       await client.query('COMMIT');
@@ -452,7 +477,21 @@ export const deleteCompra = async (id) => {
        )`,
       [id]
     );
-    
+
+    // Revertir inventario antes de eliminar los items
+    const itemsCompra = await client.query(
+      'SELECT insumo_id, cantidad, unidad FROM items_compra WHERE compra_id = $1',
+      [id]
+    );
+
+    for (const item of itemsCompra.rows) {
+      await client.query(`
+        UPDATE inventario
+        SET cantidad_actual = cantidad_actual - $1, ultima_actualizacion = NOW()
+        WHERE insumo_id = $2 AND unidad = $3
+      `, [item.cantidad, item.insumo_id, item.unidad]);
+    }
+
     // Eliminar los items de la compra
     await client.query(
       'DELETE FROM items_compra WHERE compra_id = $1',
@@ -511,7 +550,7 @@ export const addItemToCompra = async (compraId, data) => {
     // Obtener el item completo con datos del insumo
     const itemCompleto = await client.query(
       `SELECT ic.*, i.nombre as insumo_nombre, i.categoria as insumo_categoria,
-       CASE 
+       CASE
          WHEN ir.id IS NOT NULL THEN true
          ELSE false
        END as es_de_requisicion,
@@ -522,12 +561,22 @@ export const addItemToCompra = async (compraId, data) => {
        WHERE ic.id = $1`,
       [itemResult.rows[0].id]
     );
-    
+
+    // Actualizar inventario (crear o incrementar)
+    await client.query(`
+      INSERT INTO inventario (insumo_id, cantidad_actual, unidad, ultima_actualizacion)
+      VALUES ($1, $2, $3, NOW())
+      ON CONFLICT (insumo_id, unidad)
+      DO UPDATE SET
+        cantidad_actual = inventario.cantidad_actual + $2,
+        ultima_actualizacion = NOW()
+    `, [insumo_id, cantidad, unidad]);
+
     // Recalcular el total de la compra
     await recalcularTotalCompra(compraId, client);
-    
+
     await client.query('COMMIT');
-    
+
     return itemCompleto.rows[0];
   } catch (error) {
     await client.query('ROLLBACK');
@@ -590,13 +639,42 @@ export const updateItemCompra = async (compraId, itemId, data) => {
     query += updates.join(',');
     query += ` WHERE id = $${paramIndex} AND compra_id = $${paramIndex + 1} RETURNING *`;
     params.push(itemId, compraId);
-    
+
+    // Guardar datos anteriores para ajustar inventario
+    const itemAnterior = existingItem.rows[0];
+    const cantidadAnterior = parseFloat(itemAnterior.cantidad);
+    const unidadAnterior = itemAnterior.unidad;
+
     const result = await client.query(query, params);
-    
+    const itemActualizado = result.rows[0];
+
+    // Ajustar inventario si cambió cantidad o unidad
+    const cantidadNueva = parseFloat(itemActualizado.cantidad);
+    const unidadNueva = itemActualizado.unidad;
+
+    if (cantidadAnterior !== cantidadNueva || unidadAnterior !== unidadNueva) {
+      // Restar cantidad anterior
+      await client.query(`
+        UPDATE inventario
+        SET cantidad_actual = cantidad_actual - $1, ultima_actualizacion = NOW()
+        WHERE insumo_id = $2 AND unidad = $3
+      `, [cantidadAnterior, itemAnterior.insumo_id, unidadAnterior]);
+
+      // Sumar cantidad nueva
+      await client.query(`
+        INSERT INTO inventario (insumo_id, cantidad_actual, unidad, ultima_actualizacion)
+        VALUES ($1, $2, $3, NOW())
+        ON CONFLICT (insumo_id, unidad)
+        DO UPDATE SET
+          cantidad_actual = inventario.cantidad_actual + $2,
+          ultima_actualizacion = NOW()
+      `, [itemAnterior.insumo_id, cantidadNueva, unidadNueva]);
+    }
+
     // Obtener el item completo con datos del insumo
     const itemCompleto = await client.query(
       `SELECT ic.*, i.nombre as insumo_nombre, i.categoria as insumo_categoria,
-       CASE 
+       CASE
          WHEN ir.id IS NOT NULL THEN true
          ELSE false
        END as es_de_requisicion,
@@ -607,7 +685,7 @@ export const updateItemCompra = async (compraId, itemId, data) => {
        WHERE ic.id = $1`,
       [itemId]
     );
-    
+
     // Recalcular el total de la compra
     await recalcularTotalCompra(compraId, client);
     
@@ -648,7 +726,7 @@ export const deleteItemCompra = async (compraId, itemId) => {
         'UPDATE items_requisicion SET completado = false WHERE id = $1',
         [existingItem.rows[0].requisicion_item_id]
       );
-      
+
       // Actualizar la requisición si es necesario
       await client.query(
         `UPDATE requisiciones r
@@ -660,13 +738,21 @@ export const deleteItemCompra = async (compraId, itemId) => {
         [existingItem.rows[0].requisicion_item_id]
       );
     }
-    
+
+    // Revertir inventario antes de eliminar el item
+    const itemData = existingItem.rows[0];
+    await client.query(`
+      UPDATE inventario
+      SET cantidad_actual = cantidad_actual - $1, ultima_actualizacion = NOW()
+      WHERE insumo_id = $2 AND unidad = $3
+    `, [itemData.cantidad, itemData.insumo_id, itemData.unidad]);
+
     // Eliminar el item
     const result = await client.query(
       'DELETE FROM items_compra WHERE id = $1 RETURNING *',
       [itemId]
     );
-    
+
     // Recalcular el total de la compra
     await recalcularTotalCompra(compraId, client);
     
