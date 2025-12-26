@@ -244,10 +244,10 @@ export const getEstadisticasInventario = async () => {
       (
         SELECT SUM(inv2.cantidad_actual * COALESCE(
           (
-            SELECT AVG(precio_unitario) FROM (
-              SELECT precio_unitario
+            SELECT AVG(precio_unitario / NULLIF(cantidad, 0)) FROM (
+              SELECT precio_unitario, cantidad
               FROM items_compra ic
-              WHERE ic.insumo_id = inv2.insumo_id
+              WHERE ic.insumo_id = inv2.insumo_id AND ic.cantidad > 0
               ORDER BY ic.id DESC
               LIMIT 3
             ) ultimos_precios
