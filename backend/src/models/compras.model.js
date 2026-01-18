@@ -4,7 +4,7 @@ import pool from "../config/db.js";
  * Obtiene todas las compras, opcionalmente filtradas por proveedor y/o fecha
  */
 export const getAllCompras = async (filters = {}) => {
-  const { proveedor_id, fecha_inicio, fecha_fin } = filters;
+  const { proveedor_id, fecha_inicio, fecha_fin, metodo_pago } = filters;
 
   let query = `
     SELECT c.*,
@@ -17,31 +17,38 @@ export const getAllCompras = async (filters = {}) => {
     LEFT JOIN empleados e ON c.usuario_id = e.id
     WHERE 1=1
   `;
-  
+
   const params = [];
   let paramIndex = 1;
-  
+
   // Filtrar por proveedor si se proporciona
   if (proveedor_id) {
     query += ` AND c.proveedor_id = $${paramIndex}`;
     params.push(proveedor_id);
     paramIndex++;
   }
-  
+
   // Filtrar por fecha de inicio si se proporciona
   if (fecha_inicio) {
     query += ` AND c.fecha_compra >= $${paramIndex}`;
     params.push(fecha_inicio);
     paramIndex++;
   }
-  
+
   // Filtrar por fecha de fin si se proporciona
   if (fecha_fin) {
     query += ` AND c.fecha_compra <= $${paramIndex}`;
     params.push(fecha_fin);
     paramIndex++;
   }
-  
+
+  // Filtrar por método de pago si se proporciona
+  if (metodo_pago) {
+    query += ` AND c.metodo_pago = $${paramIndex}`;
+    params.push(metodo_pago);
+    paramIndex++;
+  }
+
   query += ' ORDER BY c.fecha_compra DESC';
   
   const result = await pool.query(query, params);

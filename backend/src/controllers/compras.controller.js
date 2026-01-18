@@ -21,14 +21,15 @@ import {
  */
 export const fetchCompras = async (req, res) => {
   try {
-    const { proveedor_id, fecha_inicio, fecha_fin } = req.query;
-    
+    const { proveedor_id, fecha_inicio, fecha_fin, metodo_pago } = req.query;
+
     const filters = {
       proveedor_id: proveedor_id ? parseInt(proveedor_id) : null,
       fecha_inicio,
-      fecha_fin
+      fecha_fin,
+      metodo_pago: metodo_pago || null
     };
-    
+
     const compras = await getAllCompras(filters);
     res.json(compras);
   } catch (error) {

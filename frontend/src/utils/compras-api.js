@@ -126,7 +126,8 @@ export const getCompras = async (filters = {}) => {
   if (filters.proveedor_id) params.append("proveedor_id", filters.proveedor_id);
   if (filters.fecha_inicio) params.append("fecha_inicio", filters.fecha_inicio);
   if (filters.fecha_fin) params.append("fecha_fin", filters.fecha_fin);
-  
+  if (filters.metodo_pago) params.append("metodo_pago", filters.metodo_pago);
+
   const query = params.toString() ? `?${params.toString()}` : "";
   return await fetchApi(`/compras${query}`);
 };

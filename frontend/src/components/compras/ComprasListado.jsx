@@ -25,6 +25,10 @@ export default function ComprasListado() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [filtroProveedor, setFiltroProveedor] = useState("");
+  const [filtroMetodoPago, setFiltroMetodoPago] = useState("");
+  const [mostrarModalPago, setMostrarModalPago] = useState(false);
+  const [compraAPagar, setCompraAPagar] = useState(null);
+  const [metodoPagoSeleccionado, setMetodoPagoSeleccionado] = useState("efectivo");
   const [formData, setFormData] = useState({
     proveedor_id: "",
     metodo_pago: "efectivo",
@@ -50,7 +54,7 @@ export default function ComprasListado() {
 
   useEffect(() => {
     cargarCompras();
-  }, [filtroProveedor]);
+  }, [filtroProveedor, filtroMetodoPago]);
 
   useEffect(() => {
     if (formData.proveedor_id) {
@@ -87,7 +91,10 @@ export default function ComprasListado() {
       if (filtroProveedor) {
         filters.proveedor_id = filtroProveedor;
       }
-      
+      if (filtroMetodoPago) {
+        filters.metodo_pago = filtroMetodoPago;
+      }
+
       const data = await getCompras(filters);
       setCompras(data);
     } catch (error) {
@@ -284,6 +291,42 @@ export default function ComprasListado() {
     setMostrarFormularioItem(false);
   };
 
+  const abrirModalPago = (compra) => {
+    setCompraAPagar(compra);
+    setMetodoPagoSeleccionado("efectivo");
+    setMostrarModalPago(true);
+  };
+
+  const cerrarModalPago = () => {
+    setMostrarModalPago(false);
+    setCompraAPagar(null);
+    setMetodoPagoSeleccionado("efectivo");
+  };
+
+  const marcarComoPagado = async () => {
+    if (!compraAPagar) return;
+
+    setError("");
+
+    try {
+      await updateCompra(compraAPagar.id, {
+        metodo_pago: metodoPagoSeleccionado
+      });
+
+      cerrarModalPago();
+      await cargarCompras();
+
+      // Si estamos viendo el detalle de esta compra, actualizarlo
+      if (compraActual && compraActual.id === compraAPagar.id) {
+        const compraActualizada = await getCompraById(compraAPagar.id);
+        setCompraActual(compraActualizada);
+      }
+    } catch (error) {
+      console.error("Error:", error);
+      setError(error.message || "Error al marcar como pagado");
+    }
+  };
+
   if (loading && compras.length === 0) {
     return <div className="text-center py-10">Cargando compras...</div>;
   }
@@ -292,7 +335,7 @@ export default function ComprasListado() {
     <div className="w-full">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-subtitulo text-amarillo">Compras</h2>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           <select
             value={filtroProveedor}
             onChange={(e) => setFiltroProveedor(e.target.value)}
@@ -304,6 +347,17 @@ export default function ComprasListado() {
                 {proveedor.nombre}
               </option>
             ))}
+          </select>
+          <select
+            value={filtroMetodoPago}
+            onChange={(e) => setFiltroMetodoPago(e.target.value)}
+            className="bg-negro border border-gray-700 rounded p-2 text-white"
+          >
+            <option value="">Todos los métodos</option>
+            <option value="pendiente de pago">⏳ Pendiente de Pago</option>
+            <option value="efectivo">Efectivo</option>
+            <option value="transfer bbva">Transfer BBVA</option>
+            <option value="transfer Mercado Pago">Transfer Mercado Pago</option>
           </select>
           <button
             onClick={() => {
@@ -448,7 +502,23 @@ export default function ComprasListado() {
             </div>
             <div>
               <p className="text-gray-400">Método de Pago:</p>
-              <p className="text-white capitalize">{compraActual.metodo_pago}</p>
+              {compraActual.metodo_pago === "pendiente de pago" ? (
+                <div className="flex items-center gap-2">
+                  <span className="px-2 py-1 rounded text-sm bg-yellow-600 text-black font-bold">
+                    ⏳ Pendiente de Pago
+                  </span>
+                  <button
+                    onClick={() => abrirModalPago(compraActual)}
+                    className="bg-green-600 text-white px-3 py-1 rounded text-sm font-bold"
+                  >
+                    Marcar Pagado
+                  </button>
+                </div>
+              ) : (
+                <span className="px-2 py-1 rounded text-sm bg-green-900/50 text-green-200 capitalize">
+                  {compraActual.metodo_pago}
+                </span>
+              )}
             </div>
             <div>
               <p className="text-gray-400">Total:</p>
@@ -671,52 +741,134 @@ export default function ComprasListado() {
                   </tr>
                 </thead>
                 <tbody>
-                  {compras.map((compra) => (
-                    <tr key={compra.id} className="border-b border-gray-700">
-                      <td className="p-2">{compra.id}</td>
-                      <td className="p-2">{compra.proveedor_nombre || "N/A"}</td>
-                      <td className="p-2">
-                        {new Date(compra.fecha_compra).toLocaleDateString()}
-                      </td>
-                      <td className="p-2 text-center">
-                        {compra.total_items}
-                      </td>
-                      <td className="p-2 text-center">
-                        ${parseFloat(compra.total_calculado || compra.total).toFixed(2)}
-                      </td>
-                      <td className="p-2 text-center capitalize">
-                        {compra.metodo_pago}
-                      </td>
-                      <td className="p-2 text-center">
-                        <div className="flex justify-center gap-2">
-                          <button
-                            onClick={() => verDetalleCompra(compra.id)}
-                            className="bg-amarillo text-negro p-1 rounded"
-                            title="Ver detalle"
-                          >
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                            </svg>
-                          </button>
-                          <button
-                            onClick={() => eliminarCompra(compra.id)}
-                            className="bg-red-700 text-white p-1 rounded"
-                            title="Eliminar"
-                          >
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                            </svg>
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
+                  {compras.map((compra) => {
+                    const esPendiente = compra.metodo_pago === "pendiente de pago";
+                    return (
+                      <tr
+                        key={compra.id}
+                        className={`border-b border-gray-700 ${esPendiente ? "bg-yellow-900/20" : ""}`}
+                      >
+                        <td className="p-2">{compra.id}</td>
+                        <td className="p-2">{compra.proveedor_nombre || "N/A"}</td>
+                        <td className="p-2">
+                          {new Date(compra.fecha_compra).toLocaleDateString()}
+                        </td>
+                        <td className="p-2 text-center">
+                          {compra.total_items}
+                        </td>
+                        <td className="p-2 text-center">
+                          ${parseFloat(compra.total_calculado || compra.total).toFixed(2)}
+                        </td>
+                        <td className="p-2 text-center">
+                          {esPendiente ? (
+                            <span className="px-2 py-1 rounded text-xs bg-yellow-600 text-black font-bold">
+                              ⏳ Pendiente
+                            </span>
+                          ) : (
+                            <span className="px-2 py-1 rounded text-xs bg-green-900/50 text-green-200 capitalize">
+                              {compra.metodo_pago}
+                            </span>
+                          )}
+                        </td>
+                        <td className="p-2 text-center">
+                          <div className="flex justify-center gap-2">
+                            {esPendiente && (
+                              <button
+                                onClick={() => abrirModalPago(compra)}
+                                className="bg-green-600 text-white p-1 rounded"
+                                title="Marcar como pagado"
+                              >
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                </svg>
+                              </button>
+                            )}
+                            <button
+                              onClick={() => verDetalleCompra(compra.id)}
+                              className="bg-amarillo text-negro p-1 rounded"
+                              title="Ver detalle"
+                            >
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                              </svg>
+                            </button>
+                            <button
+                              onClick={() => eliminarCompra(compra.id)}
+                              className="bg-red-700 text-white p-1 rounded"
+                              title="Eliminar"
+                            >
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                              </svg>
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
           )}
         </>
+      )}
+
+      {/* Modal para marcar como pagado */}
+      {mostrarModalPago && compraAPagar && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+          <div className="bg-negro border border-gray-700 rounded-lg w-full max-w-md">
+            <div className="flex justify-between items-center p-4 border-b border-gray-700">
+              <h3 className="text-xl text-amarillo font-bold">Marcar como Pagado</h3>
+              <button
+                onClick={cerrarModalPago}
+                className="text-gray-400 hover:text-white"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="p-4">
+              <div className="mb-4 p-3 bg-gray-800 rounded">
+                <p className="text-gray-400 text-sm">Compra #{compraAPagar.id}</p>
+                <p className="text-white font-bold">{compraAPagar.proveedor_nombre}</p>
+                <p className="text-amarillo text-lg font-bold">
+                  ${parseFloat(compraAPagar.total_calculado || compraAPagar.total).toFixed(2)}
+                </p>
+              </div>
+
+              <div className="mb-4">
+                <label className="block text-white mb-2">Método de Pago Utilizado</label>
+                <select
+                  value={metodoPagoSeleccionado}
+                  onChange={(e) => setMetodoPagoSeleccionado(e.target.value)}
+                  className="w-full bg-negro border border-gray-700 rounded p-3 text-white text-lg"
+                >
+                  <option value="efectivo">Efectivo</option>
+                  <option value="transfer bbva">Transfer BBVA</option>
+                  <option value="transfer Mercado Pago">Transfer Mercado Pago</option>
+                </select>
+              </div>
+
+              <div className="flex justify-end gap-2">
+                <button
+                  onClick={cerrarModalPago}
+                  className="bg-gray-700 text-white px-4 py-2 rounded"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={marcarComoPagado}
+                  className="bg-green-600 text-white px-4 py-2 rounded font-bold"
+                >
+                  Confirmar Pago
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
