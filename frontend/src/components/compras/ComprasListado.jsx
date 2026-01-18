@@ -357,10 +357,9 @@ export default function ComprasListado() {
                 className="w-full bg-negro border border-gray-700 rounded p-2 text-white"
               >
                 <option value="efectivo">Efectivo</option>
-                <option value="transferencia">Transferencia</option>
-                <option value="tarjeta">Tarjeta</option>
-                <option value="cheque">Cheque</option>
-                <option value="credito">Crédito</option>
+                <option value="transfer bbva">Transfer BBVA</option>
+                <option value="transfer Mercado Pago">Transfer Mercado Pago</option>
+                <option value="pendiente de pago">Pendiente de Pago</option>
               </select>
             </div>
             

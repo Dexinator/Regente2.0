@@ -1,6 +1,34 @@
 import pool from "../config/db.js";
 
 /**
+ * Verifica si una unidad de medida existe en la tabla, si no existe la crea
+ * @param {object} client - Cliente de conexión a la BD (para transacciones)
+ * @param {string} nombreUnidad - Nombre de la unidad a verificar/crear
+ * @returns {string} - El nombre de la unidad (normalizado si se creó)
+ */
+const asegurarUnidadExiste = async (client, nombreUnidad) => {
+  if (!nombreUnidad || nombreUnidad.trim() === '') {
+    return 'Unidad'; // Valor por defecto
+  }
+
+  const nombreNormalizado = nombreUnidad.trim();
+
+  // Verificar si la unidad ya existe
+  const existeQuery = 'SELECT id FROM unidades_medida WHERE nombre = $1';
+  const existeResult = await client.query(existeQuery, [nombreNormalizado]);
+
+  if (existeResult.rows.length === 0) {
+    // La unidad no existe, crearla
+    await client.query(
+      'INSERT INTO unidades_medida (nombre, categoria) VALUES ($1, $2) ON CONFLICT (nombre) DO NOTHING',
+      [nombreNormalizado, 'Personalizada']
+    );
+  }
+
+  return nombreNormalizado;
+};
+
+/**
  * Obtiene todos los insumos activos, opcionalmente filtrados por categoría
  */
 export const getAllInsumos = async (categoria = null) => {
@@ -55,40 +83,43 @@ export const getInsumoById = async (id) => {
  * Crea un nuevo insumo con sus proveedores asociados
  */
 export const createInsumo = async (data) => {
-  const { 
-    nombre, 
-    descripcion, 
-    categoria, 
+  const {
+    nombre,
+    descripcion,
+    categoria,
     marca,
     unidad_medida_default,
     cantidad_por_unidad,
-    proveedores 
+    proveedores
   } = data;
-  
+
   const client = await pool.connect();
-  
+
   try {
     await client.query('BEGIN');
-    
+
     // Verificar si ya existe un insumo con el mismo nombre
     const existingInsumo = await client.query(
       'SELECT id FROM insumos WHERE nombre = $1',
       [nombre]
     );
-    
+
     if (existingInsumo.rows.length > 0) {
       throw new Error('Ya existe un insumo con este nombre');
     }
-    
+
+    // Asegurar que la unidad de medida existe (la crea si no existe)
+    const unidadFinal = await asegurarUnidadExiste(client, unidad_medida_default);
+
     // Insertar el insumo
     const insumoQuery = `
-      INSERT INTO insumos 
-      (nombre, descripcion, categoria, marca, unidad_medida_default, cantidad_por_unidad) 
-      VALUES ($1, $2, $3, $4, $5, $6) 
+      INSERT INTO insumos
+      (nombre, descripcion, categoria, marca, unidad_medida_default, cantidad_por_unidad)
+      VALUES ($1, $2, $3, $4, $5, $6)
       RETURNING *
     `;
-    
-    const insumoValues = [nombre, descripcion, categoria, marca, unidad_medida_default || 'unidad', cantidad_por_unidad || 1];
+
+    const insumoValues = [nombre, descripcion, categoria, marca, unidadFinal, cantidad_por_unidad || 1];
     const insumoResult = await client.query(insumoQuery, insumoValues);
     const insumoId = insumoResult.rows[0].id;
     
@@ -120,42 +151,45 @@ export const createInsumo = async (data) => {
  * Actualiza un insumo existente y sus proveedores asociados
  */
 export const updateInsumo = async (id, data) => {
-  const { 
-    nombre, 
-    descripcion, 
-    categoria, 
+  const {
+    nombre,
+    descripcion,
+    categoria,
     marca,
     unidad_medida_default,
     cantidad_por_unidad,
     proveedores,
     activo
   } = data;
-  
+
   const client = await pool.connect();
-  
+
   try {
     await client.query('BEGIN');
-    
+
     // Verificar si ya existe otro insumo con el mismo nombre
     const existingInsumo = await client.query(
       'SELECT id FROM insumos WHERE nombre = $1 AND id != $2',
       [nombre, id]
     );
-    
+
     if (existingInsumo.rows.length > 0) {
       throw new Error('Ya existe otro insumo con este nombre');
     }
-    
+
+    // Asegurar que la unidad de medida existe (la crea si no existe)
+    const unidadFinal = await asegurarUnidadExiste(client, unidad_medida_default);
+
     // Actualizar el insumo
     const insumoQuery = `
-      UPDATE insumos 
-      SET nombre = $1, descripcion = $2, categoria = $3, 
+      UPDATE insumos
+      SET nombre = $1, descripcion = $2, categoria = $3,
           marca = $4, unidad_medida_default = $5, cantidad_por_unidad = $6, activo = $7
-      WHERE id = $8 
+      WHERE id = $8
       RETURNING *
     `;
-    
-    const insumoValues = [nombre, descripcion, categoria, marca, unidad_medida_default, cantidad_por_unidad || 1, activo, id];
+
+    const insumoValues = [nombre, descripcion, categoria, marca, unidadFinal, cantidad_por_unidad || 1, activo, id];
     const insumoResult = await client.query(insumoQuery, insumoValues);
     
     if (insumoResult.rows.length === 0) {

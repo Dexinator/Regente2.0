@@ -8,7 +8,10 @@ import {
   getProveedores,
   getInsumos,
   getItemsRequisicionPendientes,
-  getInsumosByProveedor
+  getInsumosByProveedor,
+  getUnidadesMedida,
+  createInsumo,
+  getCategoriasInsumos
 } from "../../utils/compras-api";
 import { getEmpleadoId } from "../../utils/auth";
 
@@ -16,8 +19,9 @@ export default function RegistroCompras() {
   const [compras, setCompras] = useState([]);
   const [proveedores, setProveedores] = useState([]);
   const [insumos, setInsumos] = useState([]);
+  const [unidades, setUnidades] = useState([]);
   const [compraEditando, setCompraEditando] = useState(null);
-  const [mostrarFormulario, setMostrarFormulario] = useState(false);
+  const [mostrarFormulario, setMostrarFormulario] = useState(true);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [filtroProveedor, setFiltroProveedor] = useState("");
@@ -48,6 +52,20 @@ export default function RegistroCompras() {
     requisicion_item_id: null
   });
 
+  // Estados para modal de nuevo insumo
+  const [mostrarModalNuevoInsumo, setMostrarModalNuevoInsumo] = useState(false);
+  const [categoriasInsumos, setCategoriasInsumos] = useState([]);
+  const [creandoInsumo, setCreandoInsumo] = useState(false);
+  const [mostrarInputUnidadNueva, setMostrarInputUnidadNueva] = useState(false);
+  const [unidadNueva, setUnidadNueva] = useState("");
+  const [formNuevoInsumo, setFormNuevoInsumo] = useState({
+    nombre: "",
+    categoria: "",
+    marca: "",
+    unidad_medida_default: "unidad",
+    descripcion: ""
+  });
+
   const usuarioId = getEmpleadoId();
 
   useEffect(() => {
@@ -60,6 +78,12 @@ export default function RegistroCompras() {
 
   useEffect(() => {
     // Filtrar insumos basado en búsqueda
+    // No filtrar si ya hay un insumo seleccionado (evita reabrir el dropdown)
+    if (formItem.insumo_id) {
+      setInsumosFiltrados([]);
+      return;
+    }
+
     if (busquedaInsumo.trim() === "") {
       setInsumosFiltrados([]);
     } else {
@@ -71,7 +95,7 @@ export default function RegistroCompras() {
       ).slice(0, 10);
       setInsumosFiltrados(filtrados);
     }
-  }, [busquedaInsumo, insumos]);
+  }, [busquedaInsumo, insumos, formItem.insumo_id]);
 
   useEffect(() => {
     // Cuando se selecciona un proveedor, buscar items de requisición pendientes y precios
@@ -89,13 +113,17 @@ export default function RegistroCompras() {
     setError("");
 
     try {
-      const [proveedoresData, insumosData] = await Promise.all([
+      const [proveedoresData, insumosData, unidadesData, categoriasData] = await Promise.all([
         getProveedores(),
-        getInsumos()
+        getInsumos(),
+        getUnidadesMedida(),
+        getCategoriasInsumos()
       ]);
 
       setProveedores(proveedoresData);
       setInsumos(insumosData);
+      setUnidades(unidadesData);
+      setCategoriasInsumos(categoriasData);
 
       await cargarCompras();
     } catch (error) {
@@ -192,6 +220,112 @@ export default function RegistroCompras() {
     }
   };
 
+  // Funciones para el modal de nuevo insumo
+  const abrirModalNuevoInsumo = () => {
+    // Pre-llenar el nombre con lo que el usuario escribió en la búsqueda
+    setFormNuevoInsumo({
+      nombre: busquedaInsumo.trim(),
+      categoria: "",
+      marca: "",
+      unidad_medida_default: "unidad",
+      descripcion: ""
+    });
+    setMostrarModalNuevoInsumo(true);
+    setInsumosFiltrados([]);
+  };
+
+  const cerrarModalNuevoInsumo = () => {
+    setMostrarModalNuevoInsumo(false);
+    setMostrarInputUnidadNueva(false);
+    setUnidadNueva("");
+    setFormNuevoInsumo({
+      nombre: "",
+      categoria: "",
+      marca: "",
+      unidad_medida_default: "unidad",
+      descripcion: ""
+    });
+  };
+
+  const handleNuevoInsumoChange = (e) => {
+    const { name, value } = e.target;
+
+    // Si es el campo de unidad y selecciona "otra"
+    if (name === "unidad_medida_default") {
+      if (value === "__otra__") {
+        setMostrarInputUnidadNueva(true);
+        setUnidadNueva("");
+      } else {
+        setMostrarInputUnidadNueva(false);
+        setUnidadNueva("");
+      }
+    }
+
+    setFormNuevoInsumo({
+      ...formNuevoInsumo,
+      [name]: value
+    });
+  };
+
+  const handleCrearInsumo = async (e) => {
+    e.preventDefault();
+
+    if (!formNuevoInsumo.nombre.trim()) {
+      setError("El nombre del insumo es requerido");
+      return;
+    }
+
+    // Validar unidad nueva si se seleccionó "otra"
+    if (formNuevoInsumo.unidad_medida_default === "__otra__" && !unidadNueva.trim()) {
+      setError("Debe ingresar el nombre de la nueva unidad");
+      return;
+    }
+
+    setCreandoInsumo(true);
+    setError("");
+
+    try {
+      // Determinar la unidad a usar
+      const unidadFinal = formNuevoInsumo.unidad_medida_default === "__otra__"
+        ? unidadNueva.trim()
+        : formNuevoInsumo.unidad_medida_default;
+
+      // Crear el insumo con el proveedor actual si está seleccionado
+      const dataToSend = {
+        ...formNuevoInsumo,
+        unidad_medida_default: unidadFinal,
+        proveedores: formData.proveedor_id && formData.proveedor_id !== 'otro'
+          ? [{ id: parseInt(formData.proveedor_id), precio_referencia: null }]
+          : []
+      };
+
+      const nuevoInsumo = await createInsumo(dataToSend);
+
+      // Recargar la lista de insumos, categorías y unidades
+      const [insumosActualizados, categoriasActualizadas, unidadesActualizadas] = await Promise.all([
+        getInsumos(),
+        getCategoriasInsumos(),
+        getUnidadesMedida()
+      ]);
+      setInsumos(insumosActualizados);
+      setCategoriasInsumos(categoriasActualizadas);
+      setUnidades(unidadesActualizadas);
+
+      // Seleccionar automáticamente el nuevo insumo
+      seleccionarInsumo(nuevoInsumo);
+
+      // Cerrar el modal
+      cerrarModalNuevoInsumo();
+
+      setError(`Insumo "${nuevoInsumo.nombre}" creado exitosamente`);
+    } catch (error) {
+      console.error("Error al crear insumo:", error);
+      setError(error.message || "Error al crear el insumo");
+    } finally {
+      setCreandoInsumo(false);
+    }
+  };
+
   const agregarItem = () => {
     if (!formItem.insumo_id || formItem.precio_unitario <= 0) {
       setError("Selecciona un insumo y define el precio");
@@ -285,7 +419,6 @@ export default function RegistroCompras() {
 
       resetForm();
       await cargarCompras();
-      setMostrarFormulario(false);
     } catch (error) {
       console.error("Error:", error);
       setError(error.message || "Error al guardar la compra");
@@ -366,17 +499,8 @@ export default function RegistroCompras() {
 
   return (
     <div className="w-full">
-      <div className="flex justify-between items-center mb-6">
+      <div className="mb-6">
         <h2 className="text-2xl font-subtitulo text-amarillo">Registro de Compras y Gastos</h2>
-        <button
-          onClick={() => {
-            resetForm();
-            setMostrarFormulario(!mostrarFormulario);
-          }}
-          className="bg-vino text-white px-4 py-2 rounded-full font-bold"
-        >
-          {mostrarFormulario ? "Cancelar" : "Nueva Compra"}
-        </button>
       </div>
 
       {/* Filtros */}
@@ -473,10 +597,9 @@ export default function RegistroCompras() {
                 className="w-full bg-negro border border-gray-700 rounded p-2 text-white"
               >
                 <option value="efectivo">Efectivo</option>
-                <option value="transferencia">Transferencia</option>
-                <option value="tarjeta">Tarjeta</option>
-                <option value="cheque">Cheque</option>
-                <option value="credito">Crédito</option>
+                <option value="transfer bbva">Transfer BBVA</option>
+                <option value="transfer Mercado Pago">Transfer Mercado Pago</option>
+                <option value="pendiente de pago">Pendiente de Pago</option>
               </select>
             </div>
 
@@ -556,18 +679,31 @@ export default function RegistroCompras() {
                 <input
                   type="text"
                   value={busquedaInsumo}
-                  onChange={(e) => setBusquedaInsumo(e.target.value)}
+                  onChange={(e) => {
+                    setBusquedaInsumo(e.target.value);
+                    // Limpiar el insumo seleccionado para permitir una nueva búsqueda
+                    if (formItem.insumo_id) {
+                      setFormItem({
+                        ...formItem,
+                        insumo_id: "",
+                        insumo_nombre: ""
+                      });
+                    }
+                  }}
                   placeholder="Nombre, categoría o marca..."
                   className="w-full bg-negro border border-gray-700 rounded p-2 text-white"
                 />
 
-                {insumosFiltrados.length > 0 && (
+                {(insumosFiltrados.length > 0 || busquedaInsumo.trim().length >= 2) && !formItem.insumo_id && (
                   <div className="absolute z-10 w-full mt-1 bg-negro border border-gray-700 rounded shadow-lg max-h-60 overflow-y-auto">
                     {insumosFiltrados.map(insumo => (
                       <div
                         key={insumo.id}
-                        onClick={() => seleccionarInsumo(insumo)}
-                        className="p-2 hover:bg-vino/30 cursor-pointer border-b border-gray-800 last:border-0"
+                        onMouseDown={(e) => {
+                          e.preventDefault();
+                          seleccionarInsumo(insumo);
+                        }}
+                        className="p-2 hover:bg-vino/30 cursor-pointer border-b border-gray-800"
                       >
                         <div className="text-white">{insumo.nombre}</div>
                         <div className="text-sm text-gray-400">
@@ -576,6 +712,29 @@ export default function RegistroCompras() {
                         </div>
                       </div>
                     ))}
+                    {/* Opción para crear nuevo insumo */}
+                    <div
+                      onMouseDown={(e) => {
+                        e.preventDefault();
+                        abrirModalNuevoInsumo();
+                      }}
+                      className="p-2 hover:bg-amarillo/20 cursor-pointer border-t border-gray-600 bg-gray-900/50"
+                    >
+                      <div className="text-amarillo font-bold flex items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                        </svg>
+                        Crear nuevo insumo
+                        {busquedaInsumo.trim() && (
+                          <span className="font-normal text-white">"{busquedaInsumo.trim()}"</span>
+                        )}
+                      </div>
+                      <div className="text-sm text-gray-400">
+                        {insumosFiltrados.length === 0
+                          ? "No se encontraron coincidencias"
+                          : "Agregar un insumo que no está en la lista"}
+                      </div>
+                    </div>
                   </div>
                 )}
               </div>
@@ -589,7 +748,6 @@ export default function RegistroCompras() {
                   type="number"
                   value={formItem.cantidad}
                   onChange={(e) => setFormItem({...formItem, cantidad: e.target.value})}
-                  min="0.01"
                   step="0.01"
                   className="w-full bg-negro border border-gray-700 rounded p-2 text-white"
                 />
@@ -597,12 +755,18 @@ export default function RegistroCompras() {
 
               <div>
                 <label className="block text-white mb-1">Unidad</label>
-                <input
-                  type="text"
+                <select
                   value={formItem.unidad}
                   onChange={(e) => setFormItem({...formItem, unidad: e.target.value})}
                   className="w-full bg-negro border border-gray-700 rounded p-2 text-white"
-                />
+                >
+                  <option value="">Seleccionar unidad</option>
+                  {unidades.map((unidad) => (
+                    <option key={unidad.id} value={unidad.nombre}>
+                      {unidad.nombre} {unidad.abreviatura && `(${unidad.abreviatura})`}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               <div>
@@ -611,7 +775,6 @@ export default function RegistroCompras() {
                   type="number"
                   value={formItem.precio_unitario}
                   onChange={(e) => setFormItem({...formItem, precio_unitario: e.target.value})}
-                  min="0.01"
                   step="0.01"
                   placeholder="Lo que pagaste"
                   className="w-full bg-negro border border-gray-700 rounded p-2 text-white"
@@ -702,16 +865,15 @@ export default function RegistroCompras() {
           )}
 
           <div className="flex justify-end gap-2">
-            <button
-              type="button"
-              onClick={() => {
-                resetForm();
-                setMostrarFormulario(false);
-              }}
-              className="bg-gray-700 text-white px-4 py-2 rounded"
-            >
-              Cancelar
-            </button>
+            {(compraEditando || formData.items.length > 0) && (
+              <button
+                type="button"
+                onClick={resetForm}
+                className="bg-gray-700 text-white px-4 py-2 rounded"
+              >
+                {compraEditando ? "Cancelar Edición" : "Limpiar"}
+              </button>
+            )}
             <button
               type="submit"
               className="bg-amarillo text-negro px-4 py-2 rounded font-bold"
@@ -789,6 +951,138 @@ export default function RegistroCompras() {
               ))}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {/* Modal para crear nuevo insumo */}
+      {mostrarModalNuevoInsumo && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+          <div className="bg-negro border border-gray-700 rounded-lg w-full max-w-md">
+            <div className="flex justify-between items-center p-4 border-b border-gray-700">
+              <h3 className="text-xl text-amarillo font-bold">Nuevo Insumo</h3>
+              <button
+                onClick={cerrarModalNuevoInsumo}
+                className="text-gray-400 hover:text-white"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <form onSubmit={handleCrearInsumo} className="p-4">
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-white mb-1">Nombre *</label>
+                  <input
+                    type="text"
+                    name="nombre"
+                    value={formNuevoInsumo.nombre}
+                    onChange={handleNuevoInsumoChange}
+                    required
+                    autoFocus
+                    className="w-full bg-negro border border-gray-700 rounded p-2 text-white"
+                    placeholder="Nombre del insumo"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-white mb-1">Categoría</label>
+                  <input
+                    type="text"
+                    name="categoria"
+                    value={formNuevoInsumo.categoria}
+                    onChange={handleNuevoInsumoChange}
+                    list="categorias-insumos-list"
+                    className="w-full bg-negro border border-gray-700 rounded p-2 text-white"
+                    placeholder="Ej: Verduras, Carnes, Limpieza..."
+                  />
+                  <datalist id="categorias-insumos-list">
+                    {categoriasInsumos.map((cat, index) => (
+                      <option key={index} value={cat} />
+                    ))}
+                  </datalist>
+                </div>
+
+                <div>
+                  <label className="block text-white mb-1">Marca</label>
+                  <input
+                    type="text"
+                    name="marca"
+                    value={formNuevoInsumo.marca}
+                    onChange={handleNuevoInsumoChange}
+                    className="w-full bg-negro border border-gray-700 rounded p-2 text-white"
+                    placeholder="Marca (opcional)"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-white mb-1">Unidad de Medida *</label>
+                  <select
+                    name="unidad_medida_default"
+                    value={formNuevoInsumo.unidad_medida_default}
+                    onChange={handleNuevoInsumoChange}
+                    required
+                    className="w-full bg-negro border border-gray-700 rounded p-2 text-white"
+                  >
+                    <option value="">Seleccionar unidad</option>
+                    {unidades.map((unidad) => (
+                      <option key={unidad.id} value={unidad.nombre}>
+                        {unidad.nombre} {unidad.abreviatura && `(${unidad.abreviatura})`}
+                      </option>
+                    ))}
+                    <option value="__otra__">--- Otra (agregar nueva) ---</option>
+                  </select>
+
+                  {mostrarInputUnidadNueva && (
+                    <div className="mt-2">
+                      <label className="block text-white mb-1 text-sm">Nueva unidad *</label>
+                      <input
+                        type="text"
+                        value={unidadNueva}
+                        onChange={(e) => setUnidadNueva(e.target.value)}
+                        placeholder="Ej: Galón, Costal, etc."
+                        required
+                        className="w-full bg-negro border border-gray-700 rounded p-2 text-white"
+                      />
+                      <p className="text-xs text-gray-400 mt-1">
+                        Esta unidad se agregará automáticamente a la lista
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                {formData.proveedor_id && formData.proveedor_id !== 'otro' && (
+                  <div className="bg-vino/20 border border-vino/50 rounded p-3">
+                    <p className="text-sm text-gray-300">
+                      Este insumo se asociará automáticamente con el proveedor:{" "}
+                      <span className="text-white font-bold">
+                        {proveedores.find(p => p.id === parseInt(formData.proveedor_id))?.nombre}
+                      </span>
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex justify-end gap-2 mt-6">
+                <button
+                  type="button"
+                  onClick={cerrarModalNuevoInsumo}
+                  className="bg-gray-700 text-white px-4 py-2 rounded"
+                  disabled={creandoInsumo}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="bg-amarillo text-negro px-4 py-2 rounded font-bold disabled:opacity-50"
+                  disabled={creandoInsumo}
+                >
+                  {creandoInsumo ? "Creando..." : "Crear Insumo"}
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
     </div>

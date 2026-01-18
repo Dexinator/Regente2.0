@@ -141,10 +141,12 @@ export const createCompra = async (data) => {
     data.fecha_compra = new Date(data.fecha_compra).toISOString();
   }
   // Limpiar campos según el tipo de compra
+  // Si proveedor_id es 'otro', convertir a null y usar origen_compra
+  // Si proveedor_id ya es null pero hay origen_compra, preservar origen_compra
   const cleanedData = {
     ...data,
-    proveedor_id: data.proveedor_id === 'otro' ? null : data.proveedor_id,
-    origen_compra: data.proveedor_id === 'otro' ? data.origen_compra : null
+    proveedor_id: data.proveedor_id === 'otro' ? null : (data.proveedor_id || null),
+    origen_compra: data.proveedor_id === 'otro' ? data.origen_compra : (data.proveedor_id ? null : data.origen_compra)
   };
   return await fetchApi("/compras", {
     method: "POST",
@@ -158,10 +160,12 @@ export const updateCompra = async (id, data) => {
     data.fecha_compra = new Date(data.fecha_compra).toISOString();
   }
   // Limpiar campos según el tipo de compra
+  // Si proveedor_id es 'otro', convertir a null y usar origen_compra
+  // Si proveedor_id ya es null pero hay origen_compra, preservar origen_compra
   const cleanedData = {
     ...data,
-    proveedor_id: data.proveedor_id === 'otro' ? null : data.proveedor_id,
-    origen_compra: data.proveedor_id === 'otro' ? data.origen_compra : null
+    proveedor_id: data.proveedor_id === 'otro' ? null : (data.proveedor_id || null),
+    origen_compra: data.proveedor_id === 'otro' ? data.origen_compra : (data.proveedor_id ? null : data.origen_compra)
   };
   return await fetchApi(`/compras/${id}`, {
     method: "PUT",
@@ -257,4 +261,9 @@ export const getInventarioBajoPorProveedor = async (proveedor_id) => {
 
 export const getEstadisticasInventario = async () => {
   return await fetchApi("/inventario/estadisticas");
+};
+
+// Unidades de Medida
+export const getUnidadesMedida = async () => {
+  return await fetchApi("/unidades");
 }; 

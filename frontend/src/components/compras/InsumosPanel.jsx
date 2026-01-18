@@ -1,23 +1,27 @@
 import { useState, useEffect } from "react";
-import { 
-  getInsumos, 
+import {
+  getInsumos,
   getCategoriasInsumos,
   getProveedores,
   getInsumoById,
-  createInsumo, 
-  updateInsumo, 
-  deleteInsumo 
+  createInsumo,
+  updateInsumo,
+  deleteInsumo,
+  getUnidadesMedida
 } from "../../utils/compras-api";
 
 export default function InsumosPanel() {
   const [insumos, setInsumos] = useState([]);
   const [categorias, setCategorias] = useState([]);
   const [proveedores, setProveedores] = useState([]);
+  const [unidades, setUnidades] = useState([]);
   const [categoriaSeleccionada, setCategoriaSeleccionada] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [mostrarFormulario, setMostrarFormulario] = useState(false);
   const [insumoEditando, setInsumoEditando] = useState(null);
+  const [mostrarInputUnidadNueva, setMostrarInputUnidadNueva] = useState(false);
+  const [unidadNueva, setUnidadNueva] = useState("");
   const [formData, setFormData] = useState({
     nombre: "",
     descripcion: "",
@@ -39,16 +43,18 @@ export default function InsumosPanel() {
   const cargarDatos = async () => {
     setLoading(true);
     setError("");
-    
+
     try {
-      // Cargar categorías
-      const categoriasData = await getCategoriasInsumos();
+      // Cargar categorías, proveedores y unidades en paralelo
+      const [categoriasData, proveedoresData, unidadesData] = await Promise.all([
+        getCategoriasInsumos(),
+        getProveedores(),
+        getUnidadesMedida()
+      ]);
       setCategorias(categoriasData);
-      
-      // Cargar proveedores
-      const proveedoresData = await getProveedores();
       setProveedores(proveedoresData);
-      
+      setUnidades(unidadesData);
+
       // Cargar insumos
       await cargarInsumos();
     } catch (error) {
@@ -71,6 +77,18 @@ export default function InsumosPanel() {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
+
+    // Si es el campo de unidad y selecciona "otra"
+    if (name === "unidad_medida_default") {
+      if (value === "__otra__") {
+        setMostrarInputUnidadNueva(true);
+        setUnidadNueva("");
+      } else {
+        setMostrarInputUnidadNueva(false);
+        setUnidadNueva("");
+      }
+    }
+
     setFormData({
       ...formData,
       [name]: value
@@ -112,19 +130,35 @@ export default function InsumosPanel() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
-    
+
+    // Determinar la unidad a usar
+    let unidadFinal = formData.unidad_medida_default;
+    if (formData.unidad_medida_default === "__otra__") {
+      if (!unidadNueva.trim()) {
+        setError("Debe ingresar el nombre de la nueva unidad");
+        return;
+      }
+      unidadFinal = unidadNueva.trim();
+    }
+
+    const dataToSend = {
+      ...formData,
+      unidad_medida_default: unidadFinal
+    };
+
     try {
       if (insumoEditando) {
         await updateInsumo(insumoEditando.id, {
-          ...formData,
+          ...dataToSend,
           activo: true
         });
       } else {
-        await createInsumo(formData);
+        await createInsumo(dataToSend);
       }
-      
+
       resetForm();
-      await cargarInsumos();
+      // Recargar datos incluyendo unidades (por si se agregó una nueva)
+      await cargarDatos();
     } catch (error) {
       console.error("Error:", error);
       setError(error.message || "Error al guardar el insumo");
@@ -133,21 +167,43 @@ export default function InsumosPanel() {
 
   const editarInsumo = async (id) => {
     setError("");
-    
+
     try {
       // Obtener insumo con sus proveedores
       const insumo = await getInsumoById(id);
-      
+
+      // Verificar si la unidad del insumo existe en la lista de unidades
+      const unidadExiste = unidades.some(u => u.nombre === insumo.unidad_medida_default);
+
       setInsumoEditando(insumo);
-      setFormData({
-        nombre: insumo.nombre,
-        descripcion: insumo.descripcion || "",
-        categoria: insumo.categoria || "",
-        marca: insumo.marca || "",
-        unidad_medida_default: insumo.unidad_medida_default || "unidad",
-        cantidad_por_unidad: insumo.cantidad_por_unidad || 1,
-        proveedores: insumo.proveedores || []
-      });
+
+      if (unidadExiste) {
+        setFormData({
+          nombre: insumo.nombre,
+          descripcion: insumo.descripcion || "",
+          categoria: insumo.categoria || "",
+          marca: insumo.marca || "",
+          unidad_medida_default: insumo.unidad_medida_default || "",
+          cantidad_por_unidad: insumo.cantidad_por_unidad || 1,
+          proveedores: insumo.proveedores || []
+        });
+        setMostrarInputUnidadNueva(false);
+        setUnidadNueva("");
+      } else {
+        // La unidad no existe en la tabla, mostrar como "otra"
+        setFormData({
+          nombre: insumo.nombre,
+          descripcion: insumo.descripcion || "",
+          categoria: insumo.categoria || "",
+          marca: insumo.marca || "",
+          unidad_medida_default: "__otra__",
+          cantidad_por_unidad: insumo.cantidad_por_unidad || 1,
+          proveedores: insumo.proveedores || []
+        });
+        setMostrarInputUnidadNueva(true);
+        setUnidadNueva(insumo.unidad_medida_default || "");
+      }
+
       setMostrarFormulario(true);
     } catch (error) {
       console.error("Error:", error);
@@ -176,10 +232,12 @@ export default function InsumosPanel() {
       descripcion: "",
       categoria: "",
       marca: "",
-      unidad_medida_default: "unidad",
+      unidad_medida_default: "",
       cantidad_por_unidad: 1,
       proveedores: []
     });
+    setMostrarInputUnidadNueva(false);
+    setUnidadNueva("");
     setMostrarFormulario(false);
   };
 
@@ -270,20 +328,39 @@ export default function InsumosPanel() {
             </div>
             
             <div>
-              <label className="block text-white mb-1">Unidad de Medida</label>
+              <label className="block text-white mb-1">Unidad de Medida *</label>
               <select
                 name="unidad_medida_default"
                 value={formData.unidad_medida_default}
                 onChange={handleInputChange}
+                required
                 className="w-full bg-negro border border-gray-700 rounded p-2 text-white"
               >
-                <option value="unidad">Unidad</option>
-                <option value="kg">Kilogramo</option>
-                <option value="g">Gramo</option>
-                <option value="l">Litro</option>
-                <option value="ml">Mililitro</option>
-                <option value="pza">Pieza</option>
+                <option value="">Seleccionar unidad</option>
+                {unidades.map((unidad) => (
+                  <option key={unidad.id} value={unidad.nombre}>
+                    {unidad.nombre} {unidad.abreviatura && `(${unidad.abreviatura})`}
+                  </option>
+                ))}
+                <option value="__otra__">--- Otra (agregar nueva) ---</option>
               </select>
+
+              {mostrarInputUnidadNueva && (
+                <div className="mt-2">
+                  <label className="block text-white mb-1 text-sm">Nueva unidad *</label>
+                  <input
+                    type="text"
+                    value={unidadNueva}
+                    onChange={(e) => setUnidadNueva(e.target.value)}
+                    placeholder="Ej: Galón, Costal, etc."
+                    required
+                    className="w-full bg-negro border border-gray-700 rounded p-2 text-white"
+                  />
+                  <p className="text-xs text-gray-400 mt-1">
+                    Esta unidad se agregará automáticamente a la lista
+                  </p>
+                </div>
+              )}
             </div>
             
             <div>

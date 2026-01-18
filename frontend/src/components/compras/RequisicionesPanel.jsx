@@ -1,20 +1,22 @@
 import { useState, useEffect } from "react";
-import { 
-  getRequisiciones, 
+import {
+  getRequisiciones,
   getRequisicionById,
-  createRequisicion, 
-  updateRequisicion, 
+  createRequisicion,
+  updateRequisicion,
   deleteRequisicion,
   addItemRequisicion,
   updateItemRequisicion,
   deleteItemRequisicion,
-  getInsumos
+  getInsumos,
+  getUnidadesMedida
 } from "../../utils/compras-api";
 import { getUserRole, getUserName, getEmpleadoId } from "../../utils/auth";
 
 export default function RequisicionesPanel() {
   const [requisiciones, setRequisiciones] = useState([]);
   const [insumos, setInsumos] = useState([]);
+  const [unidades, setUnidades] = useState([]);
   const [requisicionActual, setRequisicionActual] = useState(null);
   const [mostrarFormulario, setMostrarFormulario] = useState(false);
   const [mostrarFormularioItem, setMostrarFormularioItem] = useState(false);
@@ -49,43 +51,59 @@ export default function RequisicionesPanel() {
 
   useEffect(() => {
     // Filtrar insumos para el formulario principal
+    // No filtrar si ya hay un insumo seleccionado (evita reabrir el dropdown)
+    if (formItemData.insumo_id) {
+      setInsumosFiltrados([]);
+      return;
+    }
+
     if (busquedaInsumo.trim() === "") {
       setInsumosFiltrados([]);
     } else {
       const termino = busquedaInsumo.toLowerCase();
-      const filtrados = insumos.filter(insumo => 
+      const filtrados = insumos.filter(insumo =>
         insumo.nombre.toLowerCase().includes(termino) ||
         (insumo.categoria && insumo.categoria.toLowerCase().includes(termino)) ||
         (insumo.marca && insumo.marca.toLowerCase().includes(termino))
       ).slice(0, 10);
       setInsumosFiltrados(filtrados);
     }
-  }, [busquedaInsumo, insumos]);
+  }, [busquedaInsumo, insumos, formItemData.insumo_id]);
 
   useEffect(() => {
     // Filtrar insumos para el formulario de detalle
+    // No filtrar si ya hay un insumo seleccionado (evita reabrir el dropdown)
+    if (formItemData.insumo_id) {
+      setInsumosFiltradosDetalle([]);
+      return;
+    }
+
     if (busquedaInsumoDetalle.trim() === "") {
       setInsumosFiltradosDetalle([]);
     } else {
       const termino = busquedaInsumoDetalle.toLowerCase();
-      const filtrados = insumos.filter(insumo => 
+      const filtrados = insumos.filter(insumo =>
         insumo.nombre.toLowerCase().includes(termino) ||
         (insumo.categoria && insumo.categoria.toLowerCase().includes(termino)) ||
         (insumo.marca && insumo.marca.toLowerCase().includes(termino))
       ).slice(0, 10);
       setInsumosFiltradosDetalle(filtrados);
     }
-  }, [busquedaInsumoDetalle, insumos]);
+  }, [busquedaInsumoDetalle, insumos, formItemData.insumo_id]);
 
   const cargarDatos = async () => {
     setLoading(true);
     setError("");
-    
+
     try {
-      // Cargar insumos
-      const insumosData = await getInsumos();
+      // Cargar insumos y unidades en paralelo
+      const [insumosData, unidadesData] = await Promise.all([
+        getInsumos(),
+        getUnidadesMedida()
+      ]);
       setInsumos(insumosData);
-      
+      setUnidades(unidadesData);
+
       // Cargar requisiciones
       await cargarRequisiciones();
     } catch (error) {
@@ -292,8 +310,14 @@ export default function RequisicionesPanel() {
       items: [...formData.items, { ...formItemData }]
     });
 
-    // Resetear el formulario de item
-    resetFormItem();
+    // Limpiar los campos pero mantener el formulario visible para agregar más items
+    setFormItemData({
+      insumo_id: "",
+      cantidad: 1,
+      unidad: "unidad",
+      urgencia: "normal"
+    });
+    setBusquedaInsumo("");
     setError("");
   };
 
@@ -328,7 +352,12 @@ export default function RequisicionesPanel() {
           <button
             onClick={() => {
               setRequisicionActual(null);
-              setMostrarFormulario(!mostrarFormulario);
+              const nuevoEstado = !mostrarFormulario;
+              setMostrarFormulario(nuevoEstado);
+              // Mostrar automáticamente el formulario de item al abrir nueva requisición
+              if (nuevoEstado) {
+                setMostrarFormularioItem(true);
+              }
             }}
             className="bg-vino text-white px-4 py-2 rounded-full font-bold"
           >
@@ -383,7 +412,16 @@ export default function RequisicionesPanel() {
                       <input
                         type="text"
                         value={busquedaInsumo}
-                        onChange={(e) => setBusquedaInsumo(e.target.value)}
+                        onChange={(e) => {
+                          setBusquedaInsumo(e.target.value);
+                          // Limpiar el insumo seleccionado para permitir una nueva búsqueda
+                          if (formItemData.insumo_id) {
+                            setFormItemData({
+                              ...formItemData,
+                              insumo_id: ""
+                            });
+                          }
+                        }}
                         placeholder="Buscar por nombre, categoría o marca..."
                         className="w-full bg-negro border border-gray-700 rounded p-2 text-white"
                       />
@@ -441,16 +479,22 @@ export default function RequisicionesPanel() {
                   
                   <div>
                     <label className="block text-white mb-1">Unidad *</label>
-                    <input
-                      type="text"
+                    <select
                       name="unidad"
                       value={formItemData.unidad}
                       onChange={handleItemInputChange}
                       required
                       className="w-full bg-negro border border-gray-700 rounded p-2 text-white"
-                    />
+                    >
+                      <option value="">Seleccionar unidad</option>
+                      {unidades.map((unidad) => (
+                        <option key={unidad.id} value={unidad.nombre}>
+                          {unidad.nombre} {unidad.abreviatura && `(${unidad.abreviatura})`}
+                        </option>
+                      ))}
+                    </select>
                   </div>
-                  
+
                   <div>
                     <label className="block text-white mb-1">Urgencia</label>
                     <select
@@ -599,7 +643,16 @@ export default function RequisicionesPanel() {
                       <input
                         type="text"
                         value={busquedaInsumoDetalle}
-                        onChange={(e) => setBusquedaInsumoDetalle(e.target.value)}
+                        onChange={(e) => {
+                          setBusquedaInsumoDetalle(e.target.value);
+                          // Limpiar el insumo seleccionado para permitir una nueva búsqueda
+                          if (formItemData.insumo_id) {
+                            setFormItemData({
+                              ...formItemData,
+                              insumo_id: ""
+                            });
+                          }
+                        }}
                         placeholder="Buscar por nombre, categoría o marca..."
                         className="w-full bg-negro border border-gray-700 rounded p-2 text-white"
                       />
@@ -657,16 +710,22 @@ export default function RequisicionesPanel() {
                   
                   <div>
                     <label className="block text-white mb-1">Unidad *</label>
-                    <input
-                      type="text"
+                    <select
                       name="unidad"
                       value={formItemData.unidad}
                       onChange={handleItemInputChange}
                       required
                       className="w-full bg-negro border border-gray-700 rounded p-2 text-white"
-                    />
+                    >
+                      <option value="">Seleccionar unidad</option>
+                      {unidades.map((unidad) => (
+                        <option key={unidad.id} value={unidad.nombre}>
+                          {unidad.nombre} {unidad.abreviatura && `(${unidad.abreviatura})`}
+                        </option>
+                      ))}
+                    </select>
                   </div>
-                  
+
                   <div>
                     <label className="block text-white mb-1">Urgencia</label>
                     <select
