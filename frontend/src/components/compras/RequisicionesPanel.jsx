@@ -22,7 +22,7 @@ export default function RequisicionesPanel() {
   const [mostrarFormularioItem, setMostrarFormularioItem] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [filtroCompletada, setFiltroCompletada] = useState(null);
+  const [filtroCompletada, setFiltroCompletada] = useState(false);
   const [formData, setFormData] = useState({
     notas: "",
     items: []
@@ -849,14 +849,16 @@ export default function RequisicionesPanel() {
             )}
           </div>
           
-          <div className="flex justify-end gap-2">
-            <button
-              onClick={() => eliminarRequisicion(requisicionActual.id)}
-              className="bg-red-700 text-white px-4 py-2 rounded"
-            >
-              Eliminar Requisición
-            </button>
-          </div>
+          {!requisicionActual.completada && (
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => eliminarRequisicion(requisicionActual.id)}
+                className="bg-red-700 text-white px-4 py-2 rounded"
+              >
+                Eliminar Requisición
+              </button>
+            </div>
+          )}
         </div>
       )}
 
@@ -911,15 +913,17 @@ export default function RequisicionesPanel() {
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                             </svg>
                           </button>
-                          <button
-                            onClick={() => eliminarRequisicion(requisicion.id)}
-                            className="bg-red-700 text-white p-1 rounded"
-                            title="Eliminar"
-                          >
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          {!requisicion.completada && (
+                            <button
+                              onClick={() => eliminarRequisicion(requisicion.id)}
+                              className="bg-red-700 text-white p-1 rounded"
+                              title="Eliminar"
+                            >
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                             </svg>
-                          </button>
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>
