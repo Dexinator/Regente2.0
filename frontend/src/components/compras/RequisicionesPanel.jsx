@@ -297,6 +297,18 @@ export default function RequisicionesPanel() {
       return;
     }
 
+    // Validar cantidad
+    if (!formItemData.cantidad || formItemData.cantidad <= 0) {
+      setError("Debe ingresar una cantidad válida");
+      return;
+    }
+
+    // Validar unidad
+    if (!formItemData.unidad) {
+      setError("Debe seleccionar una unidad");
+      return;
+    }
+
     // Verificar que no se haya agregado ya este insumo
     const yaExiste = formData.items.some(item => item.insumo_id === formItemData.insumo_id);
     if (yaExiste) {
@@ -425,7 +437,7 @@ export default function RequisicionesPanel() {
                         placeholder="Buscar por nombre, categoría o marca..."
                         className="w-full bg-negro border border-gray-700 rounded p-2 text-white"
                       />
-                      
+
                       {/* Dropdown de resultados */}
                       {insumosFiltrados.length > 0 && (
                         <div className="absolute z-10 w-full mt-1 bg-negro border border-gray-700 rounded shadow-lg max-h-60 overflow-y-auto">
@@ -453,7 +465,7 @@ export default function RequisicionesPanel() {
                           ))}
                         </div>
                       )}
-                      
+
                       {/* Mostrar si se seleccionó un insumo */}
                       {formItemData.insumo_id && (
                         <div className="text-xs text-green-400 mt-1">
@@ -462,7 +474,7 @@ export default function RequisicionesPanel() {
                       )}
                     </div>
                   </div>
-                  
+
                   <div>
                     <label className="block text-white mb-1">Cantidad *</label>
                     <input
@@ -472,18 +484,16 @@ export default function RequisicionesPanel() {
                       onChange={handleItemInputChange}
                       min="1"
                       step="0.01"
-                      required
                       className="w-full bg-negro border border-gray-700 rounded p-2 text-white"
                     />
                   </div>
-                  
+
                   <div>
                     <label className="block text-white mb-1">Unidad *</label>
                     <select
                       name="unidad"
                       value={formItemData.unidad}
                       onChange={handleItemInputChange}
-                      required
                       className="w-full bg-negro border border-gray-700 rounded p-2 text-white"
                     >
                       <option value="">Seleccionar unidad</option>
@@ -510,7 +520,7 @@ export default function RequisicionesPanel() {
                     </select>
                   </div>
                 </div>
-                
+
                 <div className="flex justify-end">
                   <button
                     type="button"
