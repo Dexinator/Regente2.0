@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
-import { 
-  getProveedores, 
-  createProveedor, 
-  updateProveedor, 
+import {
+  getProveedores,
+  createProveedor,
+  updateProveedor,
   deleteProveedor,
   getDiasCompraDisponibles
 } from "../../utils/compras-api";
@@ -12,6 +12,7 @@ export default function ProveedoresPanel() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [mostrarFormulario, setMostrarFormulario] = useState(false);
+  const [mostrarModalEditar, setMostrarModalEditar] = useState(false);
   const [proveedorEditando, setProveedorEditando] = useState(null);
   const [diasDisponibles, setDiasDisponibles] = useState([]);
   const [formData, setFormData] = useState({
@@ -32,14 +33,13 @@ export default function ProveedoresPanel() {
   const cargarDatos = async () => {
     setLoading(true);
     setError("");
-    
+
     try {
-      // Cargar proveedores y días disponibles en paralelo
       const [proveedoresData, diasData] = await Promise.all([
         getProveedores(),
         getDiasCompraDisponibles()
       ]);
-      
+
       setProveedores(proveedoresData);
       setDiasDisponibles(diasData);
     } catch (error) {
@@ -52,7 +52,7 @@ export default function ProveedoresPanel() {
 
   const cargarProveedores = async () => {
     setError("");
-    
+
     try {
       const data = await getProveedores();
       setProveedores(data);
@@ -87,18 +87,13 @@ export default function ProveedoresPanel() {
     });
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmitNuevo = async (e) => {
     e.preventDefault();
     setError("");
-    
+
     try {
-      if (proveedorEditando) {
-        await updateProveedor(proveedorEditando.id, formData);
-      } else {
-        await createProveedor(formData);
-      }
-      
-      resetForm();
+      await createProveedor(formData);
+      resetFormNuevo();
       await cargarProveedores();
     } catch (error) {
       console.error("Error:", error);
@@ -106,14 +101,25 @@ export default function ProveedoresPanel() {
     }
   };
 
+  const handleSubmitEditar = async (e) => {
+    e.preventDefault();
+    setError("");
+
+    try {
+      await updateProveedor(proveedorEditando.id, formData);
+      cerrarModalEditar();
+      await cargarProveedores();
+    } catch (error) {
+      console.error("Error:", error);
+      setError(error.message || "Error al actualizar el proveedor");
+    }
+  };
+
   const editarProveedor = (proveedor) => {
-    console.log("Editando proveedor:", proveedor);
-    console.log("Valor de activo:", proveedor.activo, typeof proveedor.activo);
-    
     setProveedorEditando(proveedor);
     setFormData({
       nombre: proveedor.nombre,
-      rfc: proveedor.rfc,
+      rfc: proveedor.rfc || "",
       direccion: proveedor.direccion || "",
       telefono: proveedor.telefono || "",
       email: proveedor.email || "",
@@ -121,14 +127,29 @@ export default function ProveedoresPanel() {
       dias_compra: proveedor.dias_compra || [],
       activo: proveedor.activo === true || proveedor.activo === "t" || proveedor.activo === 1
     });
-    setMostrarFormulario(true);
+    setMostrarModalEditar(true);
+  };
+
+  const cerrarModalEditar = () => {
+    setMostrarModalEditar(false);
+    setProveedorEditando(null);
+    setFormData({
+      nombre: "",
+      rfc: "",
+      direccion: "",
+      telefono: "",
+      email: "",
+      contacto_nombre: "",
+      dias_compra: [],
+      activo: true
+    });
   };
 
   const eliminarProveedor = async (id) => {
     if (!confirm("¿Estás seguro de eliminar este proveedor?")) return;
-    
+
     setError("");
-    
+
     try {
       await deleteProveedor(id);
       await cargarProveedores();
@@ -138,8 +159,7 @@ export default function ProveedoresPanel() {
     }
   };
 
-  const resetForm = () => {
-    setProveedorEditando(null);
+  const resetFormNuevo = () => {
     setFormData({
       nombre: "",
       rfc: "",
@@ -152,6 +172,121 @@ export default function ProveedoresPanel() {
     });
     setMostrarFormulario(false);
   };
+
+  // Componente de formulario reutilizable
+  const FormularioProveedor = ({ onSubmit, onCancel, titulo, submitLabel }) => (
+    <form onSubmit={onSubmit} className="bg-negro/50 p-4 rounded-lg">
+      <h3 className="text-xl text-amarillo mb-4">{titulo}</h3>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+        <div>
+          <label className="block text-white mb-1">Nombre * <span className="text-gray-400 text-xs">({formData.nombre.length}/100)</span></label>
+          <input
+            type="text"
+            name="nombre"
+            value={formData.nombre}
+            onChange={handleInputChange}
+            required
+            maxLength={100}
+            className="w-full bg-negro border border-gray-700 rounded p-2 text-white"
+          />
+        </div>
+
+        <div>
+          <label className="block text-white mb-1">RFC <span className="text-gray-400 text-xs">(máx 13)</span></label>
+          <input
+            type="text"
+            name="rfc"
+            value={formData.rfc}
+            onChange={handleInputChange}
+            maxLength={13}
+            className="w-full bg-negro border border-gray-700 rounded p-2 text-white"
+            placeholder="Opcional"
+          />
+        </div>
+
+        <div>
+          <label className="block text-white mb-1">Dirección</label>
+          <input
+            type="text"
+            name="direccion"
+            value={formData.direccion}
+            onChange={handleInputChange}
+            className="w-full bg-negro border border-gray-700 rounded p-2 text-white"
+          />
+        </div>
+
+        <div>
+          <label className="block text-white mb-1">Teléfono</label>
+          <input
+            type="text"
+            name="telefono"
+            value={formData.telefono}
+            onChange={handleInputChange}
+            maxLength={20}
+            className="w-full bg-negro border border-gray-700 rounded p-2 text-white"
+          />
+        </div>
+
+        <div>
+          <label className="block text-white mb-1">Email</label>
+          <input
+            type="email"
+            name="email"
+            value={formData.email}
+            onChange={handleInputChange}
+            maxLength={100}
+            className="w-full bg-negro border border-gray-700 rounded p-2 text-white"
+          />
+        </div>
+
+        <div>
+          <label className="block text-white mb-1">Nombre de Contacto</label>
+          <input
+            type="text"
+            name="contacto_nombre"
+            value={formData.contacto_nombre}
+            onChange={handleInputChange}
+            maxLength={100}
+            className="w-full bg-negro border border-gray-700 rounded p-2 text-white"
+          />
+        </div>
+      </div>
+
+      <div className="mb-4">
+        <label className="block text-white mb-2">Días de Compra</label>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+          {diasDisponibles.map((dia) => (
+            <label key={dia.value} className="flex items-center space-x-2 text-white">
+              <input
+                type="checkbox"
+                checked={formData.dias_compra.includes(dia.value)}
+                onChange={(e) => handleDiaCompraChange(dia.value, e.target.checked)}
+                className="w-4 h-4"
+              />
+              <span className="text-sm">{dia.label}</span>
+            </label>
+          ))}
+        </div>
+      </div>
+
+      <div className="flex justify-end gap-2">
+        <button
+          type="button"
+          onClick={onCancel}
+          className="bg-gray-700 text-white px-4 py-2 rounded"
+        >
+          Cancelar
+        </button>
+        <button
+          type="submit"
+          className="bg-amarillo text-negro px-4 py-2 rounded font-bold"
+        >
+          {submitLabel}
+        </button>
+      </div>
+    </form>
+  );
 
   if (loading) {
     return <div className="text-center py-10">Cargando proveedores...</div>;
@@ -176,119 +311,14 @@ export default function ProveedoresPanel() {
       )}
 
       {mostrarFormulario && (
-        <form onSubmit={handleSubmit} className="bg-negro/50 p-4 rounded-lg mb-6">
-          <h3 className="text-xl text-amarillo mb-4">
-            {proveedorEditando ? "Editar Proveedor" : "Nuevo Proveedor"}
-          </h3>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-            <div>
-              <label className="block text-white mb-1">Nombre * <span className="text-gray-400 text-xs">({formData.nombre.length}/100)</span></label>
-              <input
-                type="text"
-                name="nombre"
-                value={formData.nombre}
-                onChange={handleInputChange}
-                required
-                maxLength={100}
-                className="w-full bg-negro border border-gray-700 rounded p-2 text-white"
-              />
-            </div>
-
-            <div>
-              <label className="block text-white mb-1">RFC <span className="text-gray-400 text-xs">(máx 13)</span></label>
-              <input
-                type="text"
-                name="rfc"
-                value={formData.rfc}
-                onChange={handleInputChange}
-                maxLength={13}
-                className="w-full bg-negro border border-gray-700 rounded p-2 text-white"
-                placeholder="Opcional"
-              />
-            </div>
-
-            <div>
-              <label className="block text-white mb-1">Dirección</label>
-              <input
-                type="text"
-                name="direccion"
-                value={formData.direccion}
-                onChange={handleInputChange}
-                className="w-full bg-negro border border-gray-700 rounded p-2 text-white"
-              />
-            </div>
-
-            <div>
-              <label className="block text-white mb-1">Teléfono</label>
-              <input
-                type="text"
-                name="telefono"
-                value={formData.telefono}
-                onChange={handleInputChange}
-                maxLength={20}
-                className="w-full bg-negro border border-gray-700 rounded p-2 text-white"
-              />
-            </div>
-
-            <div>
-              <label className="block text-white mb-1">Email</label>
-              <input
-                type="email"
-                name="email"
-                value={formData.email}
-                onChange={handleInputChange}
-                maxLength={100}
-                className="w-full bg-negro border border-gray-700 rounded p-2 text-white"
-              />
-            </div>
-
-            <div>
-              <label className="block text-white mb-1">Nombre de Contacto</label>
-              <input
-                type="text"
-                name="contacto_nombre"
-                value={formData.contacto_nombre}
-                onChange={handleInputChange}
-                maxLength={100}
-                className="w-full bg-negro border border-gray-700 rounded p-2 text-white"
-              />
-            </div>
-          </div>
-          
-          <div className="mb-4">
-            <label className="block text-white mb-2">Días de Compra</label>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-              {diasDisponibles.map((dia) => (
-                <label key={dia.value} className="flex items-center space-x-2 text-white">
-                  <input
-                    type="checkbox"
-                    checked={formData.dias_compra.includes(dia.value)}
-                    onChange={(e) => handleDiaCompraChange(dia.value, e.target.checked)}
-                    className="w-4 h-4"
-                  />
-                  <span className="text-sm">{dia.label}</span>
-                </label>
-              ))}
-            </div>
-          </div>
-          
-          <div className="flex justify-end gap-2">
-            <button
-              type="button"
-              onClick={resetForm}
-              className="bg-gray-700 text-white px-4 py-2 rounded"
-            >
-              Cancelar
-            </button>
-            <button
-              type="submit"
-              className="bg-amarillo text-negro px-4 py-2 rounded font-bold"
-            >
-              {proveedorEditando ? "Actualizar" : "Guardar"}
-            </button>
-          </div>
-        </form>
+        <div className="mb-6">
+          <FormularioProveedor
+            onSubmit={handleSubmitNuevo}
+            onCancel={resetFormNuevo}
+            titulo="Nuevo Proveedor"
+            submitLabel="Guardar"
+          />
+        </div>
       )}
 
       {proveedores.length === 0 ? (
@@ -301,39 +331,17 @@ export default function ProveedoresPanel() {
             <thead className="bg-vino text-white">
               <tr>
                 <th className="p-2 text-left">Nombre</th>
+                <th className="p-2 text-center">Acciones</th>
                 <th className="p-2 text-left">RFC</th>
                 <th className="p-2 text-left">Teléfono</th>
                 <th className="p-2 text-left">Email</th>
                 <th className="p-2 text-left">Días de Compra</th>
-                <th className="p-2 text-center">Acciones</th>
               </tr>
             </thead>
             <tbody>
               {proveedores.map((proveedor) => (
                 <tr key={proveedor.id} className="border-b border-gray-700">
                   <td className="p-2">{proveedor.nombre}</td>
-                  <td className="p-2">{proveedor.rfc || "-"}</td>
-                  <td className="p-2">{proveedor.telefono || "-"}</td>
-                  <td className="p-2">{proveedor.email || "-"}</td>
-                  <td className="p-2">
-                    {proveedor.dias_compra && proveedor.dias_compra.length > 0 ? (
-                      <div className="flex flex-wrap gap-1">
-                        {proveedor.dias_compra.map((dia) => {
-                          const diaLabel = diasDisponibles.find(d => d.value === dia)?.label || dia;
-                          return (
-                            <span
-                              key={dia}
-                              className="bg-amarillo text-negro px-2 py-1 rounded text-xs"
-                            >
-                              {diaLabel}
-                            </span>
-                          );
-                        })}
-                      </div>
-                    ) : (
-                      <span className="text-gray-400">Sin días configurados</span>
-                    )}
-                  </td>
                   <td className="p-2 text-center">
                     <div className="flex justify-center gap-2">
                       <button
@@ -356,12 +364,50 @@ export default function ProveedoresPanel() {
                       </button>
                     </div>
                   </td>
+                  <td className="p-2">{proveedor.rfc || "-"}</td>
+                  <td className="p-2">{proveedor.telefono || "-"}</td>
+                  <td className="p-2">{proveedor.email || "-"}</td>
+                  <td className="p-2">
+                    {proveedor.dias_compra && proveedor.dias_compra.length > 0 ? (
+                      <div className="flex flex-wrap gap-1">
+                        {proveedor.dias_compra.map((dia) => {
+                          const diaLabel = diasDisponibles.find(d => d.value === dia)?.label || dia;
+                          return (
+                            <span
+                              key={dia}
+                              className="bg-amarillo text-negro px-2 py-1 rounded text-xs"
+                            >
+                              {diaLabel}
+                            </span>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <span className="text-gray-400">Sin días configurados</span>
+                    )}
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
       )}
+
+      {/* Modal de Edición */}
+      {mostrarModalEditar && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+          <div className="bg-gris-oscuro rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-4">
+              <FormularioProveedor
+                onSubmit={handleSubmitEditar}
+                onCancel={cerrarModalEditar}
+                titulo="Editar Proveedor"
+                submitLabel="Actualizar"
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
-} 
+}
