@@ -8,16 +8,16 @@ import RecetasPanel from "./RecetasPanel";
 import InventarioPanel from "./InventarioPanel";
 
 export default function ComprasPanel() {
-  const [seccionActiva, setSeccionActiva] = useState("inventario");
+  const [seccionActiva, setSeccionActiva] = useState("proveedores");
 
   const secciones = [
+    { id: "proveedores", nombre: "Proveedores" },
+    { id: "insumos", nombre: "Insumos" },
+    { id: "requisiciones", nombre: "Requisiciones" },
+    { id: "compras-del-dia", nombre: "Compras del Día" },
+    { id: "registro-compras", nombre: "Registro de Compras" },
     { id: "inventario", nombre: "Inventario" },
     { id: "recetas", nombre: "Recetas" },
-    { id: "registro-compras", nombre: "Registro de Compras" },
-    { id: "compras-del-dia", nombre: "Compras del Día" },
-    { id: "requisiciones", nombre: "Requisiciones" },
-    { id: "insumos", nombre: "Insumos" },
-    { id: "proveedores", nombre: "Proveedores" },
   ];
 
   return (

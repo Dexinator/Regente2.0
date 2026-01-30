@@ -350,3 +350,11 @@ regente2.0/
 - Cancellations stored as negative quantity records in `detalles_orden`
 - Total calculation uses ABS(precio_unitario) * cantidad for accurate totals
 - Frontend groups products and processes cancellations to show net quantities
+---
+
+## Bitacora de Sesiones
+
+**Negocio:** Palacio
+**Proyecto:** regente
+
+Al terminar la sesion de trabajo, registra lo realizado usando `/bitacora` o menciona "terminamos" para que se guarde automaticamente en Obsidian (JorgeTrabaja/Palacio/regente/).
