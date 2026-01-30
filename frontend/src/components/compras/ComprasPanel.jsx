@@ -21,7 +21,7 @@ export default function ComprasPanel() {
   ];
 
   return (
-    <div className="w-full max-w-6xl mx-auto">
+    <div className="w-full max-w-full px-2 lg:px-4">
       <h1 className="text-3xl font-titulo text-amarillo mb-6 text-center">
         Sistema de Compras
       </h1>
