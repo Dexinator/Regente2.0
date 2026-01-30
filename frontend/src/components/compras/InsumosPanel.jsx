@@ -516,29 +516,24 @@ export default function InsumosPanel() {
         </div>
       ) : (
         <div className="w-full overflow-x-auto">
-          <table className="min-w-[700px] w-full text-white table-fixed">
+          <table className="min-w-[600px] w-full text-white">
             <thead className="bg-vino text-white text-sm">
               <tr>
-                <th className="p-2 text-left w-[22%]">Nombre</th>
-                <th className="p-2 text-left w-[18%]">Categoría</th>
-                <th className="p-2 text-left w-[14%]">Marca</th>
-                <th className="p-2 text-left w-[12%]">Unidad</th>
-                <th className="p-2 text-center w-[7%]">Cant</th>
-                <th className="p-2 text-center w-[7%]">Prov.</th>
-                <th className="p-2 text-center w-[20%]">Acciones</th>
+                <th className="p-2 text-left">Nombre</th>
+                <th className="p-2 text-center w-20">Acciones</th>
+                <th className="p-2 text-left">Categoría</th>
+                <th className="p-2 text-left">Marca</th>
+                <th className="p-2 text-left">Unidad</th>
+                <th className="p-2 text-center w-12">Cant</th>
+                <th className="p-2 text-center w-12">Prov.</th>
               </tr>
             </thead>
             <tbody>
               {insumos.map((insumo) => (
                 <tr key={insumo.id} className="border-b border-gray-700 hover:bg-gray-800/30">
-                  <td className="p-2 truncate" title={insumo.nombre}>{insumo.nombre}</td>
-                  <td className="p-2 truncate" title={insumo.categoria}>{insumo.categoria || "-"}</td>
-                  <td className="p-2 truncate" title={insumo.marca}>{insumo.marca || "-"}</td>
-                  <td className="p-2 truncate" title={insumo.unidad_medida_default}>{insumo.unidad_medida_default}</td>
-                  <td className="p-2 text-center">{insumo.cantidad_por_unidad || 1}</td>
-                  <td className="p-2 text-center">{insumo.num_proveedores || 0}</td>
+                  <td className="p-2">{insumo.nombre}</td>
                   <td className="p-2">
-                    <div className="flex justify-center gap-2">
+                    <div className="flex justify-center gap-1">
                       <button
                         onClick={() => editarInsumo(insumo.id)}
                         className="bg-amarillo text-negro p-1.5 rounded hover:bg-yellow-500"
@@ -559,6 +554,11 @@ export default function InsumosPanel() {
                       </button>
                     </div>
                   </td>
+                  <td className="p-2">{insumo.categoria || "-"}</td>
+                  <td className="p-2">{insumo.marca || "-"}</td>
+                  <td className="p-2">{insumo.unidad_medida_default}</td>
+                  <td className="p-2 text-center">{insumo.cantidad_por_unidad || 1}</td>
+                  <td className="p-2 text-center">{insumo.num_proveedores || 0}</td>
                 </tr>
               ))}
             </tbody>
