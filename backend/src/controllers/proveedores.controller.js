@@ -57,6 +57,23 @@ export const addProveedor = async (req, res) => {
     return res.status(400).json({ error: 'Nombre es obligatorio' });
   }
 
+  // Validar longitud de campos
+  if (nombre.length > 100) {
+    return res.status(400).json({ error: 'Nombre no puede exceder 100 caracteres' });
+  }
+  if (rfc && rfc.length > 13) {
+    return res.status(400).json({ error: 'RFC no puede exceder 13 caracteres' });
+  }
+  if (telefono && telefono.length > 20) {
+    return res.status(400).json({ error: 'Teléfono no puede exceder 20 caracteres' });
+  }
+  if (email && email.length > 100) {
+    return res.status(400).json({ error: 'Email no puede exceder 100 caracteres' });
+  }
+  if (contacto_nombre && contacto_nombre.length > 100) {
+    return res.status(400).json({ error: 'Nombre de contacto no puede exceder 100 caracteres' });
+  }
+
   try {
     const nuevoProveedor = await createProveedor({
       nombre, 
@@ -88,6 +105,23 @@ export const editProveedor = async (req, res) => {
   // Validar campos requeridos
   if (!nombre) {
     return res.status(400).json({ error: 'Nombre es obligatorio' });
+  }
+
+  // Validar longitud de campos
+  if (nombre.length > 100) {
+    return res.status(400).json({ error: 'Nombre no puede exceder 100 caracteres' });
+  }
+  if (rfc && rfc.length > 13) {
+    return res.status(400).json({ error: 'RFC no puede exceder 13 caracteres' });
+  }
+  if (telefono && telefono.length > 20) {
+    return res.status(400).json({ error: 'Teléfono no puede exceder 20 caracteres' });
+  }
+  if (email && email.length > 100) {
+    return res.status(400).json({ error: 'Email no puede exceder 100 caracteres' });
+  }
+  if (contacto_nombre && contacto_nombre.length > 100) {
+    return res.status(400).json({ error: 'Nombre de contacto no puede exceder 100 caracteres' });
   }
 
   try {

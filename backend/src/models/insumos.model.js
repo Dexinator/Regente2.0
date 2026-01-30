@@ -32,17 +32,23 @@ const asegurarUnidadExiste = async (client, nombreUnidad) => {
  * Obtiene todos los insumos activos, opcionalmente filtrados por categoría
  */
 export const getAllInsumos = async (categoria = null) => {
-  let query = 'SELECT * FROM insumos WHERE activo = true';
+  let query = `
+    SELECT i.*,
+           COUNT(ip.proveedor_id) as num_proveedores
+    FROM insumos i
+    LEFT JOIN insumo_proveedor ip ON i.id = ip.insumo_id
+    WHERE i.activo = true
+  `;
   const params = [];
-  
+
   // Filtrar por categoría si se proporciona
   if (categoria) {
-    query += ' AND categoria = $1';
+    query += ' AND i.categoria = $1';
     params.push(categoria);
   }
-  
-  query += ' ORDER BY nombre';
-  
+
+  query += ' GROUP BY i.id ORDER BY i.nombre';
+
   const result = await pool.query(query, params);
   return result.rows;
 };

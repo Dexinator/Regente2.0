@@ -183,29 +183,31 @@ export default function ProveedoresPanel() {
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
             <div>
-              <label className="block text-white mb-1">Nombre *</label>
+              <label className="block text-white mb-1">Nombre * <span className="text-gray-400 text-xs">({formData.nombre.length}/100)</span></label>
               <input
                 type="text"
                 name="nombre"
                 value={formData.nombre}
                 onChange={handleInputChange}
                 required
+                maxLength={100}
                 className="w-full bg-negro border border-gray-700 rounded p-2 text-white"
               />
             </div>
-            
+
             <div>
-              <label className="block text-white mb-1">RFC</label>
+              <label className="block text-white mb-1">RFC <span className="text-gray-400 text-xs">(máx 13)</span></label>
               <input
                 type="text"
                 name="rfc"
                 value={formData.rfc}
                 onChange={handleInputChange}
+                maxLength={13}
                 className="w-full bg-negro border border-gray-700 rounded p-2 text-white"
                 placeholder="Opcional"
               />
             </div>
-            
+
             <div>
               <label className="block text-white mb-1">Dirección</label>
               <input
@@ -216,7 +218,7 @@ export default function ProveedoresPanel() {
                 className="w-full bg-negro border border-gray-700 rounded p-2 text-white"
               />
             </div>
-            
+
             <div>
               <label className="block text-white mb-1">Teléfono</label>
               <input
@@ -224,10 +226,11 @@ export default function ProveedoresPanel() {
                 name="telefono"
                 value={formData.telefono}
                 onChange={handleInputChange}
+                maxLength={20}
                 className="w-full bg-negro border border-gray-700 rounded p-2 text-white"
               />
             </div>
-            
+
             <div>
               <label className="block text-white mb-1">Email</label>
               <input
@@ -235,10 +238,11 @@ export default function ProveedoresPanel() {
                 name="email"
                 value={formData.email}
                 onChange={handleInputChange}
+                maxLength={100}
                 className="w-full bg-negro border border-gray-700 rounded p-2 text-white"
               />
             </div>
-            
+
             <div>
               <label className="block text-white mb-1">Nombre de Contacto</label>
               <input
@@ -246,6 +250,7 @@ export default function ProveedoresPanel() {
                 name="contacto_nombre"
                 value={formData.contacto_nombre}
                 onChange={handleInputChange}
+                maxLength={100}
                 className="w-full bg-negro border border-gray-700 rounded p-2 text-white"
               />
             </div>
