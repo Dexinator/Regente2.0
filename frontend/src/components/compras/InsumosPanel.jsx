@@ -515,17 +515,17 @@ export default function InsumosPanel() {
           No hay insumos registrados
         </div>
       ) : (
-        <div className="w-full">
-          <table className="w-full text-white table-fixed">
-            <thead className="bg-vino text-white">
+        <div className="w-full overflow-x-auto">
+          <table className="min-w-[700px] w-full text-white table-fixed">
+            <thead className="bg-vino text-white text-sm">
               <tr>
-                <th className="p-2 text-left w-[25%]">Nombre</th>
-                <th className="p-2 text-left w-[15%]">Categoría</th>
-                <th className="p-2 text-left w-[15%]">Marca</th>
+                <th className="p-2 text-left w-[22%]">Nombre</th>
+                <th className="p-2 text-left w-[18%]">Categoría</th>
+                <th className="p-2 text-left w-[14%]">Marca</th>
                 <th className="p-2 text-left w-[12%]">Unidad</th>
-                <th className="p-2 text-center w-[8%]">Cant</th>
-                <th className="p-2 text-center w-[10%]">Proveed.</th>
-                <th className="p-2 text-center w-[15%]">Acciones</th>
+                <th className="p-2 text-center w-[7%]">Cant</th>
+                <th className="p-2 text-center w-[7%]">Prov.</th>
+                <th className="p-2 text-center w-[20%]">Acciones</th>
               </tr>
             </thead>
             <tbody>
