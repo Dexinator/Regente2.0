@@ -7,6 +7,132 @@ import {
   getDiasCompraDisponibles
 } from "../../utils/compras-api";
 
+// Componente de formulario definido fuera para evitar re-renders que causan pérdida de foco
+function FormularioProveedor({
+  onSubmit,
+  onCancel,
+  titulo,
+  submitLabel,
+  formData,
+  onInputChange,
+  onDiaCompraChange,
+  diasDisponibles
+}) {
+  return (
+    <form onSubmit={onSubmit} className="bg-negro/50 p-4 rounded-lg">
+      <h3 className="text-xl text-amarillo mb-4">{titulo}</h3>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+        <div>
+          <label className="block text-white mb-1">Nombre * <span className="text-gray-400 text-xs">({formData.nombre.length}/100)</span></label>
+          <input
+            type="text"
+            name="nombre"
+            value={formData.nombre}
+            onChange={onInputChange}
+            required
+            maxLength={100}
+            className="w-full bg-negro border border-gray-700 rounded p-2 text-white"
+          />
+        </div>
+
+        <div>
+          <label className="block text-white mb-1">RFC <span className="text-gray-400 text-xs">(máx 13)</span></label>
+          <input
+            type="text"
+            name="rfc"
+            value={formData.rfc}
+            onChange={onInputChange}
+            maxLength={13}
+            className="w-full bg-negro border border-gray-700 rounded p-2 text-white"
+            placeholder="Opcional"
+          />
+        </div>
+
+        <div>
+          <label className="block text-white mb-1">Dirección</label>
+          <input
+            type="text"
+            name="direccion"
+            value={formData.direccion}
+            onChange={onInputChange}
+            className="w-full bg-negro border border-gray-700 rounded p-2 text-white"
+          />
+        </div>
+
+        <div>
+          <label className="block text-white mb-1">Teléfono</label>
+          <input
+            type="text"
+            name="telefono"
+            value={formData.telefono}
+            onChange={onInputChange}
+            maxLength={20}
+            className="w-full bg-negro border border-gray-700 rounded p-2 text-white"
+          />
+        </div>
+
+        <div>
+          <label className="block text-white mb-1">Email</label>
+          <input
+            type="email"
+            name="email"
+            value={formData.email}
+            onChange={onInputChange}
+            maxLength={100}
+            className="w-full bg-negro border border-gray-700 rounded p-2 text-white"
+          />
+        </div>
+
+        <div>
+          <label className="block text-white mb-1">Nombre de Contacto</label>
+          <input
+            type="text"
+            name="contacto_nombre"
+            value={formData.contacto_nombre}
+            onChange={onInputChange}
+            maxLength={100}
+            className="w-full bg-negro border border-gray-700 rounded p-2 text-white"
+          />
+        </div>
+      </div>
+
+      <div className="mb-4">
+        <label className="block text-white mb-2">Días de Compra</label>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+          {diasDisponibles.map((dia) => (
+            <label key={dia.value} className="flex items-center space-x-2 text-white">
+              <input
+                type="checkbox"
+                checked={formData.dias_compra.includes(dia.value)}
+                onChange={(e) => onDiaCompraChange(dia.value, e.target.checked)}
+                className="w-4 h-4"
+              />
+              <span className="text-sm">{dia.label}</span>
+            </label>
+          ))}
+        </div>
+      </div>
+
+      <div className="flex justify-end gap-2">
+        <button
+          type="button"
+          onClick={onCancel}
+          className="bg-gray-700 text-white px-4 py-2 rounded"
+        >
+          Cancelar
+        </button>
+        <button
+          type="submit"
+          className="bg-amarillo text-negro px-4 py-2 rounded font-bold"
+        >
+          {submitLabel}
+        </button>
+      </div>
+    </form>
+  );
+}
+
 export default function ProveedoresPanel() {
   const [proveedores, setProveedores] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -173,121 +299,6 @@ export default function ProveedoresPanel() {
     setMostrarFormulario(false);
   };
 
-  // Componente de formulario reutilizable
-  const FormularioProveedor = ({ onSubmit, onCancel, titulo, submitLabel }) => (
-    <form onSubmit={onSubmit} className="bg-negro/50 p-4 rounded-lg">
-      <h3 className="text-xl text-amarillo mb-4">{titulo}</h3>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-        <div>
-          <label className="block text-white mb-1">Nombre * <span className="text-gray-400 text-xs">({formData.nombre.length}/100)</span></label>
-          <input
-            type="text"
-            name="nombre"
-            value={formData.nombre}
-            onChange={handleInputChange}
-            required
-            maxLength={100}
-            className="w-full bg-negro border border-gray-700 rounded p-2 text-white"
-          />
-        </div>
-
-        <div>
-          <label className="block text-white mb-1">RFC <span className="text-gray-400 text-xs">(máx 13)</span></label>
-          <input
-            type="text"
-            name="rfc"
-            value={formData.rfc}
-            onChange={handleInputChange}
-            maxLength={13}
-            className="w-full bg-negro border border-gray-700 rounded p-2 text-white"
-            placeholder="Opcional"
-          />
-        </div>
-
-        <div>
-          <label className="block text-white mb-1">Dirección</label>
-          <input
-            type="text"
-            name="direccion"
-            value={formData.direccion}
-            onChange={handleInputChange}
-            className="w-full bg-negro border border-gray-700 rounded p-2 text-white"
-          />
-        </div>
-
-        <div>
-          <label className="block text-white mb-1">Teléfono</label>
-          <input
-            type="text"
-            name="telefono"
-            value={formData.telefono}
-            onChange={handleInputChange}
-            maxLength={20}
-            className="w-full bg-negro border border-gray-700 rounded p-2 text-white"
-          />
-        </div>
-
-        <div>
-          <label className="block text-white mb-1">Email</label>
-          <input
-            type="email"
-            name="email"
-            value={formData.email}
-            onChange={handleInputChange}
-            maxLength={100}
-            className="w-full bg-negro border border-gray-700 rounded p-2 text-white"
-          />
-        </div>
-
-        <div>
-          <label className="block text-white mb-1">Nombre de Contacto</label>
-          <input
-            type="text"
-            name="contacto_nombre"
-            value={formData.contacto_nombre}
-            onChange={handleInputChange}
-            maxLength={100}
-            className="w-full bg-negro border border-gray-700 rounded p-2 text-white"
-          />
-        </div>
-      </div>
-
-      <div className="mb-4">
-        <label className="block text-white mb-2">Días de Compra</label>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-          {diasDisponibles.map((dia) => (
-            <label key={dia.value} className="flex items-center space-x-2 text-white">
-              <input
-                type="checkbox"
-                checked={formData.dias_compra.includes(dia.value)}
-                onChange={(e) => handleDiaCompraChange(dia.value, e.target.checked)}
-                className="w-4 h-4"
-              />
-              <span className="text-sm">{dia.label}</span>
-            </label>
-          ))}
-        </div>
-      </div>
-
-      <div className="flex justify-end gap-2">
-        <button
-          type="button"
-          onClick={onCancel}
-          className="bg-gray-700 text-white px-4 py-2 rounded"
-        >
-          Cancelar
-        </button>
-        <button
-          type="submit"
-          className="bg-amarillo text-negro px-4 py-2 rounded font-bold"
-        >
-          {submitLabel}
-        </button>
-      </div>
-    </form>
-  );
-
   if (loading) {
     return <div className="text-center py-10">Cargando proveedores...</div>;
   }
@@ -317,6 +328,10 @@ export default function ProveedoresPanel() {
             onCancel={resetFormNuevo}
             titulo="Nuevo Proveedor"
             submitLabel="Guardar"
+            formData={formData}
+            onInputChange={handleInputChange}
+            onDiaCompraChange={handleDiaCompraChange}
+            diasDisponibles={diasDisponibles}
           />
         </div>
       )}
@@ -403,6 +418,10 @@ export default function ProveedoresPanel() {
                 onCancel={cerrarModalEditar}
                 titulo="Editar Proveedor"
                 submitLabel="Actualizar"
+                formData={formData}
+                onInputChange={handleInputChange}
+                onDiaCompraChange={handleDiaCompraChange}
+                diasDisponibles={diasDisponibles}
               />
             </div>
           </div>
