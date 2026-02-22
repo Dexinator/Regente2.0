@@ -3,7 +3,15 @@
     "allow": [
       "Bash(docker exec:*)",
       "Bash(awk:*)",
-      "Bash(docker-compose:*)"
+      "Bash(docker-compose:*)",
+      "mcp__slack-palacio__slack_get_channel_history",
+      "mcp__slack-audacetics__slack_get_channel_history",
+      "mcp__slack-gutete__slack_get_channel_history",
+      "mcp__slack-palacio__slack_get_user_profile",
+      "mcp__slack-gutete__slack_get_user_profile",
+      "mcp__slack-palacio__slack_get_users",
+      "mcp__slack-gutete__slack_get_users",
+      "mcp__obsidian-personal__registrar_sesion_desarrollo"
     ],
     "deny": [],
     "ask": []

@@ -352,6 +352,20 @@ regente2.0/
 - Frontend groups products and processes cancellations to show net quantities
 ---
 
+## Slack Context
+
+- **Workspace:** El Palacio Negro
+- **MCP Server:** slack-palacio
+- **Canal:** #regente (C08PUKGHYS0)
+
+Para revisar conversaciones de Slack sobre este proyecto, usa las herramientas del MCP `slack-palacio`:
+- `slack_get_channel_history` con channel `C08PUKGHYS0`
+- `slack_get_thread_replies` para hilos completos
+
+Cuando te pidan revisar tareas o cambios pendientes, lee el historial y extrae action items.
+
+---
+
 ## Bitacora de Sesiones
 
 **Negocio:** Palacio

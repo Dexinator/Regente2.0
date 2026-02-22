@@ -775,8 +775,8 @@ export default function RequisicionesPanel() {
                     <tr>
                       <th className="p-2 text-left">Insumo</th>
                       <th className="p-2 text-center">Cantidad</th>
-                      <th className="p-2 text-center">Urgencia</th>
                       <th className="p-2 text-center">Estado</th>
+                      <th className="p-2 text-center">Urgencia</th>
                       <th className="p-2 text-center">Acciones</th>
                     </tr>
                   </thead>
@@ -790,20 +790,20 @@ export default function RequisicionesPanel() {
                         <td className="p-2 text-center">
                           <span className={`
                             px-2 py-1 rounded text-xs
-                            ${item.urgencia === 'baja' ? 'bg-blue-900/50 text-blue-200' : 
-                              item.urgencia === 'normal' ? 'bg-green-900/50 text-green-200' :
-                              item.urgencia === 'alta' ? 'bg-yellow-900/50 text-yellow-200' :
-                              'bg-red-900/50 text-red-200'}
+                            ${item.completado ? 'bg-green-900/50 text-green-200' : 'bg-yellow-900/50 text-yellow-200'}
                           `}>
-                            {item.urgencia}
+                            {item.completado ? "Completado" : "Pendiente"}
                           </span>
                         </td>
                         <td className="p-2 text-center">
                           <span className={`
                             px-2 py-1 rounded text-xs
-                            ${item.completado ? 'bg-green-900/50 text-green-200' : 'bg-yellow-900/50 text-yellow-200'}
+                            ${item.urgencia === 'baja' ? 'bg-blue-900/50 text-blue-200' :
+                              item.urgencia === 'normal' ? 'bg-green-900/50 text-green-200' :
+                              item.urgencia === 'alta' ? 'bg-yellow-900/50 text-yellow-200' :
+                              'bg-red-900/50 text-red-200'}
                           `}>
-                            {item.completado ? "Completado" : "Pendiente"}
+                            {item.urgencia}
                           </span>
                         </td>
                         <td className="p-2 text-center">
