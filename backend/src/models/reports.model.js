@@ -96,7 +96,7 @@ export const getSalesByProductInRange = async (desde, hasta) => {
     FROM detalles_orden d
     JOIN productos p ON d.producto_id = p.id
     JOIN ordenes o ON d.orden_id = o.orden_id
-    WHERE o.fecha BETWEEN $1 AND $2
+    WHERE o.fecha >= $1::date AND o.fecha < ($2::date + interval '1 day')
       AND o.estado = 'cerrada'
     GROUP BY p.nombre, p.costo
     ORDER BY total_vendido DESC
@@ -113,7 +113,7 @@ export const getSalesByCategoryInRange = async (desde, hasta) => {
     FROM detalles_orden d
     JOIN productos p ON d.producto_id = p.id
     JOIN ordenes o ON d.orden_id = o.orden_id
-    WHERE o.fecha BETWEEN $1 AND $2
+    WHERE o.fecha >= $1::date AND o.fecha < ($2::date + interval '1 day')
       AND o.estado = 'cerrada'
     GROUP BY p.categoria
     ORDER BY total_vendido DESC
@@ -128,7 +128,7 @@ export const getTotalsInRange = async (desde, hasta) => {
       COALESCE(SUM(total), 0) AS total_neto,
       COALESCE(SUM(total_bruto - total), 0) AS descuento_total
     FROM ordenes
-    WHERE fecha BETWEEN $1 AND $2
+    WHERE fecha >= $1::date AND fecha < ($2::date + interval '1 day')
       AND estado = 'cerrada'
   `, [desde, hasta]);
   return result.rows[0];
@@ -243,33 +243,40 @@ export const getDailySalesByCategory = async () => {
 // REPORTES AVANZADOS - Dashboard Ejecutivo
 // ==========================================
 
-// KPIs principales para un rango de fechas
+// KPIs principales para un rango de fechas (fuente de verdad: pagos)
 export const getDashboardKPIs = async (fechaInicio, fechaFin) => {
   const result = await pool.query(`
+    WITH ordenes_periodo AS (
+      SELECT DISTINCT o.orden_id, o.preso_id
+      FROM ordenes o
+      WHERE o.fecha >= $1::date AND o.fecha < ($2::date + interval '1 day')
+        AND o.estado = 'cerrada'
+    )
     SELECT
-      COALESCE(SUM(o.total), 0) as ventas_totales,
-      COUNT(DISTINCT o.orden_id) as total_ordenes,
-      COALESCE(AVG(o.total), 0) as ticket_promedio,
-      COUNT(DISTINCT o.preso_id) as clientes_unicos,
-      COALESCE((SELECT SUM(propina) FROM pagos p
-        JOIN ordenes ord ON p.orden_id = ord.orden_id
-        WHERE ord.fecha BETWEEN $1 AND $2 AND ord.estado = 'cerrada'), 0) as propinas_totales
-    FROM ordenes o
-    WHERE o.fecha BETWEEN $1 AND $2
-      AND o.estado = 'cerrada'
+      COALESCE(SUM(p.monto), 0) as ventas_totales,
+      COUNT(DISTINCT op.orden_id) as total_ordenes,
+      CASE WHEN COUNT(DISTINCT op.orden_id) > 0
+        THEN COALESCE(SUM(p.monto), 0) / COUNT(DISTINCT op.orden_id)
+        ELSE 0
+      END as ticket_promedio,
+      COUNT(DISTINCT op.preso_id) as clientes_unicos,
+      COALESCE(SUM(p.propina), 0) as propinas_totales
+    FROM ordenes_periodo op
+    LEFT JOIN pagos p ON op.orden_id = p.orden_id
   `, [fechaInicio, fechaFin]);
   return result.rows[0];
 };
 
-// Tendencia de ventas por día
+// Tendencia de ventas por día (fuente de verdad: pagos)
 export const getSalesTrend = async (fechaInicio, fechaFin) => {
   const result = await pool.query(`
     SELECT
       DATE(o.fecha) as fecha,
-      COALESCE(SUM(o.total), 0) as ventas,
+      COALESCE(SUM(p.monto), 0) as ventas,
       COUNT(DISTINCT o.orden_id) as ordenes
     FROM ordenes o
-    WHERE o.fecha BETWEEN $1 AND $2
+    JOIN pagos p ON o.orden_id = p.orden_id
+    WHERE o.fecha >= $1::date AND o.fecha < ($2::date + interval '1 day')
       AND o.estado = 'cerrada'
     GROUP BY DATE(o.fecha)
     ORDER BY fecha
@@ -294,7 +301,7 @@ export const getMeserosPerformance = async (fechaInicio, fechaFin) => {
     FROM empleados e
     LEFT JOIN pagos p ON e.id = p.empleado_id
     LEFT JOIN ordenes o ON p.orden_id = o.orden_id
-      AND o.fecha BETWEEN $1 AND $2
+      AND o.fecha >= $1::date AND o.fecha < ($2::date + interval '1 day')
       AND o.estado = 'cerrada'
     WHERE e.rol = 'mesero' AND e.activo = true
     GROUP BY e.id, e.nombre
@@ -314,7 +321,7 @@ export const getOrdenesCreatedByEmpleado = async (fechaInicio, fechaFin) => {
       COUNT(DISTINCT o.preso_id) as clientes_atendidos
     FROM empleados e
     LEFT JOIN ordenes o ON e.id = o.empleado_id
-      AND o.fecha BETWEEN $1 AND $2
+      AND o.fecha >= $1::date AND o.fecha < ($2::date + interval '1 day')
       AND o.estado = 'cerrada'
     WHERE e.rol = 'mesero' AND e.activo = true
     GROUP BY e.id, e.nombre
@@ -334,7 +341,7 @@ export const getCocinerosPerformance = async (fechaInicio, fechaFin) => {
     FROM empleados e
     LEFT JOIN detalles_orden d ON e.id = d.empleado_id AND d.preparado = true
     LEFT JOIN ordenes o ON d.orden_id = o.orden_id
-      AND o.fecha BETWEEN $1 AND $2
+      AND o.fecha >= $1::date AND o.fecha < ($2::date + interval '1 day')
     WHERE e.rol = 'cocinero' AND e.activo = true
     GROUP BY e.id, e.nombre
     ORDER BY productos_preparados DESC
@@ -359,7 +366,7 @@ export const getTopCustomersBySpending = async (fechaInicio, fechaFin, limite = 
     FROM presos p
     JOIN ordenes o ON p.id = o.preso_id
     WHERE o.estado = 'cerrada'
-      AND o.fecha BETWEEN $1 AND $2
+      AND o.fecha >= $1::date AND o.fecha < ($2::date + interval '1 day')
     GROUP BY p.id, p.reg_name
     ORDER BY total_gastado DESC
     LIMIT $3
@@ -377,12 +384,12 @@ export const getCustomerSegmentation = async (fechaInicio, fechaFin) => {
       GROUP BY preso_id
     )
     SELECT
-      COUNT(DISTINCT CASE WHEN pv.primera BETWEEN $1 AND $2 THEN o.preso_id END) as clientes_nuevos,
-      COUNT(DISTINCT CASE WHEN pv.primera < $1 THEN o.preso_id END) as clientes_recurrentes,
+      COUNT(DISTINCT CASE WHEN pv.primera >= $1::date AND pv.primera < ($2::date + interval '1 day') THEN o.preso_id END) as clientes_nuevos,
+      COUNT(DISTINCT CASE WHEN pv.primera < $1::date THEN o.preso_id END) as clientes_recurrentes,
       COUNT(DISTINCT o.preso_id) as clientes_totales
     FROM ordenes o
     LEFT JOIN primera_visita pv ON o.preso_id = pv.preso_id
-    WHERE o.fecha BETWEEN $1 AND $2
+    WHERE o.fecha >= $1::date AND o.fecha < ($2::date + interval '1 day')
       AND o.estado = 'cerrada'
       AND o.preso_id IS NOT NULL
   `, [fechaInicio, fechaFin]);
@@ -404,7 +411,7 @@ export const getVisitFrequency = async (fechaInicio, fechaFin) => {
       SELECT preso_id, COUNT(*) as visitas
       FROM ordenes
       WHERE estado = 'cerrada'
-        AND fecha BETWEEN $1 AND $2
+        AND fecha >= $1::date AND fecha < ($2::date + interval '1 day')
         AND preso_id IS NOT NULL
       GROUP BY preso_id
     ) subq
@@ -454,7 +461,7 @@ export const getTopProductsByRevenue = async (fechaInicio, fechaFin, limite = 10
     JOIN productos p ON d.producto_id = p.id
     JOIN ordenes o ON d.orden_id = o.orden_id
     WHERE o.estado = 'cerrada'
-      AND o.fecha BETWEEN $1 AND $2
+      AND o.fecha >= $1::date AND o.fecha < ($2::date + interval '1 day')
       AND d.cantidad > 0
     GROUP BY p.id, p.nombre, p.categoria, p.costo
     ORDER BY ingresos_totales DESC
@@ -469,7 +476,7 @@ export const getCategorySales = async (fechaInicio, fechaFin) => {
     WITH total_ventas AS (
       SELECT COALESCE(SUM(total), 1) as total
       FROM ordenes
-      WHERE estado = 'cerrada' AND fecha BETWEEN $1 AND $2
+      WHERE estado = 'cerrada' AND fecha >= $1::date AND fecha < ($2::date + interval '1 day')
     )
     SELECT
       p.categoria,
@@ -482,7 +489,7 @@ export const getCategorySales = async (fechaInicio, fechaFin) => {
     JOIN ordenes o ON d.orden_id = o.orden_id
     CROSS JOIN total_ventas tv
     WHERE o.estado = 'cerrada'
-      AND o.fecha BETWEEN $1 AND $2
+      AND o.fecha >= $1::date AND o.fecha < ($2::date + interval '1 day')
       AND d.cantidad > 0
     GROUP BY p.categoria, tv.total
     ORDER BY ingresos_totales DESC
@@ -504,7 +511,7 @@ export const getLowPerformingProducts = async (fechaInicio, fechaFin, limite = 1
     LEFT JOIN detalles_orden d ON p.id = d.producto_id AND d.cantidad > 0
     LEFT JOIN ordenes o ON d.orden_id = o.orden_id
       AND o.estado = 'cerrada'
-      AND o.fecha BETWEEN $1 AND $2
+      AND o.fecha >= $1::date AND o.fecha < ($2::date + interval '1 day')
     WHERE p.precio > 0
     GROUP BY p.id, p.nombre, p.categoria, p.precio
     HAVING COALESCE(SUM(ABS(d.cantidad)), 0) > 0
@@ -527,10 +534,59 @@ export const getSentenciasPerformance = async (fechaInicio, fechaFin) => {
     LEFT JOIN detalles_orden d ON s.id = d.sentencia_id AND d.es_sentencia_principal = true
     LEFT JOIN ordenes o ON d.orden_id = o.orden_id
       AND o.estado = 'cerrada'
-      AND o.fecha BETWEEN $1 AND $2
+      AND o.fecha >= $1::date AND o.fecha < ($2::date + interval '1 day')
     WHERE s.activa = true
     GROUP BY s.id, s.nombre, s.precio
     ORDER BY veces_vendida DESC
+  `, [fechaInicio, fechaFin]);
+  return result.rows;
+};
+
+// ==========================================
+// REPORTES AVANZADOS - Datos Complementarios
+// ==========================================
+
+// Desglose por método de pago en rango de fechas
+export const getPaymentMethodsInRange = async (fechaInicio, fechaFin) => {
+  const result = await pool.query(`
+    SELECT
+      p.metodo,
+      COUNT(DISTINCT p.orden_id) as total_ordenes,
+      COALESCE(SUM(p.monto), 0) as total_ventas,
+      COALESCE(SUM(p.propina), 0) as total_propinas
+    FROM pagos p
+    JOIN ordenes o ON p.orden_id = o.orden_id
+    WHERE o.fecha >= $1::date AND o.fecha < ($2::date + interval '1 day')
+      AND o.estado = 'cerrada'
+    GROUP BY p.metodo
+    ORDER BY total_ventas DESC
+  `, [fechaInicio, fechaFin]);
+  return result.rows;
+};
+
+// Ventas por día de la semana (ajustado a hora México UTC-6)
+export const getDayOfWeekSales = async (fechaInicio, fechaFin) => {
+  const result = await pool.query(`
+    SELECT
+      EXTRACT(DOW FROM (o.fecha - interval '6 hours')) as dia_num,
+      CASE EXTRACT(DOW FROM (o.fecha - interval '6 hours'))
+        WHEN 0 THEN 'Dom'
+        WHEN 1 THEN 'Lun'
+        WHEN 2 THEN 'Mar'
+        WHEN 3 THEN 'Mie'
+        WHEN 4 THEN 'Jue'
+        WHEN 5 THEN 'Vie'
+        WHEN 6 THEN 'Sab'
+      END as dia_nombre,
+      COUNT(DISTINCT o.orden_id) as total_ordenes,
+      COALESCE(SUM(p.monto), 0) as total_ventas,
+      COUNT(DISTINCT DATE(o.fecha - interval '6 hours')) as dias_operados
+    FROM ordenes o
+    JOIN pagos p ON o.orden_id = p.orden_id
+    WHERE o.fecha >= $1::date AND o.fecha < ($2::date + interval '1 day')
+      AND o.estado = 'cerrada'
+    GROUP BY dia_num, dia_nombre
+    ORDER BY dia_num
   `, [fechaInicio, fechaFin]);
   return result.rows;
 };

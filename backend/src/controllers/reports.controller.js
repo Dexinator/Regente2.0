@@ -151,6 +151,8 @@ export const getTopClientsReport = async (req, res) => {
 import {
   getDashboardKPIs,
   getSalesTrend,
+  getPaymentMethodsInRange,
+  getDayOfWeekSales,
   getMeserosPerformance,
   getOrdenesCreatedByEmpleado,
   getCocinerosPerformance,
@@ -190,10 +192,12 @@ export const getDashboardReport = async (req, res) => {
   try {
     const periodoAnterior = calcularPeriodoAnterior(fechaInicio, fechaFin);
 
-    const [kpisActual, kpisAnterior, tendencia] = await Promise.all([
+    const [kpisActual, kpisAnterior, tendencia, metodosPago, ventasPorDia] = await Promise.all([
       getDashboardKPIs(fechaInicio, fechaFin),
       getDashboardKPIs(periodoAnterior.fechaInicio, periodoAnterior.fechaFin),
-      getSalesTrend(fechaInicio, fechaFin)
+      getSalesTrend(fechaInicio, fechaFin),
+      getPaymentMethodsInRange(fechaInicio, fechaFin),
+      getDayOfWeekSales(fechaInicio, fechaFin)
     ]);
 
     // Calcular porcentajes de cambio
@@ -239,6 +243,20 @@ export const getDashboardReport = async (req, res) => {
         fecha: t.fecha,
         ventas: parseFloat(t.ventas) || 0,
         ordenes: parseInt(t.ordenes) || 0
+      })),
+      metodos_pago: metodosPago.map(m => ({
+        metodo: m.metodo,
+        total_ordenes: parseInt(m.total_ordenes) || 0,
+        total_ventas: parseFloat(m.total_ventas) || 0,
+        total_propinas: parseFloat(m.total_propinas) || 0
+      })),
+      ventas_por_dia: ventasPorDia.map(d => ({
+        dia_num: parseInt(d.dia_num),
+        dia_nombre: d.dia_nombre,
+        total_ordenes: parseInt(d.total_ordenes) || 0,
+        total_ventas: parseFloat(d.total_ventas) || 0,
+        dias_operados: parseInt(d.dias_operados) || 1,
+        promedio_ventas: parseFloat(d.total_ventas) / (parseInt(d.dias_operados) || 1)
       }))
     });
   } catch (err) {
