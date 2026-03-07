@@ -364,12 +364,7 @@ export default function RequisicionesPanel() {
           <button
             onClick={() => {
               setRequisicionActual(null);
-              const nuevoEstado = !mostrarFormulario;
-              setMostrarFormulario(nuevoEstado);
-              // Mostrar automáticamente el formulario de item al abrir nueva requisición
-              if (nuevoEstado) {
-                setMostrarFormularioItem(true);
-              }
+              setMostrarFormulario(!mostrarFormulario);
             }}
             className="bg-vino text-white px-4 py-2 rounded-full font-bold"
           >
@@ -405,17 +400,9 @@ export default function RequisicionesPanel() {
           <div className="mb-4">
             <div className="flex justify-between items-center mb-2">
               <label className="block text-white">Items de la Requisición *</label>
-              <button
-                type="button"
-                onClick={() => setMostrarFormularioItem(!mostrarFormularioItem)}
-                className="bg-vino text-white px-3 py-1 rounded text-sm"
-              >
-                {mostrarFormularioItem ? "Cancelar" : "Agregar Item"}
-              </button>
             </div>
-            
+
             {/* Formulario para agregar item dentro del formulario principal */}
-            {mostrarFormularioItem && (
               <div className="bg-negro/30 p-3 rounded mb-3">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
                   <div>
@@ -531,8 +518,7 @@ export default function RequisicionesPanel() {
                   </button>
                 </div>
               </div>
-            )}
-            
+
             {/* Lista de items agregados */}
             {formData.items.length === 0 ? (
               <div className="bg-negro/30 p-4 rounded text-center text-gray-400">

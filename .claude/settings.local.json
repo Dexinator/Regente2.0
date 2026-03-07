@@ -11,7 +11,8 @@
       "mcp__slack-gutete__slack_get_user_profile",
       "mcp__slack-palacio__slack_get_users",
       "mcp__slack-gutete__slack_get_users",
-      "mcp__obsidian-personal__registrar_sesion_desarrollo"
+      "mcp__obsidian-personal__registrar_sesion_desarrollo",
+      "Bash(docker:*)"
     ],
     "deny": [],
     "ask": []
