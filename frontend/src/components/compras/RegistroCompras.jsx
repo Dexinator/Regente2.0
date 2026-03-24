@@ -406,7 +406,7 @@ export default function RegistroCompras() {
           insumo_id: item.insumo_id,
           cantidad: item.cantidad,
           unidad: item.unidad,
-          precio_unitario: item.precio_unitario,
+          precio_unitario: parseFloat(item.precio_unitario) / parseFloat(item.cantidad),
           requisicion_item_id: item.requisicion_item_id
         }))
       };
@@ -443,7 +443,7 @@ export default function RegistroCompras() {
           insumo_nombre: item.insumo_nombre,
           cantidad: parseFloat(item.cantidad),
           unidad: item.unidad,
-          precio_unitario: parseFloat(item.precio_unitario),
+          precio_unitario: parseFloat(item.precio_unitario) * parseFloat(item.cantidad),
           requisicion_item_id: item.requisicion_item_id
         }))
       });
