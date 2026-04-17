@@ -1050,11 +1050,14 @@ export const cancelarSentenciaCompleta = async (orden_id, sentencia_detalle_orde
       throw new Error("Sentencia principal no encontrada.");
     }
 
-    // Obtener todos los componentes de la sentencia (incluyendo la principal)
+    // Obtener todos los componentes de la sentencia (incluyendo la principal).
+    // Filtramos por cantidad > 0 (no por precio_unitario): los componentes tienen
+    // precio_unitario = 0, así que sus cancelaciones también tienen precio = -ABS(0) = 0
+    // y pasaban el filtro >= 0, generando un cascade exponencial al cancelar dos veces.
     const componentes = await client.query(
       `SELECT * FROM detalles_orden
        WHERE (id = $1 OR sentencia_detalle_orden_padre_id = $1)
-       AND precio_unitario >= 0`,
+       AND cantidad > 0`,
       [sentencia_detalle_orden_padre_id]
     );
 
