@@ -137,10 +137,9 @@ export const getCompraById = async (id) => {
 };
 
 export const createCompra = async (data) => {
-  // Asegurar que la fecha esté en el formato correcto
-  if (data.fecha_compra) {
-    data.fecha_compra = new Date(data.fecha_compra).toISOString();
-  }
+  // fecha_compra llega como "YYYY-MM-DD" desde <input type="date"> y el backend
+  // lo interpreta en la zona del DB (CDMX). No convertir a ISO con timezone porque
+  // pasaría a UTC y se almacenaría con un día de diferencia.
   // Limpiar campos según el tipo de compra
   // Si proveedor_id es 'otro', convertir a null y usar origen_compra
   // Si proveedor_id ya es null pero hay origen_compra, preservar origen_compra
@@ -156,10 +155,7 @@ export const createCompra = async (data) => {
 };
 
 export const updateCompra = async (id, data) => {
-  // Asegurar que la fecha esté en el formato correcto si se proporciona
-  if (data.fecha_compra) {
-    data.fecha_compra = new Date(data.fecha_compra).toISOString();
-  }
+  // fecha_compra llega como "YYYY-MM-DD" desde <input type="date">; ver createCompra.
   // Limpiar campos según el tipo de compra
   // Si proveedor_id es 'otro', convertir a null y usar origen_compra
   // Si proveedor_id ya es null pero hay origen_compra, preservar origen_compra

@@ -866,17 +866,14 @@ export const getProductosPorPreparar = async () => {
   return result.rows;
 };
 
-// Obtener historial de productos preparados por fecha
+// Obtener historial de productos preparados por fecha (default: hoy en CDMX)
 export const getHistorialProductosPreparados = async (fecha) => {
-  // Si no se proporciona una fecha, se usa la fecha actual
-  const fechaConsulta = fecha || new Date().toISOString().split('T')[0];
-  
   const query = `
-    SELECT 
-      d.id AS detalle_id, 
-      d.orden_id, 
-      d.producto_id, 
-      d.cantidad, 
+    SELECT
+      d.id AS detalle_id,
+      d.orden_id,
+      d.producto_id,
+      d.cantidad,
       d.notas,
       d.tiempo_creacion,
       d.tiempo_preparacion,
@@ -904,12 +901,12 @@ export const getHistorialProductosPreparados = async (fecha) => {
     LEFT JOIN sabores t ON d.tamano_id = t.id
     LEFT JOIN sabores i ON d.ingrediente_id = i.id
     LEFT JOIN categorias_variantes cvi ON i.categoria_id = cvi.id
-    WHERE d.preparado = TRUE 
-    AND DATE(d.tiempo_preparacion) = $1
+    WHERE d.preparado = TRUE
+    AND DATE(d.tiempo_preparacion) = COALESCE($1::date, CURRENT_DATE)
     ORDER BY d.tiempo_preparacion DESC
   `;
-  
-  const result = await pool.query(query, [fechaConsulta]);
+
+  const result = await pool.query(query, [fecha || null]);
   return result.rows;
 };
 
