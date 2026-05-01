@@ -619,18 +619,10 @@ export default function RequisicionesPanel() {
           <div className="mb-4">
             <div className="flex justify-between items-center mb-2">
               <h4 className="text-lg text-white">Items</h4>
-              {!requisicionActual.completada && (
-                <button
-                  onClick={() => setMostrarFormularioItem(!mostrarFormularioItem)}
-                  className="bg-vino text-white px-3 py-1 rounded"
-                >
-                  {mostrarFormularioItem ? "Cancelar" : "Agregar Item"}
-                </button>
-              )}
             </div>
-            
+
             {/* Formulario para agregar item */}
-            {mostrarFormularioItem && (
+            {!requisicionActual.completada && (
               <form onSubmit={handleItemSubmit} className="bg-negro/30 p-3 rounded mb-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
                   <div>

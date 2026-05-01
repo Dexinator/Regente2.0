@@ -5,6 +5,7 @@ import {
   createCompra 
 } from "../../utils/compras-api";
 import { getEmpleadoId } from "../../utils/auth";
+import { diaSemanaCDMX } from "../../utils/fechas";
 
 export default function ComprasDelDia() {
   const [comprasDelDia, setComprasDelDia] = useState([]);
@@ -23,11 +24,9 @@ export default function ComprasDelDia() {
       setUsuarioId(getEmpleadoId());
       
       cargarDiasDisponibles();
-      // Configurar día actual por defecto
-      const hoy = new Date();
+      // Día actual en CDMX (independiente de la zona horaria del navegador)
       const diasSemana = ['domingo', 'lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado'];
-      const diaHoy = diasSemana[hoy.getDay()];
-      setDiaSeleccionado(diaHoy);
+      setDiaSeleccionado(diasSemana[diaSemanaCDMX()]);
     }
   }, []);
 
