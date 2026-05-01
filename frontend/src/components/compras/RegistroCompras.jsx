@@ -14,6 +14,7 @@ import {
   getCategoriasInsumos
 } from "../../utils/compras-api";
 import { getEmpleadoId } from "../../utils/auth";
+import { hoyCDMX, fechaCDMX } from "../../utils/fechas";
 
 export default function RegistroCompras() {
   const [compras, setCompras] = useState([]);
@@ -34,7 +35,7 @@ export default function RegistroCompras() {
   const [formData, setFormData] = useState({
     proveedor_id: "",
     origen_compra: "",
-    fecha_compra: new Date().toISOString().split('T')[0],
+    fecha_compra: hoyCDMX(),
     metodo_pago: "efectivo",
     solicito_factura: false,
     numero_factura: "",
@@ -433,7 +434,7 @@ export default function RegistroCompras() {
       setFormData({
         proveedor_id: compraCompleta.proveedor_id || (compraCompleta.origen_compra ? 'otro' : ''),
         origen_compra: compraCompleta.origen_compra || '',
-        fecha_compra: new Date(compraCompleta.fecha_compra).toISOString().split('T')[0],
+        fecha_compra: fechaCDMX(compraCompleta.fecha_compra),
         metodo_pago: compraCompleta.metodo_pago,
         solicito_factura: compraCompleta.solicito_factura || false,
         numero_factura: compraCompleta.numero_factura || "",
@@ -472,7 +473,7 @@ export default function RegistroCompras() {
     setFormData({
       proveedor_id: "",
       origen_compra: "",
-      fecha_compra: new Date().toISOString().split('T')[0],
+      fecha_compra: hoyCDMX(),
       metodo_pago: "efectivo",
       solicito_factura: false,
       numero_factura: "",
