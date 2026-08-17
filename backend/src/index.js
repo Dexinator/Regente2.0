@@ -71,6 +71,11 @@ app.get("/", (req, res) => {
   res.json({ message: "Bienvenido a la API del Penitenciario" });
 });
 
+// Red de seguridad: un error async sin capturar no debe tumbar el servidor completo
+process.on("unhandledRejection", (reason) => {
+  console.error("Unhandled rejection:", reason);
+});
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Servidor corriendo en http://localhost:${PORT}`);
