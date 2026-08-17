@@ -77,9 +77,16 @@ export const addOrder = async (req, res) => {
 
 
 export const closeOrderById = async (req, res) => {
-  const updated = await closeOrder(req.params.id);
-  if (!updated) return res.status(404).json({ error: "Orden no encontrada" });
-  res.json(updated);
+  try {
+    const updated = await closeOrder(req.params.id);
+    if (!updated) return res.status(404).json({ error: "Orden no encontrada" });
+    res.json(updated);
+  } catch (err) {
+    if (err.message?.startsWith("Pago insuficiente")) {
+      return res.status(400).json({ error: err.message });
+    }
+    res.status(500).json({ error: "Error cerrando la orden", detail: err.message });
+  }
 };
 
 // Agregar productos a una orden abierta
