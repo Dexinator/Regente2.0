@@ -9,7 +9,10 @@ export default function ProductSelector({
   showCustomerName = false,
   customerName = "",
   orderId = null,
-  hideProductSummary = false
+  hideProductSummary = false,
+  // Modo controlado: el padre es dueño de la lista (evita que se pisen sus cambios de cantidad)
+  selectedProducts,
+  onSelectedProductsChange
 }) {
   const [productos, setProductos] = useState([]);
   const [categorias, setCategorias] = useState([]);
@@ -27,7 +30,10 @@ export default function ProductSelector({
   const [seleccionSabores, setSeleccionSabores] = useState(false);
   const [productoEditandoNotas, setProductoEditandoNotas] = useState(null);
   const [mostrarSeleccionCantidad, setMostrarSeleccionCantidad] = useState(false);
-  const [productosSeleccionados, setProductosSeleccionados] = useState(initialProducts);
+  const [productosInternos, setProductosInternos] = useState(initialProducts);
+  const esControlado = selectedProducts !== undefined && typeof onSelectedProductsChange === "function";
+  const productosSeleccionados = esControlado ? selectedProducts : productosInternos;
+  const setProductosSeleccionados = esControlado ? onSelectedProductsChange : setProductosInternos;
   const [esParaLlevar, setEsParaLlevar] = useState(false);
   
   // Estados para tamaños
@@ -58,7 +64,7 @@ export default function ProductSelector({
 
   // Actualizar el componente padre cuando cambian los productos seleccionados
   useEffect(() => {
-    if (hideProductSummary && onProductsSelected) {
+    if (!esControlado && hideProductSummary && onProductsSelected) {
       onProductsSelected(productosSeleccionados);
     }
   }, [productosSeleccionados, hideProductSummary]);
