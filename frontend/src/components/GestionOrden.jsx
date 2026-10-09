@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { API_URL } from "../utils/api.js";
 
 export default function GestionOrden({ id }) {
@@ -9,7 +9,10 @@ export default function GestionOrden({ id }) {
   const [metodoPago, setMetodoPago] = useState("efectivo");
   const [tipoPropina, setTipoPropina] = useState("fija"); // "fija" o "porcentaje"
   const [porcentajePropina, setPorcentajePropina] = useState(null);
-  
+  // Evita registrar el mismo pago dos veces por doble toque
+  const [registrandoPago, setRegistrandoPago] = useState(false);
+  const registrandoPagoRef = useRef(false);
+
   // Estado para manejo de cancelaciones
   const [mostrarCancelacion, setMostrarCancelacion] = useState(false);
   const [productoACancelar, setProductoACancelar] = useState(null);
@@ -58,6 +61,7 @@ export default function GestionOrden({ id }) {
   }, [id]);
   
   const registrarPago = async () => {
+    if (registrandoPagoRef.current) return;
     if (!nuevoPago || isNaN(nuevoPago)) {
       alert("Ingresa un monto válido");
       return;
@@ -71,6 +75,8 @@ export default function GestionOrden({ id }) {
       return;
     }
     
+    registrandoPagoRef.current = true;
+    setRegistrandoPago(true);
     try {
       // Decodificar el token para obtener el ID del empleado
       const payload = JSON.parse(atob(token.split(".")[1]));
@@ -107,6 +113,9 @@ export default function GestionOrden({ id }) {
     } catch (error) {
       console.error("Error al procesar el pago:", error);
       alert("Error al procesar el pago. Inicia sesión nuevamente.");
+    } finally {
+      registrandoPagoRef.current = false;
+      setRegistrandoPago(false);
     }
   };
   
@@ -839,9 +848,10 @@ export default function GestionOrden({ id }) {
     
     <button
     onClick={registrarPago}
-    className="w-full bg-amarillo text-negro py-2 rounded font-bold"
+    disabled={registrandoPago}
+    className="w-full bg-amarillo text-negro py-2 rounded font-bold disabled:opacity-50"
     >
-    Registrar pago
+    {registrandoPago ? "Registrando..." : "Registrar pago"}
     </button>
     </div>
     
