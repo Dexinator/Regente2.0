@@ -29,10 +29,6 @@ export default function CrearOrden() {
         .catch((err) => console.error("Error cargando presos:", err));
     }, []);
 
-    const handleProductsSelected = (productos) => {
-        setProductosSeleccionados(productos);
-    };
-
     // Función para validar código promocional
     const validarCodigoPromocional = async () => {
         if (!codigoPromocional.trim()) {
@@ -314,9 +310,9 @@ export default function CrearOrden() {
             
             {/* Selector de productos */}
             <ProductSelector
-                onProductsSelected={handleProductsSelected}
                 onClose={() => window.location.href = "/ordenes"}
-                initialProducts={productosSeleccionados}
+                selectedProducts={productosSeleccionados}
+                onSelectedProductsChange={setProductosSeleccionados}
                 hideProductSummary={true}
             />
             
