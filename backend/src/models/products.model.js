@@ -1,7 +1,10 @@
 import pool from "../config/db.js";
 
-export const getAllProducts = async () => {
-  const result = await pool.query("SELECT * FROM productos ORDER BY id DESC");
+export const getAllProducts = async ({ includeInactive = false } = {}) => {
+  const query = includeInactive
+    ? "SELECT * FROM productos ORDER BY id DESC"
+    : "SELECT * FROM productos WHERE activo = true ORDER BY id DESC";
+  const result = await pool.query(query);
   return result.rows;
 };
 

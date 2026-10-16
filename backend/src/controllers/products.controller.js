@@ -12,7 +12,8 @@ import {
 } from "../models/products.model.js";
 
 export const fetchProducts = async (req, res) => {
-  const products = await getAllProducts();
+  const includeInactive = req.query.includeInactive === "true";
+  const products = await getAllProducts({ includeInactive });
   res.json(products);
 };
 
