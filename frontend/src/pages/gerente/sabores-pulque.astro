@@ -1,0 +1,9 @@
+---
+import PrivateLayout from "../../layouts/PrivateLayout.astro";
+import RotacionPulques from "../../components/RotacionPulques";
+---
+
+<PrivateLayout title="Sabores de Pulque">
+  <h1 class="text-3xl font-titulo text-amarillo mb-6">Sabores de la Semana</h1>
+  <RotacionPulques client:load />
+</PrivateLayout>
