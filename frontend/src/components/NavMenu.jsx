@@ -27,8 +27,8 @@ export default function NavMenu() {
     const path = window.location.pathname;
     const validRoutes = {
       "mesero": ["/ordenes", "/entregar", "/cocina", "/reportes/gerente", "/reportes/avanzado", "/gerente/compras", "/gerente/productos", "/gerente/sentencias", "/gerente/variantes"],
-      "cocinero": ["/cocina", "/entregar", "/cocinero/compras", "/reportes/gerente", "/reportes/avanzado", "/gerente/compras", "/gerente/productos", "/gerente/sentencias", "/gerente/variantes"],
-      "gerente": ["/reportes/gerente", "/reportes/avanzado", "/gerente/compras", "/gerente/productos", "/gerente/sentencias", "/gerente/variantes"],
+      "cocinero": ["/cocina", "/entregar", "/cocinero/compras", "/reportes/gerente", "/reportes/avanzado", "/gerente/compras", "/gerente/productos", "/gerente/sentencias", "/gerente/variantes", "/gerente/sabores-pulque"],
+      "gerente": ["/reportes/gerente", "/reportes/avanzado", "/gerente/compras", "/gerente/productos", "/gerente/sentencias", "/gerente/variantes", "/gerente/sabores-pulque"],
       "financiero": ["/reportes/financiero", "/reportes/avanzado"],
       "admin": ["/admin", "/admin/compras", "/reportes/avanzado"],
       "administrador": ["/admin", "/admin/compras", "/reportes/avanzado"]
@@ -130,6 +130,9 @@ export default function NavMenu() {
               <a href="/cocinero/compras" className="text-white text-xl font-bold py-3 px-6 rounded-full bg-vino w-full max-w-xs text-center">
                 Sistema de Compras
               </a>
+              <a href="/gerente/sabores-pulque" className="text-white text-xl font-bold py-3 px-6 rounded-full bg-vino w-full max-w-xs text-center">
+                Sabores de Pulque
+              </a>
               <a href="/reportes/gerente" className="text-negro text-xl font-bold py-3 px-6 rounded-full bg-amarillo w-full max-w-xs text-center">
                 Panel Gerente
               </a>
@@ -150,6 +153,9 @@ export default function NavMenu() {
               </a>
               <a href="/gerente/compras" className="text-white text-xl font-bold py-3 px-6 rounded-full bg-vino w-full max-w-xs text-center">
                 Sistema de Compras
+              </a>
+              <a href="/gerente/sabores-pulque" className="text-white text-xl font-bold py-3 px-6 rounded-full bg-vino w-full max-w-xs text-center">
+                Sabores de Pulque
               </a>
             </>
           )}

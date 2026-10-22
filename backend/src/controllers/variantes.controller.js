@@ -8,7 +8,9 @@ import {
   getCategoriaVarianteById,
   createCategoriaVariante,
   updateCategoriaVariante,
-  deleteCategoriaVariante
+  deleteCategoriaVariante,
+  getPulquesRotacion,
+  aplicarRotacionPulques
 } from "../models/variantes.model.js";
 
 // Controladores para variantes (sabores)
@@ -54,6 +56,9 @@ export const removeVariante = async (req, res) => {
   try {
     const deleted = await deleteVariante(req.params.id);
     if (!deleted) return res.status(404).json({ error: "Variante no encontrada" });
+    if (deleted.desactivada) {
+      return res.json({ message: "La variante ya tiene pedidos registrados: se desactivó en lugar de borrarse", deleted });
+    }
     res.json({ message: "Variante eliminada", deleted });
   } catch (err) {
     res.status(500).json({ error: "Error eliminando variante", detail: err.message });
@@ -106,5 +111,25 @@ export const removeCategoriaVariante = async (req, res) => {
     res.json({ message: "Categoría eliminada", deleted });
   } catch (err) {
     res.status(500).json({ error: "Error eliminando categoría", detail: err.message });
+  }
+};
+
+// Controladores para la rotación semanal de sabores de pulque
+export const fetchPulquesRotacion = async (req, res) => {
+  try {
+    const pulques = await getPulquesRotacion();
+    res.json(pulques);
+  } catch (err) {
+    res.status(500).json({ error: "Error obteniendo sabores de pulque", detail: err.message });
+  }
+};
+
+export const rotarSaboresPulque = async (req, res) => {
+  try {
+    const resumen = await aplicarRotacionPulques(req.body.cambios, { simular: req.body.simular === true });
+    res.json({ simulado: req.body.simular === true, resumen });
+  } catch (err) {
+    if (err.status === 400) return res.status(400).json({ error: err.message });
+    res.status(500).json({ error: "Error aplicando la rotación de sabores", detail: err.message });
   }
 };
