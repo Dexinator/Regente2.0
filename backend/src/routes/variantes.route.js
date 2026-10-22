@@ -9,10 +9,18 @@ import {
   fetchCategoriaVarianteById,
   addCategoriaVariante,
   editCategoriaVariante,
-  removeCategoriaVariante
+  removeCategoriaVariante,
+  fetchPulquesRotacion,
+  rotarSaboresPulque
 } from "../controllers/variantes.controller.js";
+import { verifyToken, authorizeRoles } from "../middlewares/auth.js";
 
 const router = Router();
+
+// Rotación semanal de sabores de pulque (antes de "/:id")
+const rolesRotacion = authorizeRoles("cocinero", "gerente", "admin", "administrador");
+router.get("/pulques", verifyToken, rolesRotacion, fetchPulquesRotacion);
+router.post("/pulques/rotacion", verifyToken, rolesRotacion, rotarSaboresPulque);
 
 // Rutas para variantes
 router.get("/", fetchVariantes);

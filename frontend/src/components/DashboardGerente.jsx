@@ -82,6 +82,12 @@ export default function DashboardGerente() {
           🎨 Gestión de Variantes
         </a>
         <a
+          href="/gerente/sabores-pulque"
+          className="bg-amarillo text-negro px-4 py-3 rounded-lg font-bold text-center hover:bg-yellow-500 transition"
+        >
+          🍶 Sabores de Pulque
+        </a>
+        <a
           href="/gerente/sentencias"
           className="bg-amarillo text-negro px-4 py-3 rounded-lg font-bold text-center hover:bg-yellow-500 transition"
         >

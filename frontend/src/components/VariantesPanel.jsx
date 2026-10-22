@@ -139,7 +139,7 @@ export default function VariantesPanel() {
   };
 
   const handleEliminarVariante = async (id, nombre) => {
-    if (!confirm(`¿Estás seguro de eliminar la variante "${nombre}"?\n\nEsto puede afectar a los productos que la usan.`)) return;
+    if (!confirm(`¿Estás seguro de eliminar la variante "${nombre}"?\n\nSi ya tiene pedidos registrados solo se desactivará, para conservar el historial.`)) return;
     
     try {
       const token = getToken();
@@ -152,8 +152,9 @@ export default function VariantesPanel() {
       
       if (!response.ok) throw new Error("Error al eliminar variante");
       
+      const data = await response.json();
       await cargarDatos();
-      mostrarMensaje("exito", 'Variante eliminada exitosamente');
+      mostrarMensaje("exito", data.deleted?.desactivada ? data.message : 'Variante eliminada exitosamente');
     } catch (err) {
       mostrarMensaje("error", err.message);
     }
