@@ -18,6 +18,7 @@ import inventarioRoutes from "./routes/inventario.routes.js";
 import variantesRoutes from "./routes/variantes.route.js";
 import recetasRoutes from "./routes/recetas.routes.js";
 import unidadesRoutes from "./routes/unidades.routes.js";
+import talleresRoutes from "./routes/talleres.routes.js";
 
 
 dotenv.config();
@@ -29,10 +30,13 @@ app.use(helmet());
 // Configuración de CORS
 const corsOptions = {
   origin: process.env.NODE_ENV === 'production' 
-    ? ['https://regente2-0.vercel.app'] // Dominios de producción
+    ? [
+        'https://regente2-0.vercel.app', // Dominios de producción
+        process.env.TALLERES_ORIGIN || 'https://talleres-palacio.vercel.app', // Sitio público de talleres
+      ]
     : process.env.NODE_ENV === 'staging'
       ? ['https://regente2-0-staging.vercel.app'] // Dominio de staging
-      : 'http://localhost:4321', // Dominio de desarrollo (puerto por defecto de Astro)
+      : ['http://localhost:4321', 'http://localhost:4322'], // Desarrollo: Regente y sitio de talleres
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true
@@ -65,6 +69,7 @@ app.use("/inventario", inventarioRoutes);
 app.use("/variantes", variantesRoutes);
 app.use("/recetas", recetasRoutes);
 app.use("/unidades", unidadesRoutes);
+app.use("/talleres", talleresRoutes);
 
 // Ruta base
 app.get("/", (req, res) => {

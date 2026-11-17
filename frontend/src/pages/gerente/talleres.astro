@@ -1,0 +1,9 @@
+---
+import PrivateLayout from "../../layouts/PrivateLayout.astro";
+import TalleresPanel from "../../components/TalleresPanel";
+---
+
+<PrivateLayout title="Talleres">
+  <h1 class="text-3xl font-titulo text-amarillo mb-6">Talleres</h1>
+  <TalleresPanel client:load />
+</PrivateLayout>
