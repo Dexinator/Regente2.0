@@ -28,7 +28,7 @@ export default function NavMenu() {
     const validRoutes = {
       "mesero": ["/ordenes", "/entregar", "/cocina", "/reportes/gerente", "/reportes/avanzado", "/gerente/compras", "/gerente/productos", "/gerente/sentencias", "/gerente/variantes"],
       "cocinero": ["/cocina", "/entregar", "/cocinero/compras", "/reportes/gerente", "/reportes/avanzado", "/gerente/compras", "/gerente/productos", "/gerente/sentencias", "/gerente/variantes", "/gerente/sabores-pulque"],
-      "gerente": ["/reportes/gerente", "/reportes/avanzado", "/gerente/compras", "/gerente/productos", "/gerente/sentencias", "/gerente/variantes", "/gerente/sabores-pulque"],
+      "gerente": ["/reportes/gerente", "/reportes/avanzado", "/gerente/compras", "/gerente/productos", "/gerente/sentencias", "/gerente/variantes", "/gerente/sabores-pulque", "/gerente/talleres"],
       "financiero": ["/reportes/financiero", "/reportes/avanzado"],
       "admin": ["/admin", "/admin/compras", "/reportes/avanzado"],
       "administrador": ["/admin", "/admin/compras", "/reportes/avanzado"]
@@ -156,6 +156,9 @@ export default function NavMenu() {
               </a>
               <a href="/gerente/sabores-pulque" className="text-white text-xl font-bold py-3 px-6 rounded-full bg-vino w-full max-w-xs text-center">
                 Sabores de Pulque
+              </a>
+              <a href="/gerente/talleres" className="text-white text-xl font-bold py-3 px-6 rounded-full bg-vino w-full max-w-xs text-center">
+                Talleres
               </a>
             </>
           )}
