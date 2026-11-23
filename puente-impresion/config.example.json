@@ -1,0 +1,14 @@
+{
+  "api_url": "https://TU-BACKEND.herokuapp.com",
+  "printer_token": "CAMBIA-ESTE-TOKEN",
+  "poll_ms": 2000,
+  "impresora": {
+    "tipo": "red",
+    "ip": "192.168.1.200",
+    "puerto": 9100
+  },
+  "_ejemplo_usb": {
+    "tipo": "usb",
+    "dispositivo": "/dev/usb/lp0"
+  }
+}

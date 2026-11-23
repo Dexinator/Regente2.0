@@ -29,3 +29,16 @@ export const authorizeRoles = (...roles) => {
   };
 };
 
+
+// Autenticación del puente de impresión (la PC que consulta la cola).
+// Usa un token fijo en PRINTER_TOKEN, enviado en el header X-Printer-Token.
+export const verifyPrinterToken = (req, res, next) => {
+  const token = req.headers["x-printer-token"];
+  if (!process.env.PRINTER_TOKEN) {
+    return res.status(503).json({ error: "Impresión no configurada (falta PRINTER_TOKEN)" });
+  }
+  if (token !== process.env.PRINTER_TOKEN) {
+    return res.status(401).json({ error: "Token de impresora inválido" });
+  }
+  next();
+};

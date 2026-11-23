@@ -22,7 +22,41 @@ export default function GestionOrden({ id }) {
   // Estado para códigos promocionales
   const [codigoPromocional, setCodigoPromocional] = useState("");
   const [aplicandoCodigo, setAplicandoCodigo] = useState(false);
-  
+
+  // Estado para impresión de cuenta
+  const [imprimiendo, setImprimiendo] = useState(false);
+  const [msgImpresion, setMsgImpresion] = useState(null);
+
+  const imprimirCuenta = async () => {
+    if (imprimiendo) return;
+    setImprimiendo(true);
+    setMsgImpresion(null);
+    try {
+      const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+      const res = await fetch(`${API_URL}/impresion/cuenta/${id}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify({ tipo: "cuenta" })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Error al imprimir");
+      if (data.impresora_en_linea) {
+        setMsgImpresion({ tipo: "ok", texto: "🖨️ Cuenta enviada a la impresora" });
+      } else {
+        setMsgImpresion({ tipo: "aviso", texto: "⏳ Cuenta en cola: impresora sin conexión. Saldrá al reconectarse." });
+      }
+      setTimeout(() => setMsgImpresion(null), 6000);
+    } catch (error) {
+      console.error("Error al imprimir cuenta:", error);
+      setMsgImpresion({ tipo: "error", texto: `No se pudo imprimir: ${error.message}` });
+    } finally {
+      setImprimiendo(false);
+    }
+  };
+
   const cargarDatos = async () => {
     try {
       const resOrden = await fetch(`${API_URL}/orders/${id}/resumen`);
@@ -855,6 +889,24 @@ export default function GestionOrden({ id }) {
     </button>
     </div>
     
+    {msgImpresion && (
+      <div className={`mb-2 p-2 rounded text-sm text-center font-bold ${
+        msgImpresion.tipo === "ok" ? "bg-green-700 text-white" :
+        msgImpresion.tipo === "aviso" ? "bg-amarillo text-negro" :
+        "bg-red-700 text-white"
+      }`}>
+        {msgImpresion.texto}
+      </div>
+    )}
+
+    <button
+      onClick={imprimirCuenta}
+      disabled={imprimiendo}
+      className="w-full bg-negro border-2 border-amarillo text-amarillo py-2 rounded font-bold mb-2 disabled:opacity-50"
+    >
+      {imprimiendo ? "Enviando..." : "🖨️ Imprimir cuenta"}
+    </button>
+
     <div className="flex gap-2">
     <button
     onClick={() => window.location.href = `/ordenes/${id}/agregar`}

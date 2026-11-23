@@ -762,8 +762,37 @@ export const getOrderResumen = async (orden_id) => {
 // Obtener productos pendientes por preparar
 export const getProductosPorPreparar = async () => {
   const query = `
-    WITH productos_agrupados AS (
-      -- Agrupar productos con sus variantes y calcular cantidades netas
+    WITH detalle_con_bloque AS (
+      -- Calcular el bloque de 10 minutos de cada detalle pendiente.
+      -- Los productos positivos se ubican en su propio bloque para que
+      -- pedidos iguales en periodos distintos NO se fusionen en el primero.
+      -- Las cancelaciones (cantidad < 0) se asignan al bloque del primer
+      -- registro positivo del mismo producto, así reducen el periodo correcto
+      -- y no aparecen como una cancelación huérfana en otro bloque.
+      SELECT
+        d.*,
+        CASE
+          WHEN d.cantidad > 0 THEN
+            date_trunc('hour', d.tiempo_creacion)
+              + floor(extract(minute FROM d.tiempo_creacion) / 10) * interval '10 minutes'
+          ELSE COALESCE(
+            MIN(
+              date_trunc('hour', d.tiempo_creacion)
+                + floor(extract(minute FROM d.tiempo_creacion) / 10) * interval '10 minutes'
+            ) FILTER (WHERE d.cantidad > 0) OVER (
+              PARTITION BY d.orden_id, d.producto_id, d.sabor_id, d.tamano_id, d.ingrediente_id
+            ),
+            date_trunc('hour', d.tiempo_creacion)
+              + floor(extract(minute FROM d.tiempo_creacion) / 10) * interval '10 minutes'
+          )
+        END AS bloque_tiempo
+      FROM detalles_orden d
+      WHERE d.preparado = FALSE
+        AND d.es_sentencia_principal = FALSE
+    ),
+    productos_agrupados AS (
+      -- Agrupar productos con sus variantes y calcular cantidades netas,
+      -- separando por bloque de 10 minutos (bloque_tiempo)
       SELECT
         MIN(d.id) AS primer_detalle_id, -- Para mantener referencia al primer detalle
         d.orden_id,
@@ -777,8 +806,8 @@ export const getProductosPorPreparar = async () => {
         ARRAY_AGG(d.id ORDER BY d.id) FILTER (WHERE d.cantidad > 0 AND d.preparado = FALSE) AS detalle_ids,
         -- Información de cancelaciones - ORDENADAS por tiempo para consistencia
         ARRAY_AGG(
-          CASE 
-            WHEN d.cantidad < 0 THEN 
+          CASE
+            WHEN d.cantidad < 0 THEN
               json_build_object(
                 'cantidad', ABS(d.cantidad),
                 'razon', d.notas,
@@ -791,11 +820,9 @@ export const getProductosPorPreparar = async () => {
         -- Recolectar notas de productos positivos - ORDENADAS para consistencia
         STRING_AGG(DISTINCT d.notas, '; ' ORDER BY d.notas) FILTER (WHERE d.cantidad > 0 AND d.notas IS NOT NULL AND d.notas != '') AS notas_combinadas,
         BOOL_OR(d.es_para_llevar) AS es_para_llevar
-      FROM detalles_orden d
-      WHERE d.preparado = FALSE 
-        AND d.es_sentencia_principal = FALSE
+      FROM detalle_con_bloque d
       GROUP BY
-        d.orden_id, d.producto_id, d.sabor_id, d.tamano_id, d.ingrediente_id
+        d.orden_id, d.producto_id, d.sabor_id, d.tamano_id, d.ingrediente_id, d.bloque_tiempo
     ),
     productos_con_info AS (
       SELECT 
