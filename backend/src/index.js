@@ -18,6 +18,7 @@ import inventarioRoutes from "./routes/inventario.routes.js";
 import variantesRoutes from "./routes/variantes.route.js";
 import recetasRoutes from "./routes/recetas.routes.js";
 import unidadesRoutes from "./routes/unidades.routes.js";
+import impresionRoutes from "./routes/impresion.route.js";
 import talleresRoutes from "./routes/talleres.routes.js";
 
 
@@ -38,7 +39,7 @@ const corsOptions = {
       ? ['https://regente2-0-staging.vercel.app'] // Dominio de staging
       : ['http://localhost:4321', 'http://localhost:4322'], // Desarrollo: Regente y sitio de talleres
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Printer-Token'],
   credentials: true
 };
 app.use(cors(corsOptions));
@@ -69,6 +70,7 @@ app.use("/inventario", inventarioRoutes);
 app.use("/variantes", variantesRoutes);
 app.use("/recetas", recetasRoutes);
 app.use("/unidades", unidadesRoutes);
+app.use("/impresion", impresionRoutes);
 app.use("/talleres", talleresRoutes);
 
 // Ruta base
