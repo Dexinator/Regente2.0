@@ -3,10 +3,24 @@
  * Produce un Buffer listo para mandarse crudo al puerto 9100 de la impresora.
  */
 
+import { readFileSync } from "fs";
+import { dirname, join } from "path";
+import { fileURLToPath } from "url";
+
 const ESC = 0x1b;
 const GS = 0x1d;
 
 const ANCHO = 48; // columnas en fuente A sobre 72 mm de área de impresión
+
+// Logo en raster ESC/POS (GS v 0), pregenerado desde el manual de identidad.
+// Si el archivo falta, el ticket sale con el nombre en texto.
+let LOGO = null;
+try {
+  const b64 = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "logo-ticket.b64"), "utf8");
+  LOGO = Buffer.from(b64.trim(), "base64");
+} catch {
+  LOGO = null;
+}
 
 // Mapa de caracteres CP850 (página de códigos que usa la impresora para español)
 const CP850 = {
@@ -103,14 +117,20 @@ export const generarTicketCuenta = (resumen, extras = {}) => {
   const esRecibo = extras.tipo === "recibo";
 
   // ── Encabezado ──
-  t.centrar().tamano(0x11).texto("EL PALACIO NEGRO\n").tamano(0x00);
-  t.texto("Pulquería\n");
+  t.centrar();
+  if (LOGO) {
+    t.partes.push(LOGO);
+    t.texto("\n");
+  } else {
+    t.tamano(0x11).texto("EL PALACIO NEGRO\n").tamano(0x00);
+  }
+  t.texto("Pulquería · Pulque, Mezcales y Molletes\n");
   t.separador();
 
   // ── Datos de la orden ──
   t.izquierda();
   t.negritas(true).texto(`${esRecibo ? "RECIBO DE PAGO" : "CUENTA"} - Orden #${resumen.orden_id}\n`).negritas(false);
-  t.texto(`Cliente: ${resumen.cliente}\n`);
+  t.texto(`Presx: ${resumen.cliente}\n`);
   if (extras.mesero) t.texto(`Atendió: ${extras.mesero}\n`);
   t.texto(`Fecha: ${formatearFecha(extras.fecha || new Date())}\n`);
   if (resumen.num_personas > 1) t.texto(`Personas: ${resumen.num_personas}\n`);
@@ -195,8 +215,10 @@ export const generarTicketCuenta = (resumen, extras = {}) => {
 
   // ── Pie ──
   t.centrar();
+  t.negritas(true).texto("¡Que vivan las disidencias!\n").negritas(false);
   t.texto("Este documento no es un comprobante fiscal.\n");
-  t.texto("¡Gracias por su visita!\n");
+  t.texto("¡Gracias por cumplir su condena!\n");
+  t.texto("Vuelvan pronto.\n");
   t.cortar();
 
   return t.build();
