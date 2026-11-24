@@ -229,10 +229,10 @@ export const createOrder = async ({ preso_id, nombre_cliente, empleado_id, produ
       const qDetalleProducto = `
         INSERT INTO detalles_orden (
             orden_id, producto_id, cantidad, precio_unitario, empleado_id,
-            sabor_id, tamano_id, ingrediente_id, notas,
+            sabor_id, tamano_id, ingrediente_id, ingrediente_extra_2_id, notas,
             sentencia_id, es_sentencia_principal, sentencia_detalle_orden_padre_id, es_para_llevar
         )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, FALSE, $11, $12);
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, FALSE, $12, $13);
       `;
       await client.query(qDetalleProducto, [
         orden_id,
@@ -243,13 +243,14 @@ export const createOrder = async ({ preso_id, nombre_cliente, empleado_id, produ
         prodItem.sabor_id,
         prodItem.tamano_id,
         prodItem.ingrediente_id,
+        prodItem.ingrediente_extra_2_id || null,
         prodItem.notas,
         prodItem.es_parte_sentencia ? prodItem.sentencia_id : null,
         sentenciaDetalleOrdenPadreId,
         prodItem.es_para_llevar || false
       ]);
     }
-    
+
     // 4. Marcar automáticamente como preparados los productos de categorías "Solo Barra"
     const categoriasBarraQuery = `
       UPDATE detalles_orden 
@@ -286,6 +287,24 @@ export const createOrder = async ({ preso_id, nombre_cliente, empleado_id, produ
 
 // Cerrar una orden con cálculo de descuento automático
 import { getTotalPagado } from "./pagos.model.js";
+
+// Actualiza el nombre libre del cliente en una orden.
+// Si la orden ya tiene preso_id vinculado, se rechaza — el nombre viene del preso.
+export const actualizarNombreOrden = async (orden_id, nombre_cliente) => {
+  const { rows } = await pool.query(
+    "SELECT preso_id FROM ordenes WHERE orden_id = $1",
+    [orden_id]
+  );
+  if (rows.length === 0) return { ok: false, reason: "not_found" };
+  if (rows[0].preso_id) return { ok: false, reason: "tiene_preso" };
+
+  const upd = await pool.query(
+    `UPDATE ordenes SET nombre_cliente = $1 WHERE orden_id = $2
+     RETURNING orden_id, nombre_cliente`,
+    [nombre_cliente, orden_id]
+  );
+  return { ok: true, orden: upd.rows[0] };
+};
 
 export const closeOrder = async (orden_id) => {
   const client = await pool.connect();
@@ -471,10 +490,10 @@ export const addProductsToOrder = async (orden_id, productos, empleado_id) => {
       const qDetalleProducto = `
         INSERT INTO detalles_orden (
             orden_id, producto_id, cantidad, precio_unitario, empleado_id,
-            sabor_id, tamano_id, ingrediente_id, notas,
+            sabor_id, tamano_id, ingrediente_id, ingrediente_extra_2_id, notas,
             sentencia_id, es_sentencia_principal, sentencia_detalle_orden_padre_id, es_para_llevar
         )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, FALSE, $11, $12);
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, FALSE, $12, $13);
       `;
       await client.query(qDetalleProducto, [
         orden_id,
@@ -485,6 +504,7 @@ export const addProductsToOrder = async (orden_id, productos, empleado_id) => {
         prodItem.sabor_id,
         prodItem.tamano_id,
         prodItem.ingrediente_id,
+        prodItem.ingrediente_extra_2_id || null,
         prodItem.notas,
         prodItem.es_parte_sentencia ? prodItem.sentencia_id : null,
         sentenciaDetalleOrdenPadreId,
@@ -562,11 +582,14 @@ export const getOrderResumen = async (orden_id) => {
       i.nombre AS ingrediente_nombre,
       i.precio_adicional AS ingrediente_precio,
       cvi.nombre AS ingrediente_categoria,
+      d.ingrediente_extra_2_id,
+      i2.nombre AS ingrediente_extra_2_nombre,
+      i2.precio_adicional AS ingrediente_extra_2_precio,
       d.notas,
       d.sentencia_id AS promocion_id, -- ID de la tabla sentencias
       d.es_sentencia_principal,
       d.sentencia_detalle_orden_padre_id,
-      d.nombre_sentencia AS nombre_promocion, 
+      d.nombre_sentencia AS nombre_promocion,
       d.descripcion_sentencia AS descripcion_promocion,
       p.categoria AS categoria_producto, -- Categoría del producto si existe
       d.es_para_llevar
@@ -577,6 +600,7 @@ export const getOrderResumen = async (orden_id) => {
     LEFT JOIN sabores t ON d.tamano_id = t.id
     LEFT JOIN sabores i ON d.ingrediente_id = i.id
     LEFT JOIN categorias_variantes cvi ON i.categoria_id = cvi.id
+    LEFT JOIN sabores i2 ON d.ingrediente_extra_2_id = i2.id
     WHERE d.orden_id = $1
     ORDER BY d.id ASC -- Ordenar por el ID del detalle para mantener un orden consistente
   `, [orden_id]);
@@ -620,6 +644,7 @@ export const getOrderResumen = async (orden_id) => {
         sabor_id: row.sabor_id, sabor_nombre: row.sabor_nombre, sabor_categoria: row.sabor_categoria, sabor_precio: row.sabor_precio ? parseFloat(row.sabor_precio) : 0,
         tamano_id: row.tamano_id, tamano_nombre: row.tamano_nombre, tamano_precio: row.tamano_precio ? parseFloat(row.tamano_precio) : 0,
         ingrediente_id: row.ingrediente_id, ingrediente_nombre: row.ingrediente_nombre, ingrediente_precio: row.ingrediente_precio ? parseFloat(row.ingrediente_precio) : 0, ingrediente_categoria: row.ingrediente_categoria,
+        ingrediente_extra_2_id: row.ingrediente_extra_2_id, ingrediente_extra_2_nombre: row.ingrediente_extra_2_nombre, ingrediente_extra_2_precio: row.ingrediente_extra_2_precio ? parseFloat(row.ingrediente_extra_2_precio) : 0,
         notas: row.notas,
         promocion_id: row.promocion_id,
         es_sentencia_principal: row.es_sentencia_principal,
@@ -769,6 +794,8 @@ export const getProductosPorPreparar = async () => {
       -- Las cancelaciones (cantidad < 0) se asignan al bloque del primer
       -- registro positivo del mismo producto, así reducen el periodo correcto
       -- y no aparecen como una cancelación huérfana en otro bloque.
+      -- El PARTITION BY incluye ingrediente_extra_2_id para que un mollete
+      -- con 2do ingrediente sea tratado como item distinto de uno con solo 1.
       SELECT
         d.*,
         CASE
@@ -780,7 +807,7 @@ export const getProductosPorPreparar = async () => {
               date_trunc('hour', d.tiempo_creacion)
                 + floor(extract(minute FROM d.tiempo_creacion) / 10) * interval '10 minutes'
             ) FILTER (WHERE d.cantidad > 0) OVER (
-              PARTITION BY d.orden_id, d.producto_id, d.sabor_id, d.tamano_id, d.ingrediente_id
+              PARTITION BY d.orden_id, d.producto_id, d.sabor_id, d.tamano_id, d.ingrediente_id, d.ingrediente_extra_2_id
             ),
             date_trunc('hour', d.tiempo_creacion)
               + floor(extract(minute FROM d.tiempo_creacion) / 10) * interval '10 minutes'
@@ -792,19 +819,19 @@ export const getProductosPorPreparar = async () => {
     ),
     productos_agrupados AS (
       -- Agrupar productos con sus variantes y calcular cantidades netas,
-      -- separando por bloque de 10 minutos (bloque_tiempo)
+      -- separando por bloque de 10 minutos (bloque_tiempo) y por
+      -- ingrediente_extra_2_id (molletes con 2 ingredientes son item distinto).
       SELECT
-        MIN(d.id) AS primer_detalle_id, -- Para mantener referencia al primer detalle
+        MIN(d.id) AS primer_detalle_id,
         d.orden_id,
         d.producto_id,
         d.sabor_id,
         d.tamano_id,
         d.ingrediente_id,
-        SUM(d.cantidad) AS cantidad_neta, -- Suma algebraica (positivos - negativos)
+        d.ingrediente_extra_2_id,
+        SUM(d.cantidad) AS cantidad_neta,
         MIN(CASE WHEN d.cantidad > 0 THEN d.tiempo_creacion END) AS tiempo_creacion_original,
-        -- Recolectar todos los IDs de detalles positivos (para marcar como preparados) - ORDENADOS para consistencia
         ARRAY_AGG(d.id ORDER BY d.id) FILTER (WHERE d.cantidad > 0 AND d.preparado = FALSE) AS detalle_ids,
-        -- Información de cancelaciones - ORDENADAS por tiempo para consistencia
         ARRAY_AGG(
           CASE
             WHEN d.cantidad < 0 THEN
@@ -817,15 +844,14 @@ export const getProductosPorPreparar = async () => {
           ORDER BY d.tiempo_creacion
         ) FILTER (WHERE d.cantidad < 0) AS cancelaciones_json,
         MAX(CASE WHEN d.cantidad < 0 THEN d.tiempo_creacion END) AS ultima_cancelacion,
-        -- Recolectar notas de productos positivos - ORDENADAS para consistencia
         STRING_AGG(DISTINCT d.notas, '; ' ORDER BY d.notas) FILTER (WHERE d.cantidad > 0 AND d.notas IS NOT NULL AND d.notas != '') AS notas_combinadas,
         BOOL_OR(d.es_para_llevar) AS es_para_llevar
       FROM detalle_con_bloque d
       GROUP BY
-        d.orden_id, d.producto_id, d.sabor_id, d.tamano_id, d.ingrediente_id, d.bloque_tiempo
+        d.orden_id, d.producto_id, d.sabor_id, d.tamano_id, d.ingrediente_id, d.ingrediente_extra_2_id, d.bloque_tiempo
     ),
     productos_con_info AS (
-      SELECT 
+      SELECT
         pg.*,
         p.nombre,
         p.categoria,
@@ -839,6 +865,8 @@ export const getProductosPorPreparar = async () => {
         i.nombre AS ingrediente_nombre,
         i.precio_adicional AS ingrediente_precio,
         cvi.nombre AS ingrediente_categoria,
+        i2.nombre AS ingrediente_extra_2_nombre,
+        i2.precio_adicional AS ingrediente_extra_2_precio,
         sp.nombre_sentencia AS nombre_sentencia_padre
       FROM productos_agrupados pg
       JOIN productos p ON pg.producto_id = p.id
@@ -849,10 +877,11 @@ export const getProductosPorPreparar = async () => {
       LEFT JOIN sabores t ON pg.tamano_id = t.id
       LEFT JOIN sabores i ON pg.ingrediente_id = i.id
       LEFT JOIN categorias_variantes cvi ON i.categoria_id = cvi.id
+      LEFT JOIN sabores i2 ON pg.ingrediente_extra_2_id = i2.id
       LEFT JOIN detalles_orden d_first ON pg.primer_detalle_id = d_first.id
       LEFT JOIN detalles_orden sp ON d_first.sentencia_detalle_orden_padre_id = sp.id AND sp.es_sentencia_principal = TRUE
     )
-    SELECT 
+    SELECT
       detalle_ids,
       primer_detalle_id AS detalle_id,
       orden_id,
@@ -863,6 +892,7 @@ export const getProductosPorPreparar = async () => {
       sabor_id,
       tamano_id,
       ingrediente_id,
+      ingrediente_extra_2_id,
       nombre,
       categoria,
       cliente,
@@ -874,11 +904,12 @@ export const getProductosPorPreparar = async () => {
       ingrediente_nombre,
       ingrediente_precio,
       ingrediente_categoria,
+      ingrediente_extra_2_nombre,
+      ingrediente_extra_2_precio,
       nombre_sentencia_padre,
       es_para_llevar,
       cancelaciones_json AS cancelaciones,
       ultima_cancelacion,
-      -- Indicador si está completamente cancelado
       CASE WHEN cantidad_neta = 0 THEN true ELSE false END AS cancelado_completo
     FROM productos_con_info
     WHERE 
@@ -1210,37 +1241,42 @@ export const cancelarProductoOrden = async (orden_id, producto_id, cantidad, emp
       throw new Error("La orden ya está cerrada.");
     }
 
-    // Verificar que el producto exista en la orden y obtener su precio unitario
-    // Agregamos las variantes a la consulta
+    // Verificar que el producto exista en la orden y obtener su precio unitario.
+    // Los productos de categorías de barra se marcan automáticamente como preparados
+    // al crear la orden (no pasan por un cocinero), así que su cancelación debe
+    // permitirse aunque preparado = TRUE — mientras la orden siga abierta.
+    const CATEGORIAS_BARRA = ['Cerveza', 'Cerveza Artesanal', 'Mezcal', 'Otras Bebidas', 'Botana'];
     const productoCheck = await client.query(
-      `SELECT d.*, p.nombre 
+      `SELECT d.*, p.nombre, p.categoria
        FROM detalles_orden d
        JOIN productos p ON d.producto_id = p.id
-       WHERE d.orden_id = $1 
-       AND d.producto_id = $2 
-       AND d.precio_unitario > 0 
-       AND d.preparado = FALSE
+       WHERE d.orden_id = $1
+       AND d.producto_id = $2
+       AND d.precio_unitario > 0
+       AND (d.preparado = FALSE OR p.categoria = ANY($6::text[]))
        AND (d.sabor_id = $3 OR ($3 IS NULL AND d.sabor_id IS NULL))
        AND (d.tamano_id = $4 OR ($4 IS NULL AND d.tamano_id IS NULL))
        AND (d.ingrediente_id = $5 OR ($5 IS NULL AND d.ingrediente_id IS NULL))`,
-      [orden_id, producto_id, sabor_id, tamano_id, ingrediente_id]
+      [orden_id, producto_id, sabor_id, tamano_id, ingrediente_id, CATEGORIAS_BARRA]
     );
 
     if (productoCheck.rows.length === 0) {
-      // Verificar si está preparado para dar un mensaje específico
+      // Verificar si está preparado (y NO es barra) para dar un mensaje específico
       const preparadoCheck = await client.query(
         `SELECT COUNT(*) as count
-         FROM detalles_orden 
-         WHERE orden_id = $1 
-         AND producto_id = $2 
-         AND precio_unitario > 0 
-         AND preparado = TRUE
-         AND (sabor_id = $3 OR ($3 IS NULL AND sabor_id IS NULL))
-         AND (tamano_id = $4 OR ($4 IS NULL AND tamano_id IS NULL))
-         AND (ingrediente_id = $5 OR ($5 IS NULL AND ingrediente_id IS NULL))`,
-        [orden_id, producto_id, sabor_id, tamano_id, ingrediente_id]
+         FROM detalles_orden d
+         JOIN productos p ON d.producto_id = p.id
+         WHERE d.orden_id = $1
+         AND d.producto_id = $2
+         AND d.precio_unitario > 0
+         AND d.preparado = TRUE
+         AND p.categoria <> ALL($6::text[])
+         AND (d.sabor_id = $3 OR ($3 IS NULL AND d.sabor_id IS NULL))
+         AND (d.tamano_id = $4 OR ($4 IS NULL AND d.tamano_id IS NULL))
+         AND (d.ingrediente_id = $5 OR ($5 IS NULL AND d.ingrediente_id IS NULL))`,
+        [orden_id, producto_id, sabor_id, tamano_id, ingrediente_id, CATEGORIAS_BARRA]
       );
-      
+
       if (parseInt(preparadoCheck.rows[0].count) > 0) {
         throw new Error("No se puede cancelar un producto que ya está preparado.");
       } else {

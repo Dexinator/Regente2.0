@@ -1,5 +1,22 @@
 import pool from "../config/db.js";
 
+// Métodos de pago aceptados (debe coincidir con CHECK constraint en DB)
+export const METODOS_PAGO_VALIDOS = ["efectivo", "tarjeta", "transferencia", "otro"];
+
+// Cambia el método de un pago ya registrado (sin tocar monto ni propina).
+export const actualizarMetodoPago = async (pago_id, nuevo_metodo) => {
+  if (!METODOS_PAGO_VALIDOS.includes(nuevo_metodo)) {
+    return { ok: false, reason: "metodo_invalido" };
+  }
+  const result = await pool.query(
+    `UPDATE pagos SET metodo = $1 WHERE id = $2
+     RETURNING id, orden_id, metodo, monto, propina, porcentaje_propina, fecha, empleado_id`,
+    [nuevo_metodo, pago_id]
+  );
+  if (result.rowCount === 0) return { ok: false, reason: "not_found" };
+  return { ok: true, pago: result.rows[0] };
+};
+
 // Registrar un nuevo pago
 export const registrarPago = async ({ orden_id, metodo, monto, propina, porcentaje_propina, empleado_id }) => {
   const result = await pool.query(

@@ -14,7 +14,8 @@ import {
   cancelarProducto,
   fetchProductosPorEntregar,
   marcarComoEntregado,
-  revertirEntrega
+  revertirEntrega,
+  updateNombreOrden,
 } from "../controllers/orders.controller.js";
 
 // Importamos las funciones para códigos promocionales
@@ -53,6 +54,7 @@ router.delete("/:id/promocion", removeCodigoFromOrder);   // Remover código pro
 
 // Rutas específicas con ID
 router.get("/:id/resumen", getOrderSummary);
+router.patch("/:id/nombre", updateNombreOrden);
 router.put("/:id/close", closeOrderById);
 router.post("/:id/productos", addProducts);
 router.post("/:id/cancelar", cancelarProducto); // Cancelar productos

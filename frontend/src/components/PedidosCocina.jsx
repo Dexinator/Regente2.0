@@ -1,5 +1,14 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { API_URL } from "../utils/api.js";
+
+// Genera un idempotency key único por clic; el backend lo usa para no duplicar
+// una preparación si el cliente reintenta por red intermitente.
+const nuevoIdempotencyKey = () => {
+  if (typeof crypto !== "undefined" && crypto.randomUUID) {
+    return crypto.randomUUID();
+  }
+  return `prep-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+};
 
 export default function PedidosCocina() {
   const [pedidosAgrupados, setPedidosAgrupados] = useState([]);
@@ -8,6 +17,9 @@ export default function PedidosCocina() {
   const [intervalId, setIntervalId] = useState(null);
   const [filtroTipo, setFiltroTipo] = useState("todos");
   const [pedidosEnProceso, setPedidosEnProceso] = useState({});
+  // Set síncrono de claves en vuelo (sobrevive a re-renders rápidos y
+  // rechaza el 2º clic antes de que el useState se refleje).
+  const envíosEnVuelo = useRef(new Set());
 
   // Mapeo de categorías a tipos (Alimentos/Bebidas/Barra)
   const categoriasTipo = {
@@ -134,41 +146,60 @@ export default function PedidosCocina() {
   };
 
   const marcarComoPreparado = async (producto) => {
-    try {
-      // Marcamos el producto como "en proceso" para la animación
-      const claveProducto = producto.detalle_ids.join('-');
-      setPedidosEnProceso(prev => ({
-        ...prev,
-        [claveProducto]: true
-      }));
+    const claveProducto = producto.detalle_ids.join('-');
 
-      // Marcar solo UNA unidad como preparada del primer detalle_id disponible
-      const response = await fetch(`${API_URL}/orders/detalle/${producto.detalle_ids[0]}/preparar`, {
+    // Rechazo síncrono del doble clic: si ya está en vuelo, salimos.
+    if (envíosEnVuelo.current.has(claveProducto)) return;
+    envíosEnVuelo.current.add(claveProducto);
+
+    setPedidosEnProceso(prev => ({ ...prev, [claveProducto]: true }));
+
+    // Idempotency key único por clic. Si la red falla y reintentamos,
+    // el backend deduplica y no se prepara dos veces.
+    const idempotencyKey = nuevoIdempotencyKey();
+    const body = JSON.stringify({ cantidad: 1, idempotency_key: idempotencyKey });
+    const url = `${API_URL}/orders/detalle/${producto.detalle_ids[0]}/preparar`;
+
+    const intentarPreparar = async () => {
+      const response = await fetch(url, {
         method: "PUT",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({ cantidad: 1 })
+        headers: { "Content-Type": "application/json" },
+        body,
       });
-      
       if (!response.ok) {
-        throw new Error("Error al actualizar el producto");
+        throw new Error(`HTTP ${response.status}`);
       }
-      
-      // Después de 1 segundo, recargamos todos los pedidos
-      setTimeout(() => {
-        cargarPedidos();
-        
-        // Y limpiamos la lista de "en proceso"
-        setPedidosEnProceso({});
-      }, 1000);
-      
+      return response.json();
+    };
+
+    try {
+      try {
+        await intentarPreparar();
+      } catch (primerError) {
+        // Un reintento con el MISMO idempotency_key cubre el caso típico
+        // de conexión intermitente sin arriesgar doble preparación.
+        console.warn("Reintentando preparación tras fallo:", primerError);
+        await new Promise(r => setTimeout(r, 1500));
+        await intentarPreparar();
+      }
+
+      // Recargar inmediatamente; el estado "en proceso" se limpia al
+      // confirmar que el detalle ya no está pendiente.
+      await cargarPedidos();
     } catch (error) {
       console.error("Error al marcar como preparado:", error);
-      alert("Error: " + error.message);
-      
-      // Si hay error, quitamos el estado "en proceso"
-      setPedidosEnProceso({});
+      alert(
+        "No se pudo marcar como preparado tras reintentar. " +
+        "Revisa la conexión y vuelve a intentarlo. " +
+        "(El sistema evita duplicados si el servidor sí lo había recibido.)"
+      );
+    } finally {
+      envíosEnVuelo.current.delete(claveProducto);
+      setPedidosEnProceso(prev => {
+        const copia = { ...prev };
+        delete copia[claveProducto];
+        return copia;
+      });
     }
   };
 
@@ -289,13 +320,19 @@ export default function PedidosCocina() {
                     );
                   }
                   
-                  // Construir la primera línea del producto normal
+                  // Construir la primera línea del producto normal. Si hay un 2do
+                  // ingrediente extra (molletes con 2), se muestra como "ing1 + ing2".
+                  const ingredientesStr = producto.ingrediente_nombre
+                    ? (producto.ingrediente_extra_2_nombre
+                        ? `${producto.ingrediente_nombre} + ${producto.ingrediente_extra_2_nombre}`
+                        : producto.ingrediente_nombre)
+                    : null;
                   const lineaProducto = [
                     `${producto.cantidad_total}`,
                     "X",
                     producto.nombre,
                     producto.sabor_nombre,
-                    producto.ingrediente_nombre,
+                    ingredientesStr,
                     producto.tamano_nombre
                   ].filter(Boolean).join(" ");
                   

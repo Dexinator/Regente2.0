@@ -13,7 +13,8 @@ import {
   getProductosPorEntregar,
   marcarProductoComoEntregado,
   revertirEntregaProducto,
-  addProductsToOrder
+  addProductsToOrder,
+  actualizarNombreOrden,
 } from "../models/orders.model.js";
 
 export const fetchOrders = async (req, res) => {
@@ -89,6 +90,32 @@ export const closeOrderById = async (req, res) => {
   }
 };
 
+// Renombra una orden (cuando el cliente es "libre", no preso).
+export const updateNombreOrden = async (req, res) => {
+  const { nombre_cliente } = req.body;
+  const nombre = (nombre_cliente || "").trim();
+  if (!nombre) {
+    return res.status(400).json({ error: "El nombre no puede estar vacío" });
+  }
+  if (nombre.length > 255) {
+    return res.status(400).json({ error: "El nombre es demasiado largo" });
+  }
+  try {
+    const r = await actualizarNombreOrden(req.params.id, nombre);
+    if (!r.ok && r.reason === "not_found") {
+      return res.status(404).json({ error: "Orden no encontrada" });
+    }
+    if (!r.ok && r.reason === "tiene_preso") {
+      return res.status(409).json({
+        error: "Esta orden está vinculada a un preso; cambia el nombre desde el perfil del preso.",
+      });
+    }
+    res.json(r.orden);
+  } catch (err) {
+    res.status(500).json({ error: "Error actualizando nombre", detail: err.message });
+  }
+};
+
 // Agregar productos a una orden abierta
 export const addProducts = async (req, res) => {
   const orden_id = req.params.id;
@@ -151,18 +178,46 @@ export const fetchHistorialProductosPreparados = async (req, res) => {
   }
 };
 
+// Cache en memoria para deduplicar PUTs /detalle/:id/preparar
+// Protege contra doble clic en cocina cuando la red es intermitente:
+// un mismo idempotency_key dentro de 60s devuelve el resultado original.
+const preparadoCache = new Map(); // key -> { result, expiraEn }
+const PREPARADO_TTL_MS = 60_000;
+
+const limpiarCachePreparado = () => {
+  const ahora = Date.now();
+  for (const [k, v] of preparadoCache) {
+    if (v.expiraEn < ahora) preparadoCache.delete(k);
+  }
+};
+
 // Marcar un producto como preparado
 export const updateEstadoProducto = async (req, res) => {
   try {
     const detalle_id = req.params.id;
-    const { cantidad } = req.body; // Nueva: cantidad a preparar
-    
+    const { cantidad, idempotency_key } = req.body;
+
+    if (idempotency_key) {
+      limpiarCachePreparado();
+      const hit = preparadoCache.get(idempotency_key);
+      if (hit) {
+        return res.json({ ...hit.result, deduplicado: true });
+      }
+    }
+
     const producto = await marcarProductoComoPreparado(detalle_id, cantidad);
-    
+
     if (!producto) {
       return res.status(404).json({ error: "Detalle de producto no encontrado" });
     }
-    
+
+    if (idempotency_key) {
+      preparadoCache.set(idempotency_key, {
+        result: producto,
+        expiraEn: Date.now() + PREPARADO_TTL_MS,
+      });
+    }
+
     res.json(producto);
   } catch (err) {
     res.status(500).json({ error: "Error al marcar producto como preparado", detail: err.message });

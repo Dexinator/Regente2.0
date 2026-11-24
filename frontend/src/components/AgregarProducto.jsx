@@ -57,6 +57,7 @@ export default function AgregarProducto({ orden_id }) {
               sabor_id: p.sabor_id || null,
               tamano_id: p.tamano_id || null,
               ingrediente_id: p.ingrediente_id || null,
+              ingrediente_extra_2_id: p.ingrediente_extra_2_id || null,
               notas: p.notas || null,
 
               // --- Campos específicos para Sentencias ---

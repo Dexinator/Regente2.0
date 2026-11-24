@@ -262,6 +262,49 @@ export default function PedidosPorEntregar() {
     }
   };
 
+  // Marca TODOS los pedidos visibles (filtrados) como entregados.
+  // Útil cuando se acumula la pantalla al cierre del turno.
+  const entregarTodo = async (ordenesVisibles) => {
+    const totalProductos = ordenesVisibles.reduce((acc, o) => acc + o.productos.length, 0);
+    if (totalProductos === 0) return;
+
+    const confirmar = window.confirm(
+      `¿Marcar como entregados los ${totalProductos} productos visibles ` +
+      `(${ordenesVisibles.length} orden${ordenesVisibles.length === 1 ? "" : "es"})?\n\n` +
+      `Esta acción no es reversible — si necesitas cancelar un producto, ` +
+      `hazlo desde Gestión de Orden antes de marcar entregado.`
+    );
+    if (!confirmar) return;
+
+    const detalleIds = ordenesVisibles.flatMap((o) => o.productos.map((p) => p.detalle_id));
+
+    setPedidosEnProceso((prev) => {
+      const next = { ...prev };
+      for (const id of detalleIds) next[id] = true;
+      return next;
+    });
+
+    try {
+      await Promise.all(
+        detalleIds.map((id) =>
+          fetch(`${API_URL}/orders/detalle/${id}/entregar`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({}),
+          })
+        )
+      );
+      setTimeout(() => {
+        setPedidosAgrupados([]);
+        setPedidosEnProceso({});
+      }, 800);
+    } catch (error) {
+      console.error("Error entregando todo:", error);
+      alert("Error al entregar todo: " + error.message + "\nAlgunos pedidos pueden haber quedado sin marcar — recarga.");
+      setPedidosEnProceso({});
+    }
+  };
+
   // Función para formatear detalles del producto
   const formatearDetallesProducto = (producto) => {
     let detalles = producto.nombre;
@@ -339,6 +382,15 @@ export default function PedidosPorEntregar() {
           >
             Actualizar
           </button>
+          {ordenesFiltradas.length > 0 && (
+            <button
+              onClick={() => entregarTodo(ordenesFiltradas)}
+              className="bg-red-800 text-white px-3 py-1 rounded text-sm hover:bg-red-700 transition-colors"
+              title="Marca entregados todos los pedidos visibles"
+            >
+              Entregar todo ({ordenesFiltradas.reduce((a, o) => a + o.productos.length, 0)})
+            </button>
+          )}
         </div>
       </div>
       

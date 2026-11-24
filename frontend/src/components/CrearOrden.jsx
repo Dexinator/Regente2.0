@@ -70,29 +70,31 @@ export default function CrearOrden() {
         }
     };
 
-    const quitarProducto = (id, sabor_id, tamano_id, ingrediente_id, notas) => {
-        setProductosSeleccionados(prev => 
+    const quitarProducto = (id, sabor_id, tamano_id, ingrediente_id, notas, ingrediente_extra_2_id = null) => {
+        setProductosSeleccionados(prev =>
             prev
             .map(p => (
-                p.id === id && 
-                p.sabor_id === sabor_id && 
+                p.id === id &&
+                p.sabor_id === sabor_id &&
                 p.tamano_id === tamano_id &&
                 p.ingrediente_id === ingrediente_id &&
-                ((p.notas || "") === (notas || "")) 
-                    ? { ...p, cantidad: p.cantidad - 1 } 
+                (p.ingrediente_extra_2_id || null) === (ingrediente_extra_2_id || null) &&
+                ((p.notas || "") === (notas || ""))
+                    ? { ...p, cantidad: p.cantidad - 1 }
                     : p
             ))
             .filter(p => p.cantidad > 0)
         );
     };
 
-    const aumentarCantidad = (id, sabor_id, tamano_id, ingrediente_id, notas) => {
+    const aumentarCantidad = (id, sabor_id, tamano_id, ingrediente_id, notas, ingrediente_extra_2_id = null) => {
         setProductosSeleccionados(prev =>
-            prev.map(p => 
-                p.id === id && 
-                p.sabor_id === sabor_id && 
+            prev.map(p =>
+                p.id === id &&
+                p.sabor_id === sabor_id &&
                 p.tamano_id === tamano_id &&
                 p.ingrediente_id === ingrediente_id &&
+                (p.ingrediente_extra_2_id || null) === (ingrediente_extra_2_id || null) &&
                 ((p.notas || "") === (notas || ""))
                     ? { ...p, cantidad: p.cantidad + 1 }
                     : p
@@ -145,6 +147,7 @@ export default function CrearOrden() {
                             sabor_id: p.sabor_id || null,
                             tamano_id: p.tamano_id || null,
                             ingrediente_id: p.ingrediente_id || null,
+                            ingrediente_extra_2_id: p.ingrediente_extra_2_id || null,
                             notas: p.notas || null,
                             sentencia_id: p.sentencia_id || null,
                             sentencia_instance_id: p.sentencia_instance_id || null,
@@ -323,7 +326,7 @@ export default function CrearOrden() {
                         <h3 className="font-bold text-amarillo">Productos seleccionados</h3>
                         {productosSeleccionados.map((producto, index) => (
                             <div 
-                                key={`${index}-${producto.id}-${producto.sabor_id}-${producto.tamano_id}-${producto.ingrediente_id}`} 
+                                key={`${index}-${producto.id}-${producto.sabor_id}-${producto.tamano_id}-${producto.ingrediente_id}-${producto.ingrediente_extra_2_id || ''}`}
                                 className="bg-negro p-3 rounded flex justify-between items-start border-b border-gray-800 pb-3"
                             >
                                 <div className="flex-1">
@@ -363,12 +366,20 @@ export default function CrearOrden() {
                                             </div>
                                         )}
                                         
-                                        {/* Mostrar ingrediente si existe */}
+                                        {/* Mostrar ingrediente(s) extra si existe(n) */}
                                         {producto.ingrediente_nombre && (
                                             <div className="flex justify-between mt-1">
-                                                <span>Ingrediente: {producto.ingrediente_nombre}</span>
+                                                <span>
+                                                    Ingrediente{producto.ingrediente_extra_2_nombre ? "s" : ""}: {producto.ingrediente_nombre}
+                                                    {producto.ingrediente_extra_2_nombre && (
+                                                        <> + {producto.ingrediente_extra_2_nombre}</>
+                                                    )}
+                                                </span>
                                                 {parseFloat(producto.ingrediente_precio) > 0 && (
-                                                    <span className="text-amarillo">+${parseFloat(producto.ingrediente_precio).toFixed(2)}</span>
+                                                    <span className="text-amarillo">
+                                                        +${parseFloat(producto.ingrediente_precio).toFixed(2)}
+                                                        {producto.ingrediente_extra_2_nombre && <span className="text-crema/70"> (el más caro)</span>}
+                                                    </span>
                                                 )}
                                             </div>
                                         )}
@@ -387,11 +398,12 @@ export default function CrearOrden() {
                                             <>
                                                 <button
                                                     onClick={() => quitarProducto(
-                                                        producto.id, 
-                                                        producto.sabor_id, 
-                                                        producto.tamano_id, 
+                                                        producto.id,
+                                                        producto.sabor_id,
+                                                        producto.tamano_id,
                                                         producto.ingrediente_id,
-                                                        producto.notas
+                                                        producto.notas,
+                                                        producto.ingrediente_extra_2_id
                                                     )}
                                                     className="bg-vino px-2 rounded-full"
                                                 >
@@ -400,11 +412,12 @@ export default function CrearOrden() {
                                                 <span className="font-bold">{producto.cantidad}</span>
                                                 <button
                                                     onClick={() => aumentarCantidad(
-                                                        producto.id, 
-                                                        producto.sabor_id, 
-                                                        producto.tamano_id, 
+                                                        producto.id,
+                                                        producto.sabor_id,
+                                                        producto.tamano_id,
                                                         producto.ingrediente_id,
-                                                        producto.notas
+                                                        producto.notas,
+                                                        producto.ingrediente_extra_2_id
                                                     )}
                                                     className="bg-vino px-2 rounded-full"
                                                 >

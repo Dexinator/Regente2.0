@@ -49,6 +49,13 @@ export default function ProductSelector({
   const [seleccionIngrediente, setSeleccionIngrediente] = useState(false);
   const [quiereIngredienteExtra, setQuiereIngredienteExtra] = useState(false);
   const [tieneIngredientesDisponibles, setTieneIngredientesDisponibles] = useState(false);
+  // 2do ingrediente exclusivo para Molletes (regla: cobra el más caro)
+  const [ingredienteExtra1, setIngredienteExtra1] = useState(null);
+  const [seleccionIngredienteExtra2, setSeleccionIngredienteExtra2] = useState(false);
+
+  // Productos que admiten 2 ingredientes con regla MAX (Molletes y Mollete por Pieza)
+  const PRODUCTO_PERMITE_2_INGREDIENTES = (productoId) =>
+    productoId === 5 || productoId === 488;
 
   // Estado para mostrar el selector de sentencias
   const [mostrarSelectorSentencias, setMostrarSelectorSentencias] = useState(false);
@@ -364,11 +371,25 @@ export default function ProductSelector({
         ingrediente_nombre: ingrediente?.nombre || null,
         ingrediente_precio_adicional: ingrediente ? parseFloat(ingrediente.precio_adicional || 0) : 0
       };
-      
+
       agregarProductoSentenciaConVariante(productoSeleccionado, varianteParaAgregar);
       return;
     }
-    
+
+    // Caso especial Molletes: si eligió un ingrediente real (no "ninguno") y
+    // hay otros disponibles, ofrecer un 2do. El precio adicional será el MAX.
+    const esMolletes = productoSeleccionado && PRODUCTO_PERMITE_2_INGREDIENTES(productoSeleccionado.id);
+    if (esMolletes && ingrediente && ingredientesDisponibles.length > 1) {
+      setIngredienteExtra1({
+        id: ingrediente.id,
+        nombre: ingrediente.nombre,
+        precio_adicional: parseFloat(ingrediente.precio_adicional || 0),
+      });
+      setSeleccionIngrediente(false);
+      setSeleccionIngredienteExtra2(true);
+      return;
+    }
+
     const datosCombinados = tamanoSeleccionado ? {
       ...saborSeleccionado,
       tamano_id: tamanoSeleccionado.id,
@@ -383,10 +404,38 @@ export default function ProductSelector({
       ingrediente_nombre: ingrediente?.nombre || null,
       ingrediente_precio: ingrediente ? parseFloat(ingrediente.precio_adicional || 0) : 0
     };
-    
+
     // No resetear quiereIngredienteExtra ya que el usuario explícitamente lo solicitó
     mostrarPantallaNotas(productoSeleccionado, datosCombinados);
     setSeleccionIngrediente(false);
+  };
+
+  // Elige el 2do ingrediente (o salta) en Molletes.
+  // Si se agregan 2, el precio adicional del detalle es el MAX de ambos.
+  const seleccionarIngrediente2 = (ingrediente2) => {
+    const ing1 = ingredienteExtra1;
+    // El "ingrediente_id" principal será siempre el ing1 original (mantiene reportes);
+    // el 2do ingrediente va en ingrediente_extra_2_id.
+    // Pricing: MAX de los dos. Si la combinación cobraría más barata, se mantiene ing1
+    // como el "principal" pero el precio del detalle usa el MAX.
+    const precioMax = Math.max(
+      ing1?.precio_adicional || 0,
+      ingrediente2 ? parseFloat(ingrediente2.precio_adicional || 0) : 0
+    );
+
+    const datosCombinados = {
+      ...saborSeleccionado,
+      ingrediente_id: ing1?.id || null,
+      ingrediente_nombre: ing1?.nombre || null,
+      ingrediente_precio: precioMax,
+      ingrediente_extra_2_id: ingrediente2?.id || null,
+      ingrediente_extra_2_nombre: ingrediente2?.nombre || null,
+      ingrediente_extra_2_precio: ingrediente2 ? parseFloat(ingrediente2.precio_adicional || 0) : 0,
+    };
+
+    mostrarPantallaNotas(productoSeleccionado, datosCombinados);
+    setSeleccionIngredienteExtra2(false);
+    setIngredienteExtra1(null);
   };
 
   const mostrarPantallaNotas = (producto, opcion) => {
@@ -420,7 +469,10 @@ export default function ProductSelector({
         precio_adicional: parseFloat(opcion.precio_adicional || 0),
         ingrediente_id: opcion.ingrediente_id,
         ingrediente_nombre: opcion.ingrediente_nombre,
-        ingrediente_precio: opcion.ingrediente_precio
+        ingrediente_precio: opcion.ingrediente_precio,
+        ingrediente_extra_2_id: opcion.ingrediente_extra_2_id || null,
+        ingrediente_extra_2_nombre: opcion.ingrediente_extra_2_nombre || null,
+        ingrediente_extra_2_precio: parseFloat(opcion.ingrediente_extra_2_precio || 0),
       });
     } else if (opcion) {
       setProductoEditandoNotas({
@@ -464,67 +516,76 @@ export default function ProductSelector({
   const agregarProductoALista = () => {
     if (!productoEditandoNotas) return;
     
-    const { 
-      id, 
-      sabor_id, 
-      sabor_nombre, 
-      sabor_categoria, 
+    const {
+      id,
+      sabor_id,
+      sabor_nombre,
+      sabor_categoria,
       precio_adicional,
       tamano_id,
       tamano_nombre,
       tamano_precio,
       ingrediente_id,
       ingrediente_nombre,
-      ingrediente_precio
+      ingrediente_precio,
+      ingrediente_extra_2_id,
+      ingrediente_extra_2_nombre,
+      ingrediente_extra_2_precio,
     } = productoEditandoNotas;
     
-    const yaExiste = productosSeleccionados.find(p => 
-      p.id === id && 
-      p.sabor_id === sabor_id && 
-      p.tamano_id === tamano_id && 
+    // Para desduplicar, consideramos también el 2do ingrediente — un mollete
+    // con 2 ingredientes es un item distinto de uno con solo 1.
+    const yaExiste = productosSeleccionados.find(p =>
+      p.id === id &&
+      p.sabor_id === sabor_id &&
+      p.tamano_id === tamano_id &&
       p.ingrediente_id === ingrediente_id &&
+      (p.ingrediente_extra_2_id || null) === (ingrediente_extra_2_id || null) &&
       ((p.notas || "") === (notas.trim() || ""))
     );
-    
+
     if (yaExiste) {
-      setProductosSeleccionados(prev => 
-        prev.map(p => 
-          p.id === id && 
-          p.sabor_id === sabor_id && 
-          p.tamano_id === tamano_id && 
+      setProductosSeleccionados(prev =>
+        prev.map(p =>
+          p.id === id &&
+          p.sabor_id === sabor_id &&
+          p.tamano_id === tamano_id &&
           p.ingrediente_id === ingrediente_id &&
+          (p.ingrediente_extra_2_id || null) === (ingrediente_extra_2_id || null) &&
           ((p.notas || "") === (notas.trim() || ""))
-            ? { ...p, cantidad: p.cantidad + cantidad } 
+            ? { ...p, cantidad: p.cantidad + cantidad }
             : p
         )
       );
     } else {
       let precioTotal = productoEditandoNotas.precio;
-      
+
       if (precio_adicional) {
         precioTotal += precio_adicional;
       }
-      
+
       if (tamano_precio) {
         precioTotal += tamano_precio;
       }
-      
+
+      // ingrediente_precio ya trae el MAX cuando hay 2 ingredientes (molletes),
+      // así que NO sumamos ingrediente_extra_2_precio por separado.
       if (ingrediente_precio) {
         precioTotal += ingrediente_precio;
       }
-      
+
       // Agregar $10 si es para llevar (excepto para productos de categoría Pulque)
       const esPulque = productoEditandoNotas.categoria === "Pulque";
       const costoParaLlevar = esParaLlevar && !esPulque ? 10 : 0;
-      
+
       if (costoParaLlevar > 0) {
         precioTotal += costoParaLlevar;
       }
-      
+
       setProductosSeleccionados(prev => [
-        ...prev, 
-        { 
-          ...productoEditandoNotas, 
+        ...prev,
+        {
+          ...productoEditandoNotas,
           cantidad,
           precio_original: productoEditandoNotas.precio,
           precio: precioTotal,
@@ -1185,6 +1246,74 @@ export default function ProductSelector({
     );
   }
 
+  // Modal de selección del 2do ingrediente (solo molletes).
+  // Aparece después de elegir el 1er ingrediente; se cobra el MAX de los dos.
+  if (seleccionIngredienteExtra2) {
+    const disponiblesFiltrados = ingredientesDisponibles.filter(
+      (ing) => ing.id !== ingredienteExtra1?.id
+    );
+    return (
+      <div className="bg-vino rounded-xl p-4 space-y-4">
+        <div className="flex justify-between items-center">
+          <h2 className="text-xl font-bold">
+            ¿Un segundo ingrediente?
+          </h2>
+          <button
+            onClick={() => seleccionarIngrediente2(null)}
+            className="text-gray-300 hover:text-white"
+            title="Cerrar / sin 2do ingrediente"
+          >
+            ✕
+          </button>
+        </div>
+
+        <div className="bg-amarillo/15 border border-amarillo/40 p-2 rounded text-xs text-amarillo">
+          {productoSeleccionado?.nombre} ya lleva <strong>{ingredienteExtra1?.nombre}</strong>
+          {ingredienteExtra1?.precio_adicional > 0 && (
+            <> (+${ingredienteExtra1.precio_adicional.toFixed(2)})</>
+          )}
+          . Si eliges un 2º ingrediente, <strong>solo se cobra el más caro</strong>.
+        </div>
+
+        <div className="grid grid-cols-1 gap-3 max-h-96 overflow-y-auto">
+          <button
+            onClick={(e) => { e.preventDefault(); seleccionarIngrediente2(null); }}
+            className="bg-negro p-3 rounded text-left hover:bg-gray-800 flex justify-between items-center"
+          >
+            <div>
+              <p className="font-bold">Solo 1 ingrediente</p>
+              <p className="text-xs text-gray-400">Continuar con {ingredienteExtra1?.nombre}</p>
+            </div>
+          </button>
+
+          {disponiblesFiltrados.map(ing => {
+            const precioExtra = Math.max(
+              ingredienteExtra1?.precio_adicional || 0,
+              parseFloat(ing.precio_adicional || 0)
+            );
+            return (
+              <button
+                key={ing.id}
+                onClick={(e) => { e.preventDefault(); seleccionarIngrediente2(ing); }}
+                className="bg-negro p-3 rounded text-left hover:bg-gray-800 flex justify-between items-center"
+              >
+                <div>
+                  <p className="font-bold">+ {ing.nombre}</p>
+                  <p className="text-xs text-gray-400">
+                    Combo: {ingredienteExtra1?.nombre} + {ing.nombre}
+                  </p>
+                </div>
+                <span className="bg-amarillo text-negro px-2 py-1 rounded-full text-xs font-bold">
+                  Cobro: +${precioExtra.toFixed(2)}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
+
   // Modal de notas
   if (productoEditandoNotas) {
     return (
@@ -1227,11 +1356,21 @@ export default function ProductSelector({
         
         {productoEditandoNotas.ingrediente_id && (
           <div className="bg-negro/30 p-3 rounded mt-2">
-            <p className="font-bold">Ingrediente extra:</p>
-            <p>{productoEditandoNotas.ingrediente_nombre}</p>
+            <p className="font-bold">
+              Ingrediente{productoEditandoNotas.ingrediente_extra_2_id ? "s" : ""} extra:
+            </p>
+            <p>
+              {productoEditandoNotas.ingrediente_nombre}
+              {productoEditandoNotas.ingrediente_extra_2_nombre && (
+                <> + {productoEditandoNotas.ingrediente_extra_2_nombre}</>
+              )}
+            </p>
             {productoEditandoNotas.ingrediente_precio > 0 && (
               <p className="text-xs text-amarillo mt-1">
                 Precio adicional: +${productoEditandoNotas.ingrediente_precio}
+                {productoEditandoNotas.ingrediente_extra_2_id && (
+                  <> <span className="text-crema/70">(se cobra solo el más caro)</span></>
+                )}
               </p>
             )}
           </div>

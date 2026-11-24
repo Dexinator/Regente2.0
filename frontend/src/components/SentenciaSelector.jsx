@@ -17,6 +17,9 @@ export default function SentenciaSelector({ onAddProducts, onClose }) {
   const [opcionesSeleccionadas, setOpcionesSeleccionadas] = useState({});
   const [productosFinales, setProductosFinales] = useState([]);
   const [precioTotal, setPrecioTotal] = useState(0);
+  // Nota libre para toda la promo/sentencia (se propaga a todos los componentes
+  // para que aparezca en cocina en cada producto de la promo).
+  const [notaSentencia, setNotaSentencia] = useState("");
 
   // Cargar sentencias al montar el componente
   useEffect(() => {
@@ -194,6 +197,7 @@ export default function SentenciaSelector({ onAddProducts, onClose }) {
 
     // Generar ID único de instancia para esta sentencia
     const sentencia_instance_id = `temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    const notas = notaSentencia.trim() || null;
 
     // Agregar la sentencia como producto principal
     const sentenciaProducto = {
@@ -205,7 +209,8 @@ export default function SentenciaSelector({ onAddProducts, onClose }) {
       precio: sentenciaInfo.precio,
       categoria: "Sentencia",
       cantidad: 1,
-      esSentencia: true
+      esSentencia: true,
+      notas,
     };
     
     // Preparar array para productos que necesitan selección de variantes
@@ -232,7 +237,8 @@ export default function SentenciaSelector({ onAddProducts, onClose }) {
           pendiente_seleccion_variante: true,
           precio_adicional: parseFloat(producto.precio_adicional || 0),
           tamano_precio: parseFloat(producto.tamano_precio || 0),
-          ingrediente_precio: parseFloat(producto.ingrediente_precio || 0)
+          ingrediente_precio: parseFloat(producto.ingrediente_precio || 0),
+          notas,
         });
       } else {
         // Enviar el producto directamente
@@ -249,16 +255,17 @@ export default function SentenciaSelector({ onAddProducts, onClose }) {
           cantidad: producto.cantidad || 1,
           precio_adicional: parseFloat(producto.precio_adicional || 0),
           tamano_precio: parseFloat(producto.tamano_precio || 0),
-          ingrediente_precio: parseFloat(producto.ingrediente_precio || 0)
+          ingrediente_precio: parseFloat(producto.ingrediente_precio || 0),
+          notas,
         };
-        
+
         onAddProducts(productoParaAgregar);
       }
     });
-    
+
     // Agregar el producto principal
     onAddProducts(sentenciaProducto);
-    
+
     // Si hay productos con variantes pendientes, procesarlos
     if (productosConVariantesPendientes.length > 0) {
       onAddProducts({
@@ -268,7 +275,7 @@ export default function SentenciaSelector({ onAddProducts, onClose }) {
         sentencia_instance_id: sentencia_instance_id
       });
     }
-    
+
     // NO cerrar aquí - el cierre se manejará cuando se completen todas las variantes
     onClose();
   };
@@ -279,6 +286,7 @@ export default function SentenciaSelector({ onAddProducts, onClose }) {
 
     // Generar ID único de instancia para esta sentencia
     const sentencia_instance_id = `temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    const notas = notaSentencia.trim() || null;
 
     // Agregar la sentencia como producto principal
     const sentenciaProducto = {
@@ -290,7 +298,8 @@ export default function SentenciaSelector({ onAddProducts, onClose }) {
       precio: sentenciaSeleccionada.precio,
       categoria: "Sentencia",
       cantidad: 1,
-      esSentencia: true
+      esSentencia: true,
+      notas,
     };
     
     // Preparar array para productos que necesitan selección de variantes
@@ -298,11 +307,11 @@ export default function SentenciaSelector({ onAddProducts, onClose }) {
     
     // Procesar productos fijos
     productosFinales.forEach(producto => {
-      const necesitaSeleccionVariante = 
-        (producto.sabor_id === null && producto.requiere_sabor) || 
-        (producto.tamano_id === null && producto.requiere_tamano) || 
+      const necesitaSeleccionVariante =
+        (producto.sabor_id === null && producto.requiere_sabor) ||
+        (producto.tamano_id === null && producto.requiere_tamano) ||
         (producto.ingrediente_id === null && producto.requiere_ingrediente);
-      
+
       if (necesitaSeleccionVariante) {
         productosConVariantesPendientes.push({
           ...producto,
@@ -317,7 +326,8 @@ export default function SentenciaSelector({ onAddProducts, onClose }) {
           pendiente_seleccion_variante: true,
           precio_adicional: parseFloat(producto.precio_adicional || 0),
           tamano_precio: parseFloat(producto.tamano_precio || 0),
-          ingrediente_precio: parseFloat(producto.ingrediente_precio || 0)
+          ingrediente_precio: parseFloat(producto.ingrediente_precio || 0),
+          notas,
         });
       } else {
         const productoParaAgregar = {
@@ -333,7 +343,8 @@ export default function SentenciaSelector({ onAddProducts, onClose }) {
           cantidad: producto.cantidad || 1,
           precio_adicional: parseFloat(producto.precio_adicional || 0),
           tamano_precio: parseFloat(producto.tamano_precio || 0),
-          ingrediente_precio: parseFloat(producto.ingrediente_precio || 0)
+          ingrediente_precio: parseFloat(producto.ingrediente_precio || 0),
+          notas,
         };
 
         onAddProducts(productoParaAgregar);
@@ -362,7 +373,8 @@ export default function SentenciaSelector({ onAddProducts, onClose }) {
           pendiente_seleccion_variante: true,
           precio_adicional: parseFloat(producto.precio_adicional || 0),
           tamano_precio: parseFloat(producto.tamano_precio || 0),
-          ingrediente_precio: parseFloat(producto.ingrediente_precio || 0)
+          ingrediente_precio: parseFloat(producto.ingrediente_precio || 0),
+          notas,
         });
       } else {
         const opcionParaAgregar = {
@@ -378,13 +390,14 @@ export default function SentenciaSelector({ onAddProducts, onClose }) {
           cantidad: producto.cantidad || 1,
           precio_adicional: parseFloat(producto.precio_adicional || 0),
           tamano_precio: parseFloat(producto.tamano_precio || 0),
-          ingrediente_precio: parseFloat(producto.ingrediente_precio || 0)
+          ingrediente_precio: parseFloat(producto.ingrediente_precio || 0),
+          notas,
         };
 
         onAddProducts(opcionParaAgregar);
       }
     });
-    
+
     // Agregar el producto principal
     onAddProducts(sentenciaProducto);
 
@@ -407,6 +420,7 @@ export default function SentenciaSelector({ onAddProducts, onClose }) {
 
     // Generar ID único de instancia para esta sentencia
     const sentencia_instance_id = `temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    const notas = notaSentencia.trim() || null;
 
     // Agregar la sentencia como producto principal
     const sentenciaProducto = {
@@ -418,7 +432,8 @@ export default function SentenciaSelector({ onAddProducts, onClose }) {
       precio: sentenciaSeleccionada.precio,
       categoria: "Sentencia",
       cantidad: 1,
-      esSentencia: true
+      esSentencia: true,
+      notas,
     };
     
     // Preparar array para productos que necesitan selección de variantes
@@ -426,11 +441,11 @@ export default function SentenciaSelector({ onAddProducts, onClose }) {
     
     // Evaluar cada producto de la sentencia
     productosFinales.forEach(producto => {
-      const necesitaSeleccionVariante = 
-        (producto.sabor_id === null && producto.requiere_sabor) || 
-        (producto.tamano_id === null && producto.requiere_tamano) || 
+      const necesitaSeleccionVariante =
+        (producto.sabor_id === null && producto.requiere_sabor) ||
+        (producto.tamano_id === null && producto.requiere_tamano) ||
         (producto.ingrediente_id === null && producto.requiere_ingrediente);
-      
+
       if (necesitaSeleccionVariante) {
         productosConVariantesPendientes.push({
           ...producto,
@@ -445,7 +460,8 @@ export default function SentenciaSelector({ onAddProducts, onClose }) {
           pendiente_seleccion_variante: true,
           precio_adicional: parseFloat(producto.precio_adicional || 0),
           tamano_precio: parseFloat(producto.tamano_precio || 0),
-          ingrediente_precio: parseFloat(producto.ingrediente_precio || 0)
+          ingrediente_precio: parseFloat(producto.ingrediente_precio || 0),
+          notas,
         });
       } else {
         // Enviar el producto directamente
@@ -462,7 +478,8 @@ export default function SentenciaSelector({ onAddProducts, onClose }) {
           cantidad: producto.cantidad || 1,
           precio_adicional: parseFloat(producto.precio_adicional || 0),
           tamano_precio: parseFloat(producto.tamano_precio || 0),
-          ingrediente_precio: parseFloat(producto.ingrediente_precio || 0)
+          ingrediente_precio: parseFloat(producto.ingrediente_precio || 0),
+          notas,
         };
 
         onAddProducts(productoParaAgregar);
@@ -481,7 +498,7 @@ export default function SentenciaSelector({ onAddProducts, onClose }) {
         sentencia_instance_id: sentencia_instance_id
       });
     }
-    
+
     onClose();
   };
 
@@ -529,7 +546,9 @@ export default function SentenciaSelector({ onAddProducts, onClose }) {
       procesarSentenciaConOpciones();
     } else if (paso === 3) {
       console.log("Continuando desde paso 3 - Confirmación");
-      
+
+      const notas = notaSentencia.trim() || null;
+
       // Finalizar y agregar la sentencia como producto principal
       const sentenciaProducto = {
         id: -1, // ID temporal para identificar que es una sentencia
@@ -539,7 +558,8 @@ export default function SentenciaSelector({ onAddProducts, onClose }) {
         precio: sentenciaSeleccionada.precio,
         categoria: "Sentencia",
         cantidad: 1,
-        esSentencia: true
+        esSentencia: true,
+        notas,
       };
       
       console.log("Producto principal de sentencia a agregar:", sentenciaProducto);
@@ -550,14 +570,14 @@ export default function SentenciaSelector({ onAddProducts, onClose }) {
       // Evaluar cada producto de la sentencia para determinar si necesita selección de variantes
       productosFinales.forEach(producto => {
         // Determinar si el producto necesita selección de variante
-        const necesitaSeleccionVariante = 
+        const necesitaSeleccionVariante =
           // Si tiene sabor_id definido, no necesita selección
-          (producto.sabor_id === null && producto.requiere_sabor) || 
+          (producto.sabor_id === null && producto.requiere_sabor) ||
           // Si tiene tamano_id definido, no necesita selección
-          (producto.tamano_id === null && producto.requiere_tamano) || 
+          (producto.tamano_id === null && producto.requiere_tamano) ||
           // Si tiene ingrediente_id definido, no necesita selección
           (producto.ingrediente_id === null && producto.requiere_ingrediente);
-        
+
         if (necesitaSeleccionVariante) {
           // Guardar para procesamiento posterior
           productosConVariantesPendientes.push({
@@ -573,7 +593,8 @@ export default function SentenciaSelector({ onAddProducts, onClose }) {
             // Asegurar que los precios estén en formato numérico
             precio_adicional: parseFloat(producto.precio_adicional || 0),
             tamano_precio: parseFloat(producto.tamano_precio || 0),
-            ingrediente_precio: parseFloat(producto.ingrediente_precio || 0)
+            ingrediente_precio: parseFloat(producto.ingrediente_precio || 0),
+            notas,
           });
         } else {
           // Enviar el producto como parte de una sentencia inmediatamente
@@ -590,9 +611,10 @@ export default function SentenciaSelector({ onAddProducts, onClose }) {
             // Asegurar que los precios están en formato numérico
             precio_adicional: parseFloat(producto.precio_adicional || 0),
             tamano_precio: parseFloat(producto.tamano_precio || 0),
-            ingrediente_precio: parseFloat(producto.ingrediente_precio || 0)
+            ingrediente_precio: parseFloat(producto.ingrediente_precio || 0),
+            notas,
           };
-          
+
           console.log("Agregando producto fijo de sentencia:", productoParaAgregar);
           onAddProducts(productoParaAgregar);
         }
@@ -600,11 +622,11 @@ export default function SentenciaSelector({ onAddProducts, onClose }) {
 
       // También revisar las opciones seleccionadas para variantes pendientes
       Object.values(opcionesSeleccionadas).forEach(producto => {
-        const necesitaSeleccionVariante = 
-          (producto.sabor_id === null && producto.requiere_sabor) || 
-          (producto.tamano_id === null && producto.requiere_tamano) || 
+        const necesitaSeleccionVariante =
+          (producto.sabor_id === null && producto.requiere_sabor) ||
+          (producto.tamano_id === null && producto.requiere_tamano) ||
           (producto.ingrediente_id === null && producto.requiere_ingrediente);
-        
+
         if (necesitaSeleccionVariante) {
           productosConVariantesPendientes.push({
             ...producto,
@@ -620,7 +642,8 @@ export default function SentenciaSelector({ onAddProducts, onClose }) {
             // Asegurar que los precios estén en formato numérico
             precio_adicional: parseFloat(producto.precio_adicional || 0),
             tamano_precio: parseFloat(producto.tamano_precio || 0),
-            ingrediente_precio: parseFloat(producto.ingrediente_precio || 0)
+            ingrediente_precio: parseFloat(producto.ingrediente_precio || 0),
+            notas,
           });
         } else {
           // Agregar opción directamente
@@ -634,12 +657,13 @@ export default function SentenciaSelector({ onAddProducts, onClose }) {
             es_parte_sentencia: true,
             sentencia_id: sentenciaSeleccionada.id,
             cantidad: producto.cantidad || 1,
-            // Asegurar que los precios estén en formato numérico
+            // Asegurar que los precios están en formato numérico
             precio_adicional: parseFloat(producto.precio_adicional || 0),
             tamano_precio: parseFloat(producto.tamano_precio || 0),
-            ingrediente_precio: parseFloat(producto.ingrediente_precio || 0)
+            ingrediente_precio: parseFloat(producto.ingrediente_precio || 0),
+            notas,
           };
-          
+
           console.log("Agregando opción de sentencia:", opcionParaAgregar);
           onAddProducts(opcionParaAgregar);
         }
@@ -720,13 +744,30 @@ export default function SentenciaSelector({ onAddProducts, onClose }) {
           <h2 className="text-xl font-bold">Selecciona una Sentencia</h2>
           <button onClick={onClose} className="text-gray-300 hover:text-white">✕</button>
         </div>
-        
+
+        {/* Nota para la promo — aplica a toda la sentencia que se elija */}
+        <div>
+          <label className="block mb-1 text-amarillo font-bold text-sm">
+            Notas de la promo (opcional)
+          </label>
+          <textarea
+            value={notaSentencia}
+            onChange={(e) => setNotaSentencia(e.target.value)}
+            placeholder="Ej.: menos hielo, sin mayo en los molletes…"
+            rows={2}
+            className="w-full bg-negro text-white p-2 rounded text-sm"
+          />
+          <p className="text-xs text-gray-400 mt-1">
+            La nota aparecerá en cocina en cada producto de la promo.
+          </p>
+        </div>
+
         {loading && (
           <div className="flex justify-center my-4">
             <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-amarillo"></div>
           </div>
         )}
-        
+
         {error && (
           <div className="bg-red-900/50 p-3 rounded text-red-200 text-sm">
             {error}
@@ -738,7 +779,7 @@ export default function SentenciaSelector({ onAddProducts, onClose }) {
             </button>
           </div>
         )}
-        
+
         {sentencias.length === 0 && !loading && !error ? (
           <p className="text-center text-gray-300">No hay sentencias disponibles</p>
         ) : (
@@ -825,6 +866,20 @@ export default function SentenciaSelector({ onAddProducts, onClose }) {
           </div>
         ))}
         
+        {/* Nota de la promo (editable también en paso 2) */}
+        <div className="pt-2">
+          <label className="block mb-1 text-amarillo font-bold text-sm">
+            Notas de la promo (opcional)
+          </label>
+          <textarea
+            value={notaSentencia}
+            onChange={(e) => setNotaSentencia(e.target.value)}
+            placeholder="Ej.: menos hielo, sin mayo en los molletes…"
+            rows={2}
+            className="w-full bg-negro text-white p-2 rounded text-sm"
+          />
+        </div>
+
         <div className="flex justify-between pt-4">
           <button
             onClick={volver}
@@ -832,7 +887,7 @@ export default function SentenciaSelector({ onAddProducts, onClose }) {
           >
             Volver
           </button>
-          
+
           <button
             onClick={continuar}
             disabled={Object.keys(opcionesSeleccionadas).length < sentenciaSeleccionada.productos?.opcionales?.length}
@@ -948,7 +1003,21 @@ export default function SentenciaSelector({ onAddProducts, onClose }) {
             <p className="font-bold text-amarillo">${precioTotal.toFixed(2)}</p>
           </div>
         </div>
-        
+
+        {/* Nota de la promo (última oportunidad de editarla) */}
+        <div className="pt-2">
+          <label className="block mb-1 text-amarillo font-bold text-sm">
+            Notas de la promo (opcional)
+          </label>
+          <textarea
+            value={notaSentencia}
+            onChange={(e) => setNotaSentencia(e.target.value)}
+            placeholder="Ej.: menos hielo, sin mayo en los molletes…"
+            rows={2}
+            className="w-full bg-negro text-white p-2 rounded text-sm"
+          />
+        </div>
+
         <div className="flex justify-between pt-4">
           <button
             onClick={volver}
@@ -956,7 +1025,7 @@ export default function SentenciaSelector({ onAddProducts, onClose }) {
           >
             Volver
           </button>
-          
+
           <button
             onClick={continuar}
             className="px-4 py-2 bg-amarillo text-negro rounded font-bold"

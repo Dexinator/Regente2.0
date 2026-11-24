@@ -57,6 +57,74 @@ export default function GestionOrden({ id }) {
     }
   };
 
+  // Edición en vivo del nombre de la orden
+  const [editandoNombre, setEditandoNombre] = useState(false);
+  const [nombreBorrador, setNombreBorrador] = useState("");
+  const [guardandoNombre, setGuardandoNombre] = useState(false);
+
+  const cambiarMetodoPago = async (pago, nuevoMetodo) => {
+    if (nuevoMetodo === pago.metodo) return;
+    const prev = pago.metodo;
+    // optimista: actualizar UI primero
+    setPagos((lista) =>
+      Array.isArray(lista)
+        ? lista.map((p) => (p.id === pago.id ? { ...p, metodo: nuevoMetodo } : p))
+        : lista
+    );
+    try {
+      const res = await fetch(`${API_URL}/pagos/${pago.id}/metodo`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ metodo: nuevoMetodo }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        alert(data.error || "No se pudo cambiar el método de pago");
+        // revertir
+        setPagos((lista) =>
+          Array.isArray(lista)
+            ? lista.map((p) => (p.id === pago.id ? { ...p, metodo: prev } : p))
+            : lista
+        );
+      }
+    } catch (err) {
+      alert("Error de red al cambiar el método de pago");
+      setPagos((lista) =>
+        Array.isArray(lista)
+          ? lista.map((p) => (p.id === pago.id ? { ...p, metodo: prev } : p))
+          : lista
+      );
+    }
+  };
+
+  const guardarNombre = async () => {
+    const nombre = nombreBorrador.trim();
+    if (!nombre) {
+      alert("El nombre no puede estar vacío");
+      return;
+    }
+    setGuardandoNombre(true);
+    try {
+      const res = await fetch(`${API_URL}/orders/${id}/nombre`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ nombre_cliente: nombre }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        alert(data.error || "No se pudo cambiar el nombre");
+        return;
+      }
+      setOrden(prev => prev ? { ...prev, cliente: data.nombre_cliente } : prev);
+      setEditandoNombre(false);
+    } catch (err) {
+      alert("Error de red al cambiar el nombre");
+    } finally {
+      setGuardandoNombre(false);
+    }
+  };
+
+
   const cargarDatos = async () => {
     try {
       const resOrden = await fetch(`${API_URL}/orders/${id}/resumen`);
@@ -189,14 +257,22 @@ export default function GestionOrden({ id }) {
     setTipoPropina("fija");
   };
 
+  // Productos de estas categorías se auto-marcan preparado=true al crearse
+  // (van directo a barra, no pasan por cocina). Permitimos cancelarlos
+  // mientras la orden esté abierta.
+  const CATEGORIAS_BARRA = ['Cerveza', 'Cerveza Artesanal', 'Mezcal', 'Otras Bebidas', 'Botana'];
+  const esProductoBarra = (producto) =>
+    CATEGORIAS_BARRA.includes(producto.categoria_producto || producto.categoria);
+
   // Función para iniciar el proceso de cancelación de un producto
   const iniciarCancelacion = (producto) => {
     // Permitir cancelar productos que no estén completamente preparados
     const cantidadPreparada = producto.cantidad_preparada || 0;
     const cantidadTotal = producto.cantidad_neta || producto.cantidad || 0;
-    
-    // Si el producto está completamente preparado, no se puede cancelar
-    if (producto.preparado && cantidadPreparada >= cantidadTotal) {
+
+    // Si el producto está completamente preparado, no se puede cancelar —
+    // SALVO que sea de barra (auto-marcado), que siempre es cancelable.
+    if (producto.preparado && cantidadPreparada >= cantidadTotal && !esProductoBarra(producto)) {
       alert("No se puede cancelar un producto que ya está completamente preparado.");
       return;
     }
@@ -218,8 +294,12 @@ export default function GestionOrden({ id }) {
       });
     }
     
-    // Calcular cantidad real disponible para cancelar (total - cancelada - preparada)
-    const cantidadDisponible = Math.max(0, cantidadTotal - cantidadCancelada - cantidadPreparada);
+    // Calcular cantidad real disponible para cancelar.
+    // Para barra, los productos se auto-marcan preparado=true al crearse pero
+    // no pasaron por cocina; conceptualmente están "por entregar", así que
+    // ignoramos cantidad_preparada en ese cálculo.
+    const descuentoPreparada = esProductoBarra(producto) ? 0 : cantidadPreparada;
+    const cantidadDisponible = Math.max(0, cantidadTotal - cantidadCancelada - descuentoPreparada);
     
     // Guardar la cantidad disponible en el producto
     const productoConDisponible = {
@@ -558,8 +638,9 @@ export default function GestionOrden({ id }) {
                         )}
                         {p.ingrediente_nombre && (
                             <p className="text-xs text-amarillo/80">
-                                Ingrediente Extra: {p.ingrediente_nombre}
-                                {p.ingrediente_precio > 0 && ` +$${parseFloat(p.ingrediente_precio).toFixed(2)}`}
+                                Ingrediente{p.ingrediente_extra_2_nombre ? "s" : ""} Extra: {p.ingrediente_nombre}
+                                {p.ingrediente_extra_2_nombre && ` + ${p.ingrediente_extra_2_nombre}`}
+                                {p.ingrediente_precio > 0 && ` +$${parseFloat(p.ingrediente_precio).toFixed(2)}${p.ingrediente_extra_2_nombre ? " (el más caro)" : ""}`}
                             </p>
                         )}
                         {p.notas && (
@@ -600,10 +681,10 @@ export default function GestionOrden({ id }) {
                             </button>
                         )}
 
-                        {/* Solo se pueden cancelar productos individuales que NO sean parte de una sentencia */}
-                        {/* Ahora permitimos cancelar si hay unidades no preparadas (cantidad_neta - cantidad_preparada > 0) */}
+                        {/* Solo se pueden cancelar productos individuales que NO sean parte de una sentencia.
+                            Barra (auto-preparado) es siempre cancelable mientras la orden siga abierta. */}
                         {!p.es_sentencia_principal && !p.sentencia_detalle_orden_padre_id && !estaCanceladoUI &&
-                         p.cantidad_neta > 0 && (!p.preparado || (p.cantidad_preparada !== undefined && p.cantidad_preparada < p.cantidad_neta)) && (
+                         p.cantidad_neta > 0 && (!p.preparado || (p.cantidad_preparada !== undefined && p.cantidad_preparada < p.cantidad_neta) || esProductoBarra(p)) && (
                              <button
                                 onClick={() => {
                                     const productoParaCancelar = {
@@ -666,7 +747,51 @@ export default function GestionOrden({ id }) {
     <div className="flex justify-between items-center mb-2">
     <div className="flex items-center gap-2">
     <span className="text-sm text-amarillo font-bold">#{id}</span>
-    <h2 className="font-subtitulo text-xl">{orden.cliente}</h2>
+    {editandoNombre ? (
+      <>
+        <input
+          type="text"
+          value={nombreBorrador}
+          onChange={(e) => setNombreBorrador(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") guardarNombre();
+            if (e.key === "Escape") setEditandoNombre(false);
+          }}
+          autoFocus
+          maxLength={255}
+          className="bg-negro text-white px-2 py-1 rounded text-lg"
+        />
+        <button
+          onClick={guardarNombre}
+          disabled={guardandoNombre}
+          className="bg-amarillo text-negro px-2 py-1 rounded text-sm font-bold disabled:opacity-50"
+          title="Guardar"
+        >
+          ✓
+        </button>
+        <button
+          onClick={() => setEditandoNombre(false)}
+          className="text-gray-300 hover:text-white text-sm"
+          title="Cancelar"
+        >
+          ✕
+        </button>
+      </>
+    ) : (
+      <>
+        <h2 className="font-subtitulo text-xl">{orden.cliente}</h2>
+        <button
+          onClick={() => {
+            setNombreBorrador(orden.cliente || "");
+            setEditandoNombre(true);
+          }}
+          className="text-gray-300 hover:text-amarillo text-sm"
+          title="Cambiar nombre de la orden"
+        >
+          ✎
+        </button>
+      </>
+    )}
     </div>
     <p className="text-sm font-bold">Estado de pago: <strong>{orden.estado_pago}</strong></p>
     </div>
@@ -774,11 +899,22 @@ export default function GestionOrden({ id }) {
       pagos.map((pago, index) => (
         <li key={pago.id || index} className="p-2 border-b border-gray-700">
           <div className="flex justify-between">
-            <div>
-              <span className="mr-1">
+            <div className="flex items-center gap-1">
+              <span>
                 {pago.metodo === 'efectivo' ? '💵' : pago.metodo === 'tarjeta' ? '💳' : '📲'}
               </span>
-              <span className="font-bold">${pago.monto ? Number(pago.monto).toFixed(2) : 'N/A'}</span>
+              <select
+                value={pago.metodo}
+                onChange={(e) => cambiarMetodoPago(pago, e.target.value)}
+                className="bg-negro text-white text-xs rounded px-1 py-0.5 border border-gray-600"
+                title="Cambiar método de pago"
+              >
+                <option value="efectivo">efectivo</option>
+                <option value="tarjeta">tarjeta</option>
+                <option value="transferencia">transferencia</option>
+                <option value="otro">otro</option>
+              </select>
+              <span className="font-bold ml-1">${pago.monto ? Number(pago.monto).toFixed(2) : 'N/A'}</span>
               {pago.propina > 0 && (
                 <span className="text-green-400 ml-1">
                   + ${Number(pago.propina).toFixed(2)} propina
